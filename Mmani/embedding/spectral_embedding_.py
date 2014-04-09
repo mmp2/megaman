@@ -10,16 +10,15 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.linalg import lobpcg
 from scipy.sparse.linalg.eigen.lobpcg.lobpcg import symeig
-
-from ..base import BaseEstimator, TransformerMixin
-from ..externals import six
-from ..utils import check_random_state
-from ..utils.validation import atleast2d_or_csr
-from ..utils.graph import graph_laplacian
-from ..utils.sparsetools import connected_components
-from ..utils.arpack import eigsh
-from ..metrics.pairwise import rbf_kernel
-from ..neighbors import kneighbors_graph
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.externals import six
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import atleast2d_or_csr
+from sklearn.utils.graph import graph_laplacian
+from sklearn.utils.sparsetools import connected_components
+from sklearn.utils.arpack import eigsh
+from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.neighbors import radius_neighbors_graph
 
 
 def _graph_connected_component(graph, node_id):
@@ -122,6 +121,7 @@ def spectral_embedding(adjacency, n_components=8, eigen_solver=None,
                        norm_laplacian=True, drop_first=True,
                        mode=None):
     """Project the sample on the first eigen vectors of the graph Laplacian.
+    MMP:TO CHANGE THIS
 
     The adjacency matrix is used to compute a normalized graph Laplacian
     whose spectrum (especially the eigen vectors associated to the
@@ -372,7 +372,7 @@ class SpectralEmbedding(BaseEstimator):
       http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
 
-    def __init__(self, n_components=2, affinity="nearest_neighbors",
+    def __init__(self, n_components=2, affinity="radius_neighbors",
                  gamma=None, random_state=None, eigen_solver=None,
                  n_neighbors=None):
         self.n_components = n_components
