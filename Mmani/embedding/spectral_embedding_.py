@@ -372,14 +372,21 @@ class SpectralEmbedding(BaseEstimator):
       http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
 
+    """ 
+    MMP's notes: added radius_neighbors affinity with parameter neighbors_radius=None
+    neighbors_radius = 1/sqrt(gamma)
+    should we keep both params?
+    to update the doc comments above
+    """
     def __init__(self, n_components=2, affinity="radius_neighbors",
                  gamma=None, random_state=None, eigen_solver=None,
-                 n_neighbors=None):
+                 neighbors_radius = None, n_neighbors=None):
         self.n_components = n_components
         self.affinity = affinity
         self.gamma = gamma
         self.random_state = random_state
         self.eigen_solver = eigen_solver
+        self.neighbors_radius = neighbors_radius
         self.n_neighbors = n_neighbors
 
     @property
@@ -387,7 +394,7 @@ class SpectralEmbedding(BaseEstimator):
         return self.affinity == "precomputed"
 
     def _get_affinity_matrix(self, X, Y=None):
-        """Caclulate the affinity matrix from data
+        """Calculate the affinity matrix from data
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
@@ -406,6 +413,8 @@ class SpectralEmbedding(BaseEstimator):
         if self.affinity == 'precomputed':
             self.affinity_matrix_ = X
             return self.affinity_matrix_
+            
+        # nearest_neigh kept for backward compatibility 
         if self.affinity == 'nearest_neighbors':
             if sparse.issparse(X):
                 warnings.warn("Nearest neighbors affinity currently does "
@@ -421,6 +430,18 @@ class SpectralEmbedding(BaseEstimator):
                 self.affinity_matrix_ = 0.5 * (self.affinity_matrix_ +
                                                self.affinity_matrix_.T)
                 return self.affinity_matrix_
+        if self.affinity == 'radius_neighbors':
+            self.neighbors_radius_ = (self.neighbors_radius
+                           if self.neighbors_radius is not None else 1.0 / X.shape[1])   # to put another defaault value, like diam(X)/sqrt(dimensions)/10
+            self.gamma_ = (self.gamma
+                           if self.gamma is not None else 1.0 / X.shape[1])
+            self.affinity_matrix_ = radius_neighbors_graph(X, self.neighbors_radius_, mode='distance')
+            #problem here: this is a sparse matrix not np.array type
+            #.todense() doesn't work -- i get a msg about a string
+
+            self.affinity_matrix_ **= 2  # square distances
+            self.affinity_matrix_ /= -self.neighbors_radius_**2  # less copying?
+            self.affinity_matrix_ = np.exp( self.affinity_matrix_, self.affinity_matrix_ )
         if self.affinity == 'rbf':
             self.gamma_ = (self.gamma
                            if self.gamma is not None else 1.0 / X.shape[1])
@@ -450,10 +471,10 @@ class SpectralEmbedding(BaseEstimator):
         """
         random_state = check_random_state(self.random_state)
         if isinstance(self.affinity, six.string_types):
-            if self.affinity not in set(("nearest_neighbors", "rbf",
-                                         "precomputed")):
+            if self.affinity not in set(("nearest_neighbors", "rbf", 
+                                         "radius_neighbors", "precomputed")):
                 raise ValueError(("%s is not a valid affinity. Expected "
-                                  "'precomputed', 'rbf', 'nearest_neighbors' "
+                                  "'precomputed', 'rbf', 'nearest_neighbors', 'radius_neighbors' "
                                   "or a callable.") % self.affinity)
         elif not callable(self.affinity):
             raise ValueError(("'affinity' is expected to be an an affinity "
