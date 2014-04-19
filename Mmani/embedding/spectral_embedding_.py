@@ -445,8 +445,8 @@ class SpectralEmbedding(BaseEstimator):
                            if self.gamma is not None else 1.0 / X.shape[1])
             self.affinity_matrix_ = radius_neighbors_graph(X, self.neighbors_radius_, mode='distance')
             
-            self.affinity_matrix_.data **= 2  # square distances
-            self.affinity_matrix_.data /= -self.neighbors_radius_**2  # less copying?
+            self.affinity_matrix_.data **= 2              
+            self.affinity_matrix_.data /= -self.neighbors_radius_**2
             self.affinity_matrix_.data = np.exp( self.affinity_matrix_.data, self.affinity_matrix_.data )
             return self.affinity_matrix_
         if self.affinity == 'rbf':
