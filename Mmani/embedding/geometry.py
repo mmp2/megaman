@@ -1,7 +1,7 @@
 """
-Geometric (Riemannian) Manifold learning utilities and 
+Geometric (Riemannian) Manifold learning utilities and algorithms
 
-Graphs are represented with their adjacency matrices, preferably using
+Graphs are represented with their weighted adjacency matrices, preferably using
 sparse matrices.
 """
 #Authors: Marina Meila <mmp@stat.washington.edu>
@@ -77,38 +77,57 @@ else:
 def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
     """ Return the Laplacian matrix of an undirected graph.
 
-obtains a consistent estimate of 
-%   the Laplace-Beltrami operator L from the similarity matrix A . See 
-%   "Diffusion Maps" (Coifman and Lafon, 2006) and "Graph Laplacians and 
-%   their Convergence on Random Neighborhood Graphs" (Hein, Audibert,
-%   Luxburg, 2007) for more details. It also returns the Kth firts 
-%   eigenvectors PHI of the L in increasing order of eigenvalues LAM.
-%   
-%   A is the similarity matrix from the sampled data on the manifold M.
-%   Typically A is obtained from the data X by applying the heat kernel 
-%   A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
-%   need to obtained the properly scaled version of L. Following the usual
-%   convention, the laplacian (Laplace-Beltrami operator) is defined as 
-%   div(grad(f)) (that is the laplacian is taken to be negative
-%   semi-definite).
+   Computes a consistent estimate of the Laplace-Beltrami operator L
+   from the similarity matrix A . See "Diffusion Maps" (Coifman and
+   Lafon, 2006) and "Graph Laplacians and their Convergence on Random
+   Neighborhood Graphs" (Hein, Audibert, Luxburg, 2007) for more
+   details. 
 
-% Note that the Laplacians defined here are the negative of what is 
-% commonly used in the machine learning literature. This convention is used
-% so that the Laplacians converge to the standard definition of the
-% differential operator.
+   ????It also returns the Kth firts eigenvectors PHI of the L in
+   increasing order of eigenvalues LAM.
 
-    For directed graphs the out-degree is used in the computation.
-    For directed Laplacian use directed_laplacian (TBI) is recommended
+   A is the similarity matrix from the sampled data on the manifold M.
+   Typically A is obtained from the data X by applying the heat kernel 
+   A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
+   need to obtained the properly scaled version of L. Following the usual
+   convention, the laplacian (Laplace-Beltrami operator) is defined as 
+   div(grad(f)) (that is the laplacian is taken to be negative
+   semi-definite).
+
+   Note that the Laplacians defined here are the negative of what is 
+   commonly used in the machine learning literature. This convention is used
+   so that the Laplacians converge to the standard definition of the
+   differential operator.
 
     Parameters
     ----------
+    notation: A = csgraph, D=diag(A1) the diagonal matrix of degrees
+              L = lap = returned object
+              EPPS = scaling_epps**2
+           
     csgraph : array_like or sparse matrix, 2 dimensions
-        compressed-sparse graph, with shape (N, N).
+        compressed-sparse graph, with shape (N, N). 
     normed : string, optional
-        If 'renormalized', then compute renormalized Laplacian of Lafon & al.
-        If 'normalized', then compute normalized Laplacian.
-        If 'unnormalized', then compute unnormalized Laplacian.
-    return_diag : bool, optional
+        if 'renormalized':
+            compute renormalized Laplacian of Coifman & Lafon
+            L = D**-alpha A D**-alpha
+            T = diag(L1)
+            L = T**-1 L - eye()
+        if 'symmetricnormalized':
+           compute normalized Laplacian
+            L = D**-0.5 A D**-0.5 - eye()
+        if 'unnormalized': compute unnormalized Laplacian.
+            L = A-D
+        if 'randomwalks': compute stochastic transition matrix
+            L = D**-1 A
+    symmetrize: bool, optional 
+        if True symmetrize adjacency matrix (internally) before computing lap
+    scaling_epps: float, optional
+        if >0., it should be the same neighbors_radius that was used as kernel
+        width for computing the affinity. The Laplacian gets the scaled by
+        4/np.sqrt(scaling_epps) in order to ensure consistency in the limit
+        of large N
+    return_diag : bool, optional (kept for compatibility)
         If True, then return diagonal as well as laplacian.
 
     Returns
@@ -121,10 +140,17 @@ obtains a consistent estimate of
 
     Notes
     -----
-    Explain Differences between unnormalized, normalized, renormalized Laplacians.
-
-    For non-symmetric directed graphs, the laplacian is computed using the
-    out-degree of each node.
+    There are a few differences from the sklearn.spectral_embedding laplacian
+    function. 
+    1) normed='unnormalized' and 'symmetricnormalized' correspond 
+    respectively to normed=False and True in the latter. (Note also that normed
+    was changed from bool to string.
+    2) the signs of this laplacians are changed w.r.t the original
+    3) the diagonal of lap is no longer set to 0
+    4) if csgraph is not symmetric the out-degree is used in the
+    computation and no warning is raised. 
+    However, it is not recommended to use this function for directed graphs.
+    Use directed_laplacian() (NYImplemented) instead
     """
     if csgraph.ndim != 2 or csgraph.shape[0] != csgraph.shape[1]:
         raise ValueError('csgraph must be a square matrix or array')
@@ -144,7 +170,7 @@ obtains a consistent estimate of
 
 
 def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
-    ## what is thi 
+    ## what is thi s ?
     n_nodes = graph.shape[0]
     if not graph.format == 'coo':
         lap = graph.tocoo()
@@ -167,9 +193,9 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         diag_mask = (lap.row == lap.col)
 
     #lap.data[diag_mask] = 0  #why is this yere
-    d = np.asarray(lap.sum(axis=1)).squeeze()
+    degrees = np.asarray(lap.sum(axis=1)).squeeze()
     if normed == 'symmetricnormalized':
-        w = np.sqrt(d)
+        w = np.sqrt(degrees)
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap.data /= w[lap.row]
@@ -177,30 +203,33 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data[diag_mask] -= 1. 
 # whya ll this(w_zeros[lap.row[diag_mask]]).astype(lap.data.dtype-1.)
     if normed == 'geometric':
-        w = d.copy()     # normzlize one symmetrically by d
+        w = degrees.copy()     # normzlize one symmetrically by d
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetrically
+        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
         lap.data /= w[lap.row]
-        
         lap.data[diag_mask] -= 1.
+
     if normed == 'renormalized':
-        w = d**renormalization_exponent;
+        w = degrees**renormalization_exponent;
         # same as 'geoetric' from here on
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetrically
+        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
         lap.data /= w[lap.row]
-        
         lap.data[diag_mask] -= 1.
+
     if normed == 'unnormalized':
-        lap[diagmask] -= d[lap.row]
+        lap[diagmask] -= degrees[lap.row]
     if normed == 'randomwalk':
-        lap /= d[lap.row]
+        lap /= degrees[lap.row]
+
+    if scaling_epps > 0.:
+        lap *= 4/np.sqrt(scaling_epps)
 
     if return_diag:
         return lap, np.asarray( lap[diagmask] ).squeeze()
@@ -230,12 +259,12 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
 def distance_matrix( X, adjacency='radius_neighbors', neighbor_radius=None,
                      n_neighbors=0 ):
     # DNearest neighbors has issues. TB FIXED
-    if affinity == 'nearest_neighbors':
+    if mode == 'nearest_neighbors':
         warnings.warn("Nearest neighbors currently does not work"
                       "falling back to radius neighbors")
-        affinity = 'radius_neighbors'
+        mode = 'radius_neighbors'
 
-    if affinity == 'radius_neighbors':
+    if mode == 'radius_neighbors':
         neighbors_radius_ = (neighbors_radius
                              if neighbors_radius is not None else 1.0 / X.shape[1])   # to put another defaault value, like diam(X)/sqrt(dimensions)/10
         distance_matrix = radius_neighbors_graph(X, neighbors_radius_, mode='distance')
@@ -244,27 +273,27 @@ def distance_matrix( X, adjacency='radius_neighbors', neighbor_radius=None,
 
 class DistanceMatrix:
 
-    def __init__(self, affinity="radius_neighbors",
+    def __init__(self, mode="radius_neighbors",
                  gamma=None, neighbors_radius = None, n_neighbors=None):
-        self.affinity = affinity
+        self.mode = mode
         self.gamma = gamma
         self.neighbors_radius = neighbors_radius
         self.n_neighbors = n_neighbors
 
     @property
     def _pairwise(self):
-        return self.affinity == "precomputed"
+        return self.mode == "precomputed"
 
     def _get_distance_matrix_(self, X):
-        if self.affinity == 'precomputed':
+        if self.mode == 'precomputed':
             self.distance_matrix = X
         else:
-            self.distance_matrix = distance_matrix(X, affinity=self.affinity, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
+            self.distance_matrix = distance_matrix(X, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
         return self.distance_matrix
 
     def get_distance_matrix( self, X, copy=True ):
         if self.distance_matrix is None:
-            self.distance_matrix = distance_matrix(X, affinity=self.affinity, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
+            self.distance_matrix = distance_matrix(X, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
         if copy:
             return self.distance_matrix_.copy()
         else:
