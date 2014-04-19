@@ -1,6 +1,9 @@
 """Spectral Embedding"""
 
-# Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
+# Author: Marina Meila <mmp@stat.washington.edu>
+#
+#         after the scikit-learn version by 
+#         Gael Varoquaux <gael.varoquaux@normalesup.org>
 #         Wei LI <kuantkid@gmail.com>
 # License: BSD 3 clause
 
@@ -19,6 +22,7 @@ from sklearn.utils.sparsetools import connected_components
 from sklearn.utils.arpack import eigsh
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import radius_neighbors_graph
+from sklearn.neighbors import kneighbors_graph
 
 
 def _graph_connected_component(graph, node_id):
@@ -431,17 +435,20 @@ class SpectralEmbedding(BaseEstimator):
                                                self.affinity_matrix_.T)
                 return self.affinity_matrix_
         if self.affinity == 'radius_neighbors':
-            self.neighbors_radius_ = (self.neighbors_radius
-                           if self.neighbors_radius is not None else 1.0 / X.shape[1])   # to put another defaault value, like diam(X)/sqrt(dimensions)/10
+            if self.neighbors_radius is None:
+                self.neighbors_radius_ =  np.sqrt(X.shape[1])
+                # to put another defaault value, like diam(X)/sqrt(dimensions)/10
+            else:
+                self.neighbors_radius_ = self.neighbors_radius
+                
             self.gamma_ = (self.gamma
                            if self.gamma is not None else 1.0 / X.shape[1])
             self.affinity_matrix_ = radius_neighbors_graph(X, self.neighbors_radius_, mode='distance')
-            #problem here: this is a sparse matrix not np.array type
-            #.todense() doesn't work -- i get a msg about a string
-
-            self.affinity_matrix_ **= 2  # square distances
-            self.affinity_matrix_ /= -self.neighbors_radius_**2  # less copying?
-            self.affinity_matrix_ = np.exp( self.affinity_matrix_, self.affinity_matrix_ )
+            
+            self.affinity_matrix_.data **= 2  # square distances
+            self.affinity_matrix_.data /= -self.neighbors_radius_**2  # less copying?
+            self.affinity_matrix_.data = np.exp( self.affinity_matrix_.data, self.affinity_matrix_.data )
+            return self.affinity_matrix_
         if self.affinity == 'rbf':
             self.gamma_ = (self.gamma
                            if self.gamma is not None else 1.0 / X.shape[1])
@@ -449,6 +456,20 @@ class SpectralEmbedding(BaseEstimator):
             return self.affinity_matrix_
         self.affinity_matrix_ = self.affinity(X)
         return self.affinity_matrix_
+
+
+
+    def get_affinity_matrix(self, X=None, Y=None, copy = True):
+        if self.affinity_matrix_ == None:
+            if X is None: 
+                return None
+            _get_affinity_matrix(self, X, Y)
+        if copy:
+            return self.affinity_matrix_.copy()
+        else:
+            return self.affinity_matrix_
+
+# the matrices are very large and  i don;'t really want to clone. i'll chabnge later
 
     def fit(self, X, y=None):
         """Fit the model from data in X.
