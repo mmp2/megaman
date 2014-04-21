@@ -11,7 +11,7 @@ sparse matrices.
 import numpy as np
 from scipy import sparse
 
-from .graph_shortest_path import graph_shortest_path
+from sklearn.utils.graph import graph_shortest_path
 
 ###############################################################################
 # Path and connected component analysis.
@@ -63,12 +63,6 @@ def single_source_shortest_path_length(graph, source, cutoff=None):
             break
         level += 1
     return seen  # return all path lengths as dictionary
-
-
-if hasattr(sparse, 'connected_components'):
-    connected_components = sparse.connected_components
-else:
-    from .sparsetools import connected_components
 
 
 ###############################################################################
@@ -170,17 +164,19 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0
 
 
 def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
-    ## what is thi s ?
-    n_nodes = graph.shape[0]
-    if not graph.format == 'coo':
-        lap = graph.tocoo()
+    n_nodes = csgraph.shape[0]
+    if not csgraph.format == 'coo':
+        lap = csgraph.tocoo()
     else:
-        lap = graph.copy()
+        lap = csgraph.copy()
+    print lap.getformat()
     if symmetrize:
-        lap += lap.T   
+        lap = lap + lap.transpose(copy=True)
+        print lap.getformat()
         lap.data /= 2.
-    diag_mask = (lap.row == lap.col)
-    if not diag_mask.sum() == n_nodes:  ##whayt?? whoy not .size ?
+    lap = lap.tocoo()
+    diag_mask = (lap.row == lap.col)  # True/False
+    if not diag_mask.sum() == n_nodes: 
         # The sparsity pattern of the matrix has holes on the diagonal,
         # we need to fix that
         diag_idx = lap.row[diag_mask]
@@ -237,8 +233,8 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
 
 # TO BE UPDATED
 def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
-    n_nodes = graph.shape[0]
-    lap = -np.asarray(graph)  # minus sign leads to a copy
+    n_nodes = csgraph.shape[0]
+    lap = -np.asarray(csgraph)  # minus sign leads to a copy
     # set diagonal to zero
     lap.flat[::n_nodes + 1] = 0
     w = -lap.sum(axis=0)
@@ -300,7 +296,7 @@ class DistanceMatrix:
             return self.distance_matrix_
 
 def affinity_matrix( distances, neighbor_radius ):
-    if neighbor_radius not >0.:
+    if neighbor_radius <= 0.:
         raise ValueError('neighbor_radius must be >0.')
     A = distances.copy()
     if sparse.isspmatrix( A ):
@@ -312,3 +308,61 @@ def affinity_matrix( distances, neighbor_radius ):
         A /= -neighbors_radius_**2
         np.exp(A, A)
     return A
+
+
+def riemann_metric( Y, n_dim=2, laplacian=None, adjacency=None, invert_h=False,
+                   norm_laplacian=True, mode=None):
+    """
+    Parameters
+    ----------
+    adjacency : array-like or sparse matrix, shape: (n_samples, n_samples)
+        The adjacency matrix of the graph to embed.
+
+    n_dim : integer, optional
+        The dimension of the projection subspace.
+
+    Returns
+    -------
+    h_dual_metric : array, shape=(n_samples, n_dim, n_dim)
+
+    Optionally:
+    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim)
+    
+    i would like to have a way to request g for specified points only
+
+    Notes
+    -----
+    References
+    ----------
+    * 
+    """
+    # Check that either laplacian or symmetric adjacency matrix are given
+    if laplacian is not None:
+        n_samples = laplacian.get_shape()[0]
+    else:
+        n_samples = adjacency.get_shape()[0]
+
+    # If Laplacian not given, compute it from adjacency matrix.
+    """to use sparse.csgraph.laplacian() and renormalize here?
+    and put this calculation in the class anyways"""
+    if (laplacian == None ):
+        laplacian, dd = graph_laplacian(adjacency,
+                                        normed=norm_laplacian, return_diag=True)
+    h_dual_metric = np.zeros((n_samples, n_dim, n_dim ))
+    for i in np.arange(n_dim ):
+        for j in np.arange(n_dim ):
+            if ( j>=i ):
+                yij = Y[:,i]*Y[:,j]
+                h_dual_metric[ :, i, j] = 0.5*(laplacian.dot(yij)-Y[:,j]*laplacian.dot(Y[:,i])-Y[:,i]*laplacian.dot(Y[:,j]))
+        else:
+            h_dual_metric[ :,i,j] = h_dual_metric[:,j,i]
+
+    # compute rmetric if requested
+    if( invert_h ):
+        riemann_metric = np.zeros( n_samples, n_dim, n_dim )
+        for i in np.arange(n_samples):
+            riemann_metric[i,:,:] = np.inv(h_dual_metric[i,:,:].squeeze())
+    else:
+        riemann_metric = None
+
+    return h_dual_metric, riemann_metric, laplacian

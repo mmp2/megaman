@@ -23,6 +23,7 @@ from sklearn.utils.arpack import eigsh
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import radius_neighbors_graph
 from sklearn.neighbors import kneighbors_graph
+timing = True
 
 
 def _graph_connected_component(graph, node_id):
@@ -500,12 +501,19 @@ class SpectralEmbedding(BaseEstimator):
         elif not callable(self.affinity):
             raise ValueError(("'affinity' is expected to be an an affinity "
                               "name or a callable. Got: %s") % self.affinity)
-
+        if timing:
+            import time
+            t0 = time.time()
         affinity_matrix = self._get_affinity_matrix(X)
+        if timing:
+            ta = time.time()
         self.embedding_ = spectral_embedding(affinity_matrix,
                                              n_components=self.n_components,
                                              eigen_solver=self.eigen_solver,
                                              random_state=random_state)
+        if timing:
+            tl = time.time()
+            print 'affinity = {0}s, embedding = {1}s'.format( ta-t0, tl-ta )
         return self
 
     def fit_transform(self, X, y=None):
