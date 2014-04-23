@@ -169,10 +169,10 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap = csgraph.tocoo()
     else:
         lap = csgraph.copy()
-    print lap.getformat()
+    print( lap.getformat())
     if symmetrize:
         lap = lap + lap.transpose(copy=True)
-        print lap.getformat()
+        print( lap.getformat())
         lap.data /= 2.
     lap = lap.tocoo()
     diag_mask = (lap.row == lap.col)  # True/False
