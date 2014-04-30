@@ -14,7 +14,7 @@ X = np.array( (X1, X2, X[:,1]) )
 X = X.T
 
 #X = np.concatenate( (X,X),axis=1)
-print X.shape
+print( X.shape )
 
 isSP = True
 #from sklearn.manifold import LocallyLinearEmbedding
@@ -27,8 +27,8 @@ else:
 
 Y = model.fit_transform(X)
 
-print Y.shape
-print X.shape
+print( Y.shape )
+print( X.shape )
 
 #plt.plot( X[:,0], X[ :,1 ], marker='.',linestyle='None',label='X' )
 plt.plot( Y[:,0], Y[ :,1 ], marker='.',linestyle='None',color='red',label='Y' )
@@ -49,14 +49,14 @@ from sklearn.utils.arpack import eigsh
             
 A = model.get_affinity_matrix()
 la, va = eigsh(A,k=5,which='LM')
-print la
+print( la )
 L = graph_laplacian( A, scaling_epps=rad)
 ll, vl = eigsh(L,k=5,which='LM')
-print ll
+print( ll )
 h,g,duml = riemann_metric(Y, 2, laplacian=L)
 
-print h.shape
-print h[:4,:,:]
+print( h.shape )
+print( h[:4,:,:] )
 
 from junkelli import plot_cov_ellipse
 

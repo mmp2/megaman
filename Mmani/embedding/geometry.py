@@ -269,12 +269,21 @@ def distance_matrix( X, adjacency='radius_neighbors', neighbors_radius=None,
 
 class DistanceMatrix:
 
-    def __init__(self, mode="radius_neighbors",
+    def __init__(self, X, mode="radius_neighbors", use_flann = True, 
                  gamma=None, neighbors_radius = None, n_neighbors=None):
         self.mode = mode
         self.gamma = gamma
         self.neighbors_radius = neighbors_radius
         self.n_neighbors = n_neighbors
+        if self.mode != "precomputed":
+            self.X_ = X
+        if use_flann:
+            import pyflann
+            self.flindex_ = FLANN()
+            self.flparams_ = self.flindex.buildIndex( X )
+        else:
+            self.flindex_ = None
+            self.flparams_ = None
 
     @property
     def _pairwise(self):
@@ -295,6 +304,35 @@ class DistanceMatrix:
         else:
             return self.distance_matrix_
 
+    def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' )
+    """
+    mode = 'adjacency' not implemented yet
+    """
+    if radius < 0.:
+        raise ValueError('neighbors_radius must be >=0.')
+    nsam, ndim = X.shape
+
+    graph_jindices = []
+    graph_iidices = []
+    graph_data = []
+    for i in range( nsam ):
+        jj, dd = flindex.nn_radius( X[i,:], radius )
+        graph_data.add( dd )
+        graph_jindices.add( jj )
+        graph_iindices.add( i*np.ones( 1, dd.shape[0] ))
+
+    graph_data = np.concatenate( graph_data )
+    print( "graph_data.shape=", graph_data.shape )
+    graph_iindices = np.concatenate( graph_iindices )
+    graph_jindices = np.concatenate( graph_jindices )
+    graph_ij = np.vstack( (graph_iindices, graph_jindices ))
+    # this is so inefficient. i wish there was a better construction method for
+    # csr_matrix. or shall i just make a coo matrix? the laplacian is coo
+    # anyways
+
+    graph = sparse.csr_matrix((graph_data, graph_ij), shape=(nsam, nsam))
+    return graph
+    
 def affinity_matrix( distances, neighbors_radius ):
     if neighbors_radius <= 0.:
         raise ValueError('neighbors_radius must be >0.')
