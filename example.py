@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from Mmani.embedding import * 
 
-rad = 0.05
-n_samples = 5000
+rad = 0.2
+n_samples = 1000
 X = np.random.random((n_samples, 2))
 thet = X[:,0]
 X1 = np.array( thet*np.sin(2*thet ))
@@ -16,16 +16,20 @@ X = X.T
 #X = np.concatenate( (X,X),axis=1)
 print( X.shape )
 
+dX = DistanceMatrix( X )
+csdistanceX = dX.get_distance_matrix( neighbors_radius = rad )
+A = affinity_matrix( csdistanceX, rad )
+
 isSP = True
 #from sklearn.manifold import LocallyLinearEmbedding
 if isSP:
     from Mmani.embedding import SpectralEmbedding
-    model = SpectralEmbedding(neighbors_radius=rad)
+    model = SpectralEmbedding(neighbors_radius=rad, affinity="precomputed")
 else:
     from Mmani.embedding import LocallyLinearEmbedding
     model = LocallyLinearEmbedding(15, 2)
 
-Y = model.fit_transform(X)
+Y = model.fit_transform(A)
 
 print( Y.shape )
 print( X.shape )
@@ -58,7 +62,7 @@ h,g,duml = riemann_metric(Y, 2, laplacian=L)
 print( h.shape )
 print( h[:4,:,:] )
 
-from junkelli import plot_cov_ellipse
+from covar_plotter import plot_cov_ellipse
 
 ax = plt.gca()
 for i in range(n_samples):

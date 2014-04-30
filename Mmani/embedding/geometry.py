@@ -10,6 +10,8 @@ sparse matrices.
 
 import numpy as np
 from scipy import sparse
+from pyflann import *     # how to import conditionally
+
 
 from sklearn.utils.graph import graph_shortest_path
 
@@ -252,8 +254,8 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
         return lap, w
     return lap
 
-def distance_matrix( X, adjacency='radius_neighbors', neighbors_radius=None,
-                     n_neighbors=0 ):
+def distance_matrix( X, flindex = None, mode='radius_neighbors', 
+                     neighbors_radius=None, n_neighbors=0 ):
     # DNearest neighbors has issues. TB FIXED
     if mode == 'nearest_neighbors':
         warnings.warn("Nearest neighbors currently does not work"
@@ -263,8 +265,39 @@ def distance_matrix( X, adjacency='radius_neighbors', neighbors_radius=None,
     if mode == 'radius_neighbors':
         neighbors_radius_ = (neighbors_radius
                              if neighbors_radius is not None else 1.0 / X.shape[1])   # to put another defaault value, like diam(X)/sqrt(dimensions)/10
-        distance_matrix = radius_neighbors_graph(X, neighbors_radius_, mode='distance')
+        if flindex is not None:
+            distance_matrix = fl_radius_neighbors_graph(X, neighbors_radius_, flindex, mode='distance')
+        else:
+            distance_matrix = radius_neighbors_graph(X, neighbors_radius_, mode='distance')
         return distance_matrix
+
+def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' ):
+    """
+    mode = 'adjacency' not implemented yet
+    """
+    if radius < 0.:
+        raise ValueError('neighbors_radius must be >=0.')
+    nsam, ndim = X.shape
+    
+    graph_jindices = []
+    graph_iidices = []
+    graph_data = []
+
+    print( dir(flindex))
+    print("radius=", radius )
+    for i in range( nsam ):
+        print( "i=", i )
+        jj, dd = flindex.nn_radius( X[i,:], radius )
+        graph_data.add( dd )
+        graph_jindices.add( jj )
+        graph_iindices.add( i*np.ones( 1, dd.shape[0] ))
+
+    graph_data = np.concatenate( graph_data )
+    print( "graph_data.shape=", graph_data.shape )
+    graph_iindices = np.concatenate( graph_iindices )
+    graph_jindices = np.concatenate( graph_jindices )
+    graph = sparse.coo_matrix((graph_data, (graph_iindices, graph_jindices)), shape=(nsam, nsam))
+    return graph
 
 
 class DistanceMatrix:
@@ -275,12 +308,18 @@ class DistanceMatrix:
         self.gamma = gamma
         self.neighbors_radius = neighbors_radius
         self.n_neighbors = n_neighbors
+        self.distance_matrix = None
         if self.mode != "precomputed":
             self.X_ = X
+        else:
+            self.X_ = None
         if use_flann:
-            import pyflann
+#            from pyflann import *
             self.flindex_ = FLANN()
-            self.flparams_ = self.flindex.buildIndex( X )
+            self.flparams_ = self.flindex_.build_index( X )
+            print( "testing flindex on the spot")
+            jj,dd = self.flindex_.nn_radius( X[0,:], 10. )
+            print( jj, dd )
         else:
             self.flindex_ = None
             self.flparams_ = None
@@ -289,49 +328,22 @@ class DistanceMatrix:
     def _pairwise(self):
         return self.mode == "precomputed"
 
-    def _get_distance_matrix_(self, X):
-        if self.mode == 'precomputed':
-            self.distance_matrix = X
-        else:
-            self.distance_matrix = distance_matrix(X, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
-        return self.distance_matrix
+    def get_neighbors_radius( self ):
+        return self.neighbors_radius
 
-    def get_distance_matrix( self, X, copy=True ):
-        if self.distance_matrix is None:
-            self.distance_matrix = distance_matrix(X, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
+    def get_distance_matrix( self, neighbors_radius = None, copy=True ):
+        """ if a distance_matrix is already computed, and neighbors_radius not
+        given, return the existing distance_matrix. Otherwise, recompute
+        """
+        if (self.distance_matrix is None) or (neighbors_radius is not None):
+            if neighbors_radius is not None:
+                self.neighbors_radius = neighbors_radius
+            self.distance_matrix = distance_matrix(self.X_, self.flindex_, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
         if copy:
             return self.distance_matrix_.copy()
         else:
             return self.distance_matrix_
 
-    def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' )
-    """
-    mode = 'adjacency' not implemented yet
-    """
-    if radius < 0.:
-        raise ValueError('neighbors_radius must be >=0.')
-    nsam, ndim = X.shape
-
-    graph_jindices = []
-    graph_iidices = []
-    graph_data = []
-    for i in range( nsam ):
-        jj, dd = flindex.nn_radius( X[i,:], radius )
-        graph_data.add( dd )
-        graph_jindices.add( jj )
-        graph_iindices.add( i*np.ones( 1, dd.shape[0] ))
-
-    graph_data = np.concatenate( graph_data )
-    print( "graph_data.shape=", graph_data.shape )
-    graph_iindices = np.concatenate( graph_iindices )
-    graph_jindices = np.concatenate( graph_jindices )
-    graph_ij = np.vstack( (graph_iindices, graph_jindices ))
-    # this is so inefficient. i wish there was a better construction method for
-    # csr_matrix. or shall i just make a coo matrix? the laplacian is coo
-    # anyways
-
-    graph = sparse.csr_matrix((graph_data, graph_ij), shape=(nsam, nsam))
-    return graph
     
 def affinity_matrix( distances, neighbors_radius ):
     if neighbors_radius <= 0.:
