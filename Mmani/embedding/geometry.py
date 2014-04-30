@@ -252,7 +252,7 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
         return lap, w
     return lap
 
-def distance_matrix( X, adjacency='radius_neighbors', neighbor_radius=None,
+def distance_matrix( X, adjacency='radius_neighbors', neighbors_radius=None,
                      n_neighbors=0 ):
     # DNearest neighbors has issues. TB FIXED
     if mode == 'nearest_neighbors':
@@ -295,17 +295,17 @@ class DistanceMatrix:
         else:
             return self.distance_matrix_
 
-def affinity_matrix( distances, neighbor_radius ):
-    if neighbor_radius <= 0.:
-        raise ValueError('neighbor_radius must be >0.')
+def affinity_matrix( distances, neighbors_radius ):
+    if neighbors_radius <= 0.:
+        raise ValueError('neighbors_radius must be >0.')
     A = distances.copy()
     if sparse.isspmatrix( A ):
-        A.data **= 2
-        A.data /= -neighbors_radius_**2
-        np.exp( A.data, A_.data )
+        A.data = A.data**2
+        A.data = A.data/(-neighbors_radius**2)
+        np.exp( A.data, A.data )
     else:
         A **= 2
-        A /= -neighbors_radius_**2
+        A /= -neighbors_radius**2
         np.exp(A, A)
     return A
 

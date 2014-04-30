@@ -513,7 +513,7 @@ class SpectralEmbedding(BaseEstimator):
                                              random_state=random_state)
         if timing:
             tl = time.time()
-            print( 'affinity = {0}s, embedding = {1}s'.format( ta-t0, tl-ta ) )
+            print('timing: affinity = {0}s, embedding = {1}s'.format( ta-t0, tl-ta ))
         return self
 
     def fit_transform(self, X, y=None):
