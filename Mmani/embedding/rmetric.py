@@ -21,8 +21,6 @@ from sklearn.utils import check_random_state
 #from sklearn.metrics.pairwise import rbf_kernel
 #from sklearn.neighbors import radius_neighbors_graph
 
-
-d
 def _set_diag(laplacian, value):
     """Set the diagonal of the laplacian matrix and convert it to a
     sparse format well suited for eigenvalue decomposition

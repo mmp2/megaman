@@ -11,6 +11,9 @@ sparse matrices.
 import numpy as np
 from scipy import sparse
 from pyflann import *     # how to import conditionally
+from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.neighbors import radius_neighbors_graph
+from sklearn.neighbors import kneighbors_graph
 
 
 from sklearn.utils.graph import graph_shortest_path
@@ -236,22 +239,56 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
 # TO BE UPDATED
 def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
     n_nodes = csgraph.shape[0]
-    lap = -np.asarray(csgraph)  # minus sign leads to a copy
-    # set diagonal to zero
-    lap.flat[::n_nodes + 1] = 0
-    w = -lap.sum(axis=0)
-    if normed:
-        w = np.sqrt(w)
+    if symmetrize:
+        lap = (csgraph + csgraph.T)/2.
+    else:
+        lap = csgraph.copy()
+    #this one doesn't care about zeros on the diagonal...
+    degrees = np.asarray(lap.sum(axis=1)).squeeze()
+    di = np.diag_indices( lap.shape[0] )  # diagonal indices
+
+    if normed == 'symmetricnormalized':
+        w = np.sqrt(degrees)
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap /= w
         lap /= w[:, np.newaxis]
-        lap.flat[::n_nodes + 1] = (1 - w_zeros).astype(lap.dtype)
-    else:
-        lap.flat[::n_nodes + 1] = w.astype(lap.dtype)
+        di = np.diag_indices( lap.shape[0] )
+        lap[di] -= (1 - w_zeros).astype(lap.dtype)
+    if normed == 'geometric':
+        w = degrees.copy()     # normalize once symmetrically by d
+        w_zeros = (w == 0)
+        w[w_zeros] = 1
+        lap /= w
+        lap /= w[:, np.newaxis]
+        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        lap /= w[:, np.newaxis]
+        lap[di] -= (1 - w_zeros).astype(lap.dtype)
+    if normed == 'renormalized':
+        w = degrees**renormalization_exponent;
+        # same as 'geoetric' from here on
+        w_zeros = (w == 0)
+        w[w_zeros] = 1
+        lap /= w
+        lap /= w[:, np.newaxis]
+        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        lap /= w[:, np.newaxis]
+        lap[di] -= (1 - w_zeros).astype(lap.dtype)
+    if normed == 'unnormalized':
+        dum = lap[di]-degrees[np.newaxis,:]
+        lap[di] = dum[0,:]
+    if normed == 'randomwalk':
+        print('we are here')
+        print( degrees[:,np.newaxis].shape )
+        lap /= degrees[:,np.newaxis]
+        lap -= np.eye(lap.shape[0])
+
+    if scaling_epps > 0.:
+        lap *= 4/(scaling_epps**2)
 
     if return_diag:
-        return lap, w
+        diag = np.array( lap[di] )
+        return lap, diag
     return lap
 
 def distance_matrix( X, flindex = None, mode='radius_neighbors', 
@@ -280,17 +317,13 @@ def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' ):
     nsam, ndim = X.shape
     
     graph_jindices = []
-    graph_iidices = []
+    graph_iindices = []
     graph_data = []
-
-    print( dir(flindex))
-    print("radius=", radius )
     for i in range( nsam ):
-        print( "i=", i )
         jj, dd = flindex.nn_radius( X[i,:], radius )
-        graph_data.add( dd )
-        graph_jindices.add( jj )
-        graph_iindices.add( i*np.ones( 1, dd.shape[0] ))
+        graph_data.append( dd )
+        graph_jindices.append( jj )
+        graph_iindices.append( i*np.ones( jj.shape, dtype=int ))
 
     graph_data = np.concatenate( graph_data )
     print( "graph_data.shape=", graph_data.shape )
@@ -317,9 +350,6 @@ class DistanceMatrix:
 #            from pyflann import *
             self.flindex_ = FLANN()
             self.flparams_ = self.flindex_.build_index( X )
-            print( "testing flindex on the spot")
-            jj,dd = self.flindex_.nn_radius( X[0,:], 10. )
-            print( jj, dd )
         else:
             self.flindex_ = None
             self.flparams_ = None
@@ -340,9 +370,9 @@ class DistanceMatrix:
                 self.neighbors_radius = neighbors_radius
             self.distance_matrix = distance_matrix(self.X_, self.flindex_, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
         if copy:
-            return self.distance_matrix_.copy()
+            return self.distance_matrix.copy()
         else:
-            return self.distance_matrix_
+            return self.distance_matrix
 
     
 def affinity_matrix( distances, neighbors_radius ):
@@ -355,7 +385,7 @@ def affinity_matrix( distances, neighbors_radius ):
         np.exp( A.data, A.data )
     else:
         A **= 2
-        A /= -neighbors_radius**2
+        A /= (-neighbors_radius**2)
         np.exp(A, A)
     return A
 
