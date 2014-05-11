@@ -1,134 +1,127 @@
 """Riemannian Metric"""
 
 # Author: Marina Meila <mmp@stat.washington.edu>
+#         after Matlab code by Dominique Perrault-Joncas
 # License: BSD 3 clause
 
 import warnings
 import numpy as np
 
 from scipy import sparse
-from numpy.linalg import eigh, inv
-#from scipy.numpy.dual import eigh, inv
-#from scipy.sparse.linalg import lobpcg
-#from scipy.sparse.linalg.eigen.lobpcg.lobpcg import symeig
-#from sklearn.base import BaseEstimator, TransformerMixin
-#from sklearn.externals import six
-from sklearn.utils import check_random_state
-#from sklearn.utils.validation import atleast2d_or_csr
-#from sklearn.utils.graph import graph_laplacian
-#from sklearn.utils.sparsetools import connected_components
-#from sklearn.utils.arpack import eigsh
-#from sklearn.metrics.pairwise import rbf_kernel
-#from sklearn.neighbors import radius_neighbors_graph
+from numpy.linalg import eigh, svd, inv
 
-def _set_diag(laplacian, value):
-    """Set the diagonal of the laplacian matrix and convert it to a
-    sparse format well suited for eigenvalue decomposition
-
-    Parameters
-    ----------
-    laplacian : array or sparse matrix
-        The graph laplacian
-    value : float
-        The value of the diagonal
-
-    Returns
-    -------
-    laplacian : array or sparse matrix
-        An array of matrix in a form that is well suited to fast
-        eigenvalue decomposition, depending on the band width of the
-        matrix.
+def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 'svd'):
     """
-    n_nodes = laplacian.shape[0]
-    # We need all entries in the diagonal to values
-    if not sparse.isspmatrix(laplacian):
-        laplacian.flat[::n_nodes + 1] = value
-    else:
-        laplacian = laplacian.tocoo()
-        diag_idx = (laplacian.row == laplacian.col)
-        laplacian.data[diag_idx] = value
-        # If the matrix has a small number of diagonals (as in the
-        # case of structured matrices coming from images), the
-        # dia format might be best suited for matvec products:
-        n_diags = np.unique(laplacian.row - laplacian.col).size
-        if n_diags <= 7:
-            # 3 or less outer diagonals on each side
-            laplacian = laplacian.todia()
-        else:
-            # csr has the fastest matvec and is thus best suited to
-            # arpack
-            laplacian = laplacian.tocsr()
-    return laplacian
-
-
-def riemann_meric( Y, n_dim=2, laplacian=None, adjacency=None, invert_h=False,
-                   norm_laplacian=True, drop_first=True,
-                   mode=None):
-    """
-    Parameters
+    Parameters 
     ----------
-    adjacency : array-like or sparse matrix, shape: (n_samples, n_samples)
-        The adjacency matrix of the graph to embed.
-
+    Y: array-like, shape = (n_samples, mdimY )
+        The embedding coordinates of the points
+    laplacian: array-like, shape = (n_samples, n_samples)
+        The Laplacian of the data. It is recommended to use the "geometric"
+        Laplacian (default) option from geometry.graph_laplacian()
     n_dim : integer, optional
-        The dimension of the projection subspace.
+        Use only the first n_dim <= mdimY dimensions.All dimensions
+        n_dim:mdimY are ignored.
+    invert_h: boolean, optional
+        if False, only the "dual Riemannian metric" is computed
+        if True, the dual metric matrices are inverted to obtain the 
+        Riemannian metric G.
+    mode_inv: string, optional
+       How to compute the inverses of h_dual_metric, if invert_h 
+        "inv", use numpy.inv() 
+        "svd" (default), use numpy.linalg.svd(), then invert the eigenvalues
+        (possibly a more numerically stable method with H is symmetric and 
+        ill conditioned)
 
     Returns
     -------
     h_dual_metric : array, shape=(n_samples, n_dim, n_dim)
-
     Optionally:
-    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim)
+    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim )
+    Hvv : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )
+    Hsvals : singular values of H, shape = ( n_samples, n_dim )
+    Gsvals : singular values of G, shape = ( n_samples, n_dim )
     
-    i would like to have a way to request g for specified points only
-
     Notes
     -----
     References
     ----------
-    * 
+    "Non-linear dimensionality reduction: Riemannian metric estimation and
+    the problem of geometric discovery", 
+    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255 
     """
-    n_nodes = adjacency.shape[0]
-    # Whether to drop the first eigenvector
-    if drop_first:
-        n_dim = n_dim + 1
-    # Check that either laplacian or symmetric adjacency matrix are given
-
-    # If Laplacian not given, compute it from adjacency matrix.
-    "to use sparse.csgraph.laplacian() and renormalize here?
-    and put this calculation in the class anyways"
-    if (laplacian == None ):
-        laplacian, dd = graph_laplacian(adjacency,
-                                        normed=norm_laplacian, return_diag=True)
+    n_samples = laplacian.shape[0]
     h_dual_metric = np.zeros((n_samples, n_dim, n_dim ))
-    for ( i in 1:n_dim ):
-        for( j in i:n_dim ):
+    for i in np.arange(n_dim ):
+        for j in np.arange(i,n_dim ):
             yij = Y[:,i]*Y[:,j]
-            h_dual_metric[ :, i, j] = laplacian.dot(yij).todense()-laplacian.dot(Y[:,i]+Y[:,j]).todense()
-            if ( j>i ):
-                h_dual_metric[ :,j,i] = h_dual_metric[:,i,j]
+            h_dual_metric[ :, i, j] = 0.5*(laplacian.dot(yij)-Y[:,j]*laplacian.dot(Y[:,i])-Y[:,i]*laplacian.dot(Y[:,j]))
+    for j in np.arange(n_dim-1):
+        for i in np.arange(j+1,n_dim):
+            h_dual_metric[ :,i,j] = h_dual_metric[:,j,i]
 
     # compute rmetric if requested
     if( invert_h ):
-        riemann_metric = np.zeros( n_samples, n_dim, n_dim )
-        for( i in i 1:n_samples ):
-            riemann_metric[i,:,:] = np.inv(h_dual_metric[i,:,:].squeeze())
+        riemann_metric, Hvv, Hsvals, Gsvals = compute_G_from_H( h_dual_metric )
     else:
-        riemann_metric = None
+        riemann_metric = Hvv = Hsvals = Gsvals = None
 
-    return h_dual_metric, riemann_metric, laplacian
+    return h_dual_metric, riemann_metric, Hvv, Hsvals, Gsvals
 
-""" MMP's plans: make a class RiemannMetric 
-computes laplacian if needed
-computes h on as many dim as given
-computes g if requested with argument whichpoints of type index. if None compute on all points. optional argument compute g on a given number of dimensions.
-other method e.g detect dimension
+def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
+    """ 
+    if mode_inv == 'svd':
+       also returns Hvv, Hsvals, Gsvals the (transposed) eigenvectors of
+       H and the singular values of H and G
+   if mdimG < H.shape[2]:
+       G.shape = [ n_samples, mdimG, mdimG ] with n_samples = H.shape[0]
+    Notes
+    ------
+    currently Hvv, Hsvals are n_dim = H.shape[2], and Gsvals, G are mdimG
+    (This contradicts the documentation of riemann_metric which states
+    that riemann_metric and h_dual_metric have the same dimensions)
 
-attributes h,g,n_dim max number dimensions,
- to also implement epsilon search => a different module?
+    See the notes in RiemannMetric
+    """
+    n_samples = H.shape[0]
+    n_dim = H.shape[2]
+    if mode_inv is 'svd':
+        Huu, Hsvals, Hvv = np.linalg.svd( H )
+        if mdimG is None:
+            Gsvals = 1./Hsvals
+            G = np.zeros((n_samples, n_dim, n_dim))
+            for i in np.arange(n_samples):
+                G[i,:,:] = np.dot(Huu[i,:,:], np.dot( np.diag(Gsvals[i,:]), Hvv[i,:,:]))
+        elif mdimG < n_dim:
+            Gsvals[:,:mdimG] = 1./Hsvals[:,:mdimG]
+            Gsvals[:,mdimG:] = 0.
+            # this can be redone with np.einsum() but it's barbaric
+            G = np.zeros((n_samples, mdimG, mdimG))
+            for i in np.arange(n_samples):
+                G[i,:,:mdimG] = np.dot(Huu[i,:,mdimG], np.dot( np.diag(Gsvals[i,:mdimG]), Hvv[i,:,:mdimG]))
+        else:
+            raise ValueError('mdimG must be <= H.shape[1]')
+        return G, Hvv, Hsvals, Gsvals
+    else:
+        riemann_metric = np.linalg.inv(h_dual_metric)
+        return riemann_metric, None, None, None
 
 """
-            
+RiemannMetric computes and stores the Riemannian metric and its dual
+associated with an embedding Y. The Riemannian metric is currently denoted
+by G, its dual by H, and the Laplacian by L. G at each point is the 
+matrix inverse of H. 
+
+For performance, the following choices have been made:
+* the class makes no defensive copies of L, Y
+* no defensive copies of the array attributes H, G, Hvv, ....
+* G is computed on request only 
+In the future, this class will be extended to compute H only once,
+for mdimY dimensions, but to store multiple G's, with different dimensions.
+
+In the near future plans is also a "lazy" implementation, which will
+compute G (and maybe even H) only at the requested points. 
+ """
 
 class RiemannMetric:
     """ 
@@ -137,29 +130,91 @@ class RiemannMetric:
 
     Attributes
     ----------
+    Y = embedding coordinates, shape = (n, mdimY)
+    n = sample size
+    L = Laplacian, shape = (n, n)
+    mdimG = dimension of G, H
+    mdimY = dimension of Y
+    mode_inv = "svd", "inv" how to compute the inverses of H
 
-    `embedding_` : array, shape = (n_samples, n_dim)
-        Spectral embedding of the training matrix.
+    H = dual Riemann metric, shape = (n, mdimY, mdimY)
+    G = Riemann metric, shape = (n, mdimG, mdimG)
+    Hvv = (transposed) singular vectors of H, shape = (n, mdimY, mdimY)
+    Hsvals = singular values of H, shape = (n, mdimY)
+    Gsvals = singular values of G, shape = (n, mdimG)
+    detG = determinants of G, shape = (n,1)
 
-    `affinity_matrix_` : array, shape = (n_samples, n_samples)
-        Affinity_matrix constructed from samples or precomputed.
+    Notes
+    -----
+    H is always computed at full dimension self.mdimY 
+    G is computed at mdimG (some contradictions persist here)
 
     References
     ----------
+    "Non-linear dimensionality reduction: Riemannian metric estimation and
+    the problem of geometric discovery", 
+    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255
 
     """
-    def __init__(self, n_dim=2, affinity="radius_neighbors",
-                 gamma=None, random_state=None, eigen_solver=None,
-                 neighbors_radius = None, n_neighbors=None):
-        self.n_dim = n_dim
-        self.affinity = affinity
-        self.gamma = gamma
-        self.random_state = random_state
-        self.eigen_solver = eigen_solver
-        self.neighbors_radius = neighbors_radius
-        self.n_neighbors = n_neighbors
+    def __init__(self, Y, laplacian, n_dim = None, mode_inv = 'svd' ):
 
-    @property
-    def _pairwise(self):
-        return self.affinity == "precomputed"
+        # input data
+        self.Y = Y
+        self.n, self.mdimY = Y.shape
+        self.L = laplacian
+
+        # input params
+        if n_dim is None:
+            self.mdimG = self.mdimY
+        else:
+            if n_dim > self.mdimY:
+                raise ValueError('n_dim must be <= Y.shape[1]')
+            self.mdimG = n_dim    # dimension of the riemann_metric computed
+        self.mode_inv = mode_inv
+        if self.mode_inv not in set(('svd', 'inv')):
+            raise ValueError(("%s is not a valid value. Expected "
+                              "'svd', 'inv'") % self.mode_inv)
+
+        # results and outputs
+        self.H = None
+        self.G = None
+        self.Hvv = None
+        self.Hsvals = None
+        self.Gsvals = None
+        self.detG = None
+
+    def get_dual_rmetric( self, invert_h = False, mode_inv = 'svd' ):
+        """ This is not satisfactory, because if mdimG<mdimY the shape of H
+        will not be the same as the shape of G. TODO(maybe): return a (copied) 
+        smaller H with only the rows and columns in G.
+        """
+        if self.H is None:
+            self.H, self.G, self.Hvv, self.Hsvals, self.Gsvals = riemann_metric(self.Y, self.L, self.mdimG, invert_h = invert_h, mode_inv = mode_inv)
+        if invert_h:
+            return self.H, self.G
+        else:
+            return self.H
+
+    def get_rmetric( self, mode_inv = 'svd', return_svd = False ):
+        if self.H is None:
+            self.H, self.G, self.Hvv, self.Hsval = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = mode_inv)
+        if self.G is None:
+            self.G, self.Hvv, self.Hsvals,  self.Gsvals = compute_G_from_H( self.H, mode_inv = self.mode_inv )
+        if mode_inv is 'svd' and return_svd:
+            return self.G, self.Hvv, self.Hsvals, self.Gsvals
+        else:
+            return self.G
+    def get_mdimG(self):
+        return self.mdimG
+
+    def get_detG(self):
+        if self.G is None:
+            self.H, self.G, self.Hvv, self.Hsval = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = self.mode_inv)
+        if self.detG is None:
+            if self.mdimG == self.mdimY:
+                self.detG = 1./np.linalg.det(H)
+            else:
+                self.detG = 1./np.linalg.det(H[:,:mdimG,:mdimG])
+            # could also be prod eigenvalues
+            # inefficient? shall I do it on G?
 

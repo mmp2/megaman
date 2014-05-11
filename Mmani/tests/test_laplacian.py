@@ -18,10 +18,13 @@ def _load_test_data():
     test_dist_matrix
     Lsymnorm, Lunnorm, Lgeom, Lreno1_5, Lrw
     rad = scalar, radius used in affinity calculations, Laplacians
+        Note: rad is returned as an array of dimension 1. Outside one must
+        make it a scalar by rad = rad[0]
     """
     xdict = scipy.io.loadmat('Mmani/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
     rad = xdict[ 'rad' ]
-    test_dist_matrix = xdict[ 'A' ]
+    test_dist_matrix = xdict[ 'S' ] # S contains squared distances
+    test_dist_matrix = np.sqrt( test_dist_matrix ) 
     Lsymnorm = xdict[ 'Lsymnorm' ] 
     Lunnorm = xdict[ 'Lunnorm' ] 
     Lgeom = xdict[ 'Lgeom' ] 
@@ -60,29 +63,32 @@ def test_laplacian_create_A_sparse():
     assert_array_equal( A_dense, A_spdense )
 
 
-def test_equal_original():
-
+def test_equal_original(almost_equal_decimals = 5):
+    """ Loads the results from a matlab run and checks that our results
+    are the same. The results loaded are A the similarity matrix and 
+    all the Laplacians, sparse and dense.
+    """
+    
     rad, test_dist_matrix, Atest, Lsymnorm, Lunnorm, Lgeom, Lreno1_5, Lrw = _load_test_data()
 
     rad = rad[0]
     rad = rad[0]
-    print( type(test_dist_matrix), type( Atest))
     A_dense = affinity_matrix( test_dist_matrix, rad )
     A_sparse = affinity_matrix( sparse.csr_matrix( test_dist_matrix ), rad )
-    print( type( A_dense ), type( A_sparse ))
     B = A_sparse.toarray()
     B[ B == 0. ] = 1.
     assert_array_equal( A_dense, B )
-#    assert_array_almost_equal( Atest, A_dense, 1 ) fails!!
+    assert_array_almost_equal( Atest, A_dense, almost_equal_decimals )
 #    A != Atest
 
-    for (A, issparse) in [(Atest, False), (A_sparse, True)]:
+    for (A, issparse) in [(Atest, False), (sparse.coo_matrix(Atest), True)]:
         for (Ltest, normed ) in [(Lsymnorm, 'symmetricnormalized'), (Lunnorm, 'unnormalized'), (Lgeom, 'geometric'), (Lrw, 'randomwalk'), (Lreno1_5, 'renormalized')]:
             L, diag =  graph_laplacian(A, normed=normed, symmetrize=True, scaling_epps=rad, renormalization_exponent=1.5, return_diag=True)
             if issparse:
                 print( 'sparse ', normed )
-                assert_array_almost_equal( L.todense(), Ltest, 5 )
-                assert_array_equal(diag, triu(tril(L)).data)
+                assert_array_almost_equal( L.toarray(), Ltest, 5 )
+                diag_mask = (L.row == L.col )
+                assert_array_equal(diag, L.data[diag_mask].squeeze())
             else:
                 print( 'dense ', normed )
                 assert_array_almost_equal( L, Ltest, 5 )
@@ -90,4 +96,5 @@ def test_equal_original():
                 assert_array_equal(diag, np.array( L[di] )) 
             
 #TODO: test symmetry 
-# test readius
+# test radius
+# test with flann

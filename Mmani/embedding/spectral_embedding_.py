@@ -394,9 +394,9 @@ class SpectralEmbedding(BaseEstimator):
         self.neighbors_radius = neighbors_radius
         self.n_neighbors = n_neighbors
 
-    @property
-    def _pairwise(self):
-        return self.affinity == "precomputed"
+#    @property
+#    def _pairwise(self):
+#        return self.affinity == "precomputed"
 
     def _get_affinity_matrix(self, X, Y=None):
         """Calculate the affinity matrix from data
@@ -417,6 +417,7 @@ class SpectralEmbedding(BaseEstimator):
         """
         if self.affinity == 'precomputed':
             self.affinity_matrix_ = X
+            print( type(             self.affinity_matrix_))
             return self.affinity_matrix_
             
         # nearest_neigh kept for backward compatibility 
@@ -505,6 +506,7 @@ class SpectralEmbedding(BaseEstimator):
             import time
             t0 = time.time()
         affinity_matrix = self._get_affinity_matrix(X)
+        print( type( affinity_matrix ))
         if timing:
             ta = time.time()
         self.embedding_ = spectral_embedding(affinity_matrix,

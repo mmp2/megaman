@@ -145,7 +145,9 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0
     respectively to normed=False and True in the latter. (Note also that normed
     was changed from bool to string.
     2) the signs of this laplacians are changed w.r.t the original
-    3) the diagonal of lap is no longer set to 0
+    3) the diagonal of lap is no longer set to 0; also there is no checking if 
+    the matrix has zeros on the diagonal. If the degree of a node is 0, this
+    is handled graciuously (by not dividing by 0).
     4) if csgraph is not symmetric the out-degree is used in the
     computation and no warning is raised. 
     However, it is not recommended to use this function for directed graphs.
@@ -176,24 +178,17 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap = csgraph.copy()
     print( lap.getformat())
     if symmetrize:
-        lap = lap + lap.transpose(copy=True)
+        lapt = lap.copy()
+        dum = lapt.row
+        lapt.row = lapt.col
+        lapt.col = dum
+        print( 'lapt', lapt.getformat())
+        lap = lap + lapt # (coo is converted to csr here mysteriously)
         print( lap.getformat())
         lap.data /= 2.
     lap = lap.tocoo()
     diag_mask = (lap.row == lap.col)  # True/False
-    if not diag_mask.sum() == n_nodes: 
-        # The sparsity pattern of the matrix has holes on the diagonal,
-        # we need to fix that
-        diag_idx = lap.row[diag_mask]
-        diagonal_holes = list(set(range(n_nodes)).difference(diag_idx))
-        new_data = np.concatenate([lap.data, np.ones(len(diagonal_holes))])
-        new_row = np.concatenate([lap.row, diagonal_holes])
-        new_col = np.concatenate([lap.col, diagonal_holes])
-        lap = sparse.coo_matrix((new_data, (new_row, new_col)),
-                                shape=lap.shape)
-        diag_mask = (lap.row == lap.col)
 
-    #lap.data[diag_mask] = 0  #why is this yere
     degrees = np.asarray(lap.sum(axis=1)).squeeze()
     if normed == 'symmetricnormalized':
         w = np.sqrt(degrees)
@@ -202,7 +197,7 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
         lap.data[diag_mask] -= 1. 
-# whya ll this(w_zeros[lap.row[diag_mask]]).astype(lap.data.dtype-1.)
+
     if normed == 'geometric':
         w = degrees.copy()     # normzlize one symmetrically by d
         w_zeros = (w == 0)
@@ -225,25 +220,23 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data[diag_mask] -= 1.
 
     if normed == 'unnormalized':
-        lap[diagmask] -= degrees[lap.row]
+        lap.data[diag_mask] -= degrees
     if normed == 'randomwalk':
-        lap /= degrees[lap.row]
-
+        lap.data /= degrees[lap.row]
+        lap.data[diag_mask] -= 1.
     if scaling_epps > 0.:
-        lap *= 4/np.sqrt(scaling_epps)
+        lap.data *= 4/(scaling_epps**2)
 
     if return_diag:
-        return lap, np.asarray( lap[diagmask] ).squeeze()
+        return lap, lap.data[diag_mask]
     return lap
 
-# TO BE UPDATED
 def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
     n_nodes = csgraph.shape[0]
     if symmetrize:
         lap = (csgraph + csgraph.T)/2.
     else:
         lap = csgraph.copy()
-    #this one doesn't care about zeros on the diagonal...
     degrees = np.asarray(lap.sum(axis=1)).squeeze()
     di = np.diag_indices( lap.shape[0] )  # diagonal indices
 
@@ -278,8 +271,6 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
         dum = lap[di]-degrees[np.newaxis,:]
         lap[di] = dum[0,:]
     if normed == 'randomwalk':
-        print('we are here')
-        print( degrees[:,np.newaxis].shape )
         lap /= degrees[:,np.newaxis]
         lap -= np.eye(lap.shape[0])
 
@@ -326,7 +317,6 @@ def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' ):
         graph_iindices.append( i*np.ones( jj.shape, dtype=int ))
 
     graph_data = np.concatenate( graph_data )
-    print( "graph_data.shape=", graph_data.shape )
     graph_iindices = np.concatenate( graph_iindices )
     graph_jindices = np.concatenate( graph_jindices )
     graph = sparse.coo_matrix((graph_data, (graph_iindices, graph_jindices)), shape=(nsam, nsam))
@@ -388,61 +378,3 @@ def affinity_matrix( distances, neighbors_radius ):
         A /= (-neighbors_radius**2)
         np.exp(A, A)
     return A
-
-
-def riemann_metric( Y, n_dim=2, laplacian=None, adjacency=None, invert_h=False,
-                   norm_laplacian=True, mode=None):
-    """
-    Parameters
-    ----------
-    adjacency : array-like or sparse matrix, shape: (n_samples, n_samples)
-        The adjacency matrix of the graph to embed.
-
-    n_dim : integer, optional
-        The dimension of the projection subspace.
-
-    Returns
-    -------
-    h_dual_metric : array, shape=(n_samples, n_dim, n_dim)
-
-    Optionally:
-    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim)
-    
-    i would like to have a way to request g for specified points only
-
-    Notes
-    -----
-    References
-    ----------
-    * 
-    """
-    # Check that either laplacian or symmetric adjacency matrix are given
-    if laplacian is not None:
-        n_samples = laplacian.get_shape()[0]
-    else:
-        n_samples = adjacency.get_shape()[0]
-
-    # If Laplacian not given, compute it from adjacency matrix.
-    """to use sparse.csgraph.laplacian() and renormalize here?
-    and put this calculation in the class anyways"""
-    if (laplacian == None ):
-        laplacian, dd = graph_laplacian(adjacency,
-                                        normed=norm_laplacian, return_diag=True)
-    h_dual_metric = np.zeros((n_samples, n_dim, n_dim ))
-    for i in np.arange(n_dim ):
-        for j in np.arange(n_dim ):
-            if ( j>=i ):
-                yij = Y[:,i]*Y[:,j]
-                h_dual_metric[ :, i, j] = 0.5*(laplacian.dot(yij)-Y[:,j]*laplacian.dot(Y[:,i])-Y[:,i]*laplacian.dot(Y[:,j]))
-        else:
-            h_dual_metric[ :,i,j] = h_dual_metric[:,j,i]
-
-    # compute rmetric if requested
-    if( invert_h ):
-        riemann_metric = np.zeros( n_samples, n_dim, n_dim )
-        for i in np.arange(n_samples):
-            riemann_metric[i,:,:] = np.inv(h_dual_metric[i,:,:].squeeze())
-    else:
-        riemann_metric = None
-
-    return h_dual_metric, riemann_metric, laplacian
