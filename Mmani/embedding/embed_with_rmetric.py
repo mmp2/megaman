@@ -78,11 +78,13 @@ def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "point
         similarity_matrix = X
         distance_matrix = None
         if (similarity_matrix.shape[1] != n_samples ):
-            raise ValueError(("X must besquare to be a similarity matrix, X.shape =" %X.shape))
+            raise ValueError(("X must be square to be a similarity matrix, X.shape =" %X.shape))
     else:
         similarity_matrix = affinity_matrix( distance_matrix, neighbors_radius )
-        if np.all((similarity_matrix - similarity_matrix.T).data < 1e-10):
+        if not np.all((similarity_matrix - similarity_matrix.T).data < 1e-10):
             dum = (similarity_matrix - similarity_matrix.T).data
+            print( dum.shape )
+            print( similarity_matrix.shape )
             maxdiff = max( dum )
             print( "similarity_matrix not symmetric! maxdiff", maxdiff )
             # i put this test here because spectral embedding complains 
