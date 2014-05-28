@@ -1,7 +1,12 @@
-"""Riemannian Metric"""
+"""Riemannian Metric learning utilities and algorithms. 
+
+   To use the "geometric" Laplacian from geometry.py for statistically
+   consistent results. 
+
+"""
 
 # Author: Marina Meila <mmp@stat.washington.edu>
-#         after Matlab code by Dominique Perrault-Joncas
+#         after the Matlab function rmetric.m by Dominique Perrault-Joncas
 # License: BSD 3 clause
 
 import warnings

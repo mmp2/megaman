@@ -7,7 +7,7 @@ from covar_plotter import plot_cov_ellipse
 
 # Same as first_example.py but using embed_with_rmetric()
 
-rad = 0.2
+rad = 0.1
 n_samples = 1000
 X = np.random.random((n_samples, 2))
 thet = X[:,0]
@@ -30,6 +30,14 @@ plt.plot( Y[iisamples,0], Y[ iisamples,1 ], marker='.',linestyle='None',color='r
 plt.xlabel('0')
 plt.ylabel('1')
 plt.legend()
+
+detH = np.linalg.det(H)
+ineg = np.nonzero( detH <= 0 )
+if ineg[0].size > 0:
+    print( ineg[0].size, ' negative or singular covariance matrices' )
+    plt.plot( detH )
+    plt.title( 'detH' )
+    plt.show()
 
 for i in range(n_samplot):
     ii = iisamples[i]

@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 from scipy.sparse import isspmatrix
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_allclose
 
 from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
@@ -57,21 +57,24 @@ def test_equal_original(almost_equal_decimals = 5):
     """
     rad, L, Gtest, Htest, phi = _load_test_data()
 
-    H, G, Lnew = riemann_metric( phi, laplacian = L, n_dim = 2,                                  invert_h = True )
+    H, G, Hvv, Hsvals, Gsvals = riemann_metric( phi, laplacian = L, n_dim = 2,                                  invert_h = True )
     n = phi.shape[ 0 ]
-    assert_array_equal( L, Lnew )
+#    assert_array_equal( L, Lnew )
     assert_array_almost_equal( Htest, H, almost_equal_decimals )
 
 
-    print( 'true H:' )
-    print( Htest[0:3,:,:] )
-    print( 'H:' )
-    print( H[0:3,:,:] )
-    print( 'py G:' )
-    print( G[0:3,:,:] )
-    print( 'true G:' )
-    print( Gtest[0:3,:,:] )
-    assert_array_almost_equal( Gtest, G, almost_equal_decimals )
+#    print( 'true H:' )
+#    print( Htest[0:3,:,:] )
+#    print( 'H:' )
+#    print( H[0:3,:,:] )
+#    print( 'py G:' )
+#    print( G[0:3,:,:] )
+#    print( 'true G:' )
+#    print( Gtest[0:3,:,:] )
+#    assert_array_almost_equal( Gtest, G, almost_equal_decimals )
+    tol = np.mean( Gtest[:,0,0])*10**(-almost_equal_decimals )
+    assert_allclose( Gtest, G, tol)
+#    assert_array_max_ulp( Gtest, G, almost_equal_decimals )
     # this assertion fails because Gtest is generally asymmetric. G is 
     # mostly symmetric but not always. I suspect this is due to the
     # numerical errors, as many of these 2x2 matrices are very poorly

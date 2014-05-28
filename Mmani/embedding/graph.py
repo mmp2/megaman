@@ -123,7 +123,7 @@ def graph_laplacian(csgraph, normed=False, return_diag=False):
                                 return_diag=return_diag)
 
 
-def _laplacian_sparse(graph, normed=False, return_diag=False):
+def _laplacian_sparse(graph, normed=False, return_di ag=False):
     n_nodes = graph.shape[0]
     if not graph.format == 'coo':
         lap = (-graph).tocoo()

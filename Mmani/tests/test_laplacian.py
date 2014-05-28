@@ -51,8 +51,8 @@ def test_laplacian_create_A_sparse():
     #X = np.asarray( X, order="C" )
     test_dist_matrix = distance_matrix( X, mode = 'radius_neighbors', neighbors_radius = rad )
 
-    A_dense = affinity_matrix( test_dist_matrix.toarray(), rad )
-    A_sparse = affinity_matrix( sparse.csr_matrix( test_dist_matrix ), rad )
+    A_dense = affinity_matrix( test_dist_matrix.toarray(), rad, symmetrize = False )
+    A_sparse = affinity_matrix( sparse.csr_matrix( test_dist_matrix ), rad, symmetrize = False )
     A_spdense = A_sparse.toarray()
     A_spdense[ A_spdense == 0 ] = 1.
 
@@ -77,9 +77,8 @@ def test_equal_original(almost_equal_decimals = 5):
     A_sparse = affinity_matrix( sparse.csr_matrix( test_dist_matrix ), rad )
     B = A_sparse.toarray()
     B[ B == 0. ] = 1.
-    assert_array_equal( A_dense, B )
+    assert_array_almost_equal( A_dense, B, almost_equal_decimals )
     assert_array_almost_equal( Atest, A_dense, almost_equal_decimals )
-#    A != Atest
 
     for (A, issparse) in [(Atest, False), (sparse.coo_matrix(Atest), True)]:
         for (Ltest, normed ) in [(Lsymnorm, 'symmetricnormalized'), (Lunnorm, 'unnormalized'), (Lgeom, 'geometric'), (Lrw, 'randomwalk'), (Lreno1_5, 'renormalized')]:

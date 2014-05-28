@@ -81,20 +81,26 @@ def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "point
             raise ValueError(("X must besquare to be a similarity matrix, X.shape =" %X.shape))
     else:
         similarity_matrix = affinity_matrix( distance_matrix, neighbors_radius )
+        if np.all((similarity_matrix - similarity_matrix.T).data < 1e-10):
+            dum = (similarity_matrix - similarity_matrix.T).data
+            maxdiff = max( dum )
+            print( "similarity_matrix not symmetric! maxdiff", maxdiff )
+            # i put this test here because spectral embedding complains 
+            # about the similarity matrix
 
     # Embedding
     model = SpectralEmbedding(n_components = n_dim,
                               neighbors_radius=neighbors_radius,
                               affinity="precomputed")
     Y = model.fit_transform(similarity_matrix)
-    # wasteful... computes the Laplacian internally. Not much to do about it
+    # wasteful... computes the Laplacian internally. 
+    # to rewrite spectral_embedding in the future
 
     # Laplacian and Riemannian metric
     laplacian = graph_laplacian( similarity_matrix, scaling_epps=neighbors_radius)
     RM = RiemannMetric( Y, laplacian = laplacian )
     if invert_h:
         H, G = RM.get_dual_rmetric( invert_h = True )
-        return distance_matrix, similarity_matrix, laplacian, Y, H, G
     else:
         H = RM.get_dual_rmetric()
         return distance_matrix, similarity_matrix, laplacian, Y, H

@@ -1,11 +1,37 @@
 """
-Geometric (Riemannian) Manifold learning utilities and algorithms
+Scalable Manifold learning utilities and algorithms. 
 
 Graphs are represented with their weighted adjacency matrices, preferably using
 sparse matrices.
+
+A note on symmetrization and internal sparse representations
+------------------------------------------------------------ 
+
+For performance, this code uses the FLANN libarary to compute
+approximate neighborhoods efficiently. The down side of approximation
+is that (1) the distance matrix (or adjacency matrix) produced is NOT
+GUARANTEED to be symmetric. We also use sparse representations, and
+(2) fl_radius_neighbors_graph returns a sparse matrix called distance_matrix.
+
+distance_matrix has 0.0 on the diagonal, as it should. Implicitly, the
+missing entries are infinity not 0 for this matrix. But (1) and (2)
+mean that if one tries to symmetrize distance_matrix, the scipy.sparse
+code eliminates the 0.0 entries from distance_matrix. [I did not find
+an efficient way around this problem.]
+
+Hence, I adopted the following convention: 
+   * distance_matrix will NOT BE GUARANTEED symmetric
+   * affinity_matrix will perform a symmetrization by default
+   * laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry
+   * these conventions are the same for dense matrices, for consistency
+
+On internal sparse representations: currently the code contains some
+conversions between the coo and csr formats. In the near future I plan
+to clean these and use csr only.
+
 """
 #Authors: Marina Meila <mmp@stat.washington.edu>
-#          Jake Vanderplas <vanderplas@astro.washington.edu>
+#         With help from Jake Vanderplas <vanderplas@astro.washington.edu>
 # License: BSD 3 clause
 
 import numpy as np
@@ -21,7 +47,7 @@ from sklearn.utils.graph import graph_shortest_path
 ###############################################################################
 # Path and connected component analysis.
 # Code adapted from networkx
-# Code from sklean/graph
+# Code from sklean/graph (shall we keep this here)
 def single_source_shortest_path_length(graph, source, cutoff=None):
     """Return the shortest path length from source to all reachable nodes.
 
@@ -72,8 +98,8 @@ def single_source_shortest_path_length(graph, source, cutoff=None):
 
 ###############################################################################
 # Graph laplacian
-# Code adapted from the Matlab package XXX of Dominique Perrault-Joncas
-def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
+# Code adapted from the Matlab function laplacian.m of Dominique Perrault-Joncas
+def graph_laplacian(csgraph, normed='geometric', symmetrize=False, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym=False):
     """ Return the Laplacian matrix of an undirected graph.
 
    Computes a consistent estimate of the Laplace-Beltrami operator L
@@ -128,6 +154,11 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0
         of large N
     return_diag : bool, optional (kept for compatibility)
         If True, then return diagonal as well as laplacian.
+    return_lapsym : bool, optional
+        If normed in { 'geometric', 'renormalized' } then a symmetric matrix
+        lapsym, and a row normalization vector w are also returned. Having
+        these allows us to compute the laplacian spectral decomposition 
+        as a symmetric matrix, which has much better numerical properties. 
 
     Returns
     -------
@@ -156,7 +187,6 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0
     if csgraph.ndim != 2 or csgraph.shape[0] != csgraph.shape[1]:
         raise ValueError('csgraph must be a square matrix or array')
 
-    ## what is this anyways?? 
     normed = normed.lower()
     if normed not in ('unnormalized', 'geometric', 'randomwalk', 'symmetricnormalized','renormalized' ):
         raise ValueError('normed must be one of unnormalized, geometric, randomwalk, symmetricnormalized, renormalized')
@@ -164,13 +194,12 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=True, scaling_epps=0
         csgraph = csgraph.astype(np.float)
 
     if sparse.isspmatrix(csgraph):
-        return _laplacian_sparse(csgraph, normed=normed, symmetrize=symmetrize, scaling_epps=scaling_epps, renormalization_exponent=renormalization_exponent, return_diag=return_diag)
+        return _laplacian_sparse(csgraph, normed=normed, symmetrize=symmetrize, scaling_epps=scaling_epps, renormalization_exponent=renormalization_exponent, return_diag=return_diag, return_lapsym = return_lapsym)
 
     else:
         return _laplacian_dense(csgraph, normed=normed, symmetrize=symmetrize, scaling_epps=scaling_epps, renormalization_exponent=renormalization_exponent, return_diag=return_diag)
 
-
-def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
+def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym = False):
     n_nodes = csgraph.shape[0]
     if not csgraph.format == 'coo':
         lap = csgraph.tocoo()
@@ -183,7 +212,7 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lapt.row = lapt.col
         lapt.col = dum
         print( 'lapt', lapt.getformat())
-        lap = lap + lapt # (coo is converted to csr here mysteriously)
+        lap = lap + lapt # coo is converted to csr here
         print( lap.getformat())
         lap.data /= 2.
     lap = lap.tocoo()
@@ -205,6 +234,8 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
         w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        if return_lapsym:
+            lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
 
@@ -216,6 +247,8 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
         w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        if return_lapsym:
+            lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
 
@@ -228,10 +261,16 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data *= 4/(scaling_epps**2)
 
     if return_diag:
-        return lap, lap.data[diag_mask]
-    return lap
+        if return_lapsym:
+            return lap, lap.data[diag_mask], lapsym, w
+        else: 
+            return lap, lap.data[diag_mask]
+    elif return_lapsym:
+        return lap, lapsym, w
+    else:
+        return lap
 
-def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False):
+def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym = False):
     n_nodes = csgraph.shape[0]
     if symmetrize:
         lap = (csgraph + csgraph.T)/2.
@@ -255,16 +294,20 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
         lap /= w
         lap /= w[:, np.newaxis]
         w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        if return_lapsym:
+            lapsym = lap.copy()
         lap /= w[:, np.newaxis]
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
     if normed == 'renormalized':
         w = degrees**renormalization_exponent;
-        # same as 'geoetric' from here on
+        # same as 'geometric' from here on
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap /= w
         lap /= w[:, np.newaxis]
         w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
+        if return_lapsym:
+            lapsym = lap.copy()
         lap /= w[:, np.newaxis]
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
     if normed == 'unnormalized':
@@ -279,11 +322,17 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
 
     if return_diag:
         diag = np.array( lap[di] )
-        return lap, diag
-    return lap
+        if return_lapsym:
+            return lap, diag, lapsym, w
+        else: 
+            return lap, diag
+    elif return_lapsym:
+        return lap, lapsym, w
+    else:
+        return lap
 
 def distance_matrix( X, flindex = None, mode='radius_neighbors', 
-                     neighbors_radius=None, n_neighbors=0 ):
+                     neighbors_radius=None, symmetrize = True, n_neighbors=0 ):
     # DNearest neighbors has issues. TB FIXED
     if mode == 'nearest_neighbors':
         warnings.warn("Nearest neighbors currently does not work"
@@ -299,9 +348,38 @@ def distance_matrix( X, flindex = None, mode='radius_neighbors',
             distance_matrix = radius_neighbors_graph(X, neighbors_radius_, mode='distance')
         return distance_matrix
 
-def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' ):
+def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance'):
     """
-    mode = 'adjacency' not implemented yet
+    Constructs a sparse distance matrix called graph in coo
+    format. 
+    Parameters
+    ----------
+    X: data matrix, array_like, shape = (n_samples, n_dimensions )
+    radius: neighborhood radius, scalar
+        the neighbors lying approximately within radius of a node will
+        be returned. Or, in other words, all distances will be less or equal
+        to radius. There will be entries in the matrix for zero distances.
+        
+        Attention when converting to dense: The rest of the distances
+        should not be considered 0, but "large".
+   
+    flindex: FLANN index of the data X
+
+    mode: string, optional
+       "distance": graph contains pairwise distances
+       "adjacency": grah contains 0. or 1., i.e it is an adjacency matrix
+
+    Returns
+    -------
+    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
+           sparse coo or csr format
+    
+   Notes
+   -----
+    With approximate neiborhood search, the matrix is not
+    necessarily symmetric. 
+
+   mode = 'adjacency' not implemented yet
     """
     if radius < 0.:
         raise ValueError('neighbors_radius must be >=0.')
@@ -321,7 +399,6 @@ def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance' ):
     graph_jindices = np.concatenate( graph_jindices )
     graph = sparse.coo_matrix((graph_data, (graph_iindices, graph_jindices)), shape=(nsam, nsam))
     return graph
-
 
 class DistanceMatrix:
 
@@ -364,8 +441,33 @@ class DistanceMatrix:
         else:
             return self.distance_matrix
 
-    
-def affinity_matrix( distances, neighbors_radius ):
+"""
+Symmetrizes a sparse matrix in place (coo and csr formats only)
+
+NOTES: 
+  1) if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them. 
+  2) currently, if the matrix is in coo format, the symmetrization converts
+  automatically to csr. I did not find it necessary to revert to coo, as 
+  the plan is to migrate away from coo in the near future.
+  3 ) currently convert to coo; how to circumvent?
+"""
+
+def symmetrize_sparse( A ):
+    if A.getformat() is not "coo":
+        A = A.tocoo()
+    A = (A + A.transpose(copy = True))/2.
+
+# not used
+def symmetrize_sparse_coo( A ):
+    if A.format is not "csr":
+        raise ValueError('Matrix given must be of CSR format.')
+    At = A.copy()
+    dum = At.row
+    At.row = At.col
+    At.col = dum
+    A = A + At
+
+def affinity_matrix( distances, neighbors_radius, symmetrize = True ):
     if neighbors_radius <= 0.:
         raise ValueError('neighbors_radius must be >0.')
     A = distances.copy()
@@ -373,8 +475,17 @@ def affinity_matrix( distances, neighbors_radius ):
         A.data = A.data**2
         A.data = A.data/(-neighbors_radius**2)
         np.exp( A.data, A.data )
+        if symmetrize:
+            symmetrize_sparse( A )  # converts to CSR; deletes 0's
+        else:
+            pass
     else:
         A **= 2
         A /= (-neighbors_radius**2)
         np.exp(A, A)
+        if symmetrize:
+            A = (A+A.T)/2
+            A = np.asarray( A, order="C" )  # is this necessary??
+        else:
+            pass
     return A

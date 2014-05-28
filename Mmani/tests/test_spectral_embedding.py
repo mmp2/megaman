@@ -210,9 +210,9 @@ def test_equal_original(seed=36):
                                affinity="nearest_neighbors",
                                n_neighbors=k,
                                random_state=random_state)
-    se_rbf.fit_transform(X)
-    se_radn.fit_transform(X)
-    se_knn.fit_transform(X)
+    myYrbf = se_rbf.fit_transform(X)
+    myYradn = se_radn.fit_transform(X)
+    myYknn = se_knn.fit_transform(X)
     A_rbf = se_rbf.get_affinity_matrix()
     A_radn = se_radn.get_affinity_matrix()
     if isspmatrix( A_radn ):
@@ -236,15 +236,22 @@ def test_equal_original(seed=36):
     assert_array_almost_equal( A_rbf_scaled, A_radn_scaled, itol )
     assert_array_almost_equal( A_rbf_scaled, A_knn*A_rbf_scaled, itol )
     assert_array_almost_equal( A_knn*A_rbf_scaled, A_radn_scaled, itol )
-    
+
+    # Compare with original sklearn.SpectralEmbedding
 
     se0 = SE0(n_components=2, affinity="rbf", gamma=gamma,
               random_state=random_state)
-    Y0 = se0.fit_transform(X)
+    Y0rbf = se0.fit_transform(X)
     se1 = SE0(n_components=2, affinity="precomputed",
               random_state=random_state)
 #    Y1 = se1.fit_transform(A_rbf)
-    Y2 = se1.fit_transform(A_radn)
+    Y0radn = se1.fit_transform(A_radn)
 
+
+    assert_true(_check_with_col_sign_flipping(Y0rbf, myYrbf, 0.05))
+    assert_true(_check_with_col_sign_flipping(Y0radn, myYradn, 0.05))
+
+    assert_true(_check_with_col_sign_flipping(Y0rbf, Y0radn, 0.05))
+#    This fails
 #    assert_true(_check_with_col_sign_flipping(Y0, Y1, 0.05))
-    assert_true(_check_with_col_sign_flipping(Y0, Y2, 0.05))
+
