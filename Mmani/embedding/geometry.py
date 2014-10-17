@@ -205,15 +205,15 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap = csgraph.tocoo()
     else:
         lap = csgraph.copy()
-    print( lap.getformat())
+#    print( lap.getformat())
     if symmetrize:
         lapt = lap.copy()
         dum = lapt.row
         lapt.row = lapt.col
         lapt.col = dum
-        print( 'lapt', lapt.getformat())
+#        print( 'lapt', lapt.getformat())
         lap = lap + lapt # coo is converted to csr here
-        print( lap.getformat())
+#        print( lap.getformat())
         lap.data /= 2.
     lap = lap.tocoo()
     diag_mask = (lap.row == lap.col)  # True/False
@@ -416,7 +416,7 @@ class DistanceMatrix:
         if use_flann:
 #            from pyflann import *
             self.flindex_ = FLANN()
-            self.flparams_ = self.flindex_.build_index( X )
+            self.flparams_ = self.flindex_.build_index( X, algorithm = 'kmeans', target_precision = 0.9)
         else:
             self.flindex_ = None
             self.flparams_ = None

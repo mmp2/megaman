@@ -23,7 +23,7 @@ from sklearn.utils.arpack import eigsh
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import radius_neighbors_graph
 from sklearn.neighbors import kneighbors_graph
-timing = True
+timing = False
 
 
 def _graph_connected_component(graph, node_id):

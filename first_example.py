@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from Mmani.embedding import * 
 
-rad = 0.2
+rad = 0.1
 n_samples = 1000
 X = np.random.random((n_samples, 2))
 thet = X[:,0]

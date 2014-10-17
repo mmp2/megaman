@@ -24,7 +24,7 @@ degmin = 5
 compute_H = True
 mdimY = 6
 
-save_fig = False
+save_fig = True
 
 # Load spectra
 
@@ -81,9 +81,9 @@ if ineg[0].size > 0:
 
 # plot the evectors
 
-plt.plot( Y, marker='.', markersize=0.4,linestyle='None' )
-plt.title( 'evectors')
-plt.show()
+#plt.plot( Y, marker='.', markersize=0.4,linestyle='None' )
+#plt.title( 'evectors')
+#plt.show()
 
 ax0 = 1
 ax1 = 3
@@ -98,11 +98,11 @@ if compute_H:
     cov0 = np.eye(2)/1.e4
     for i in range(n_samplot):
         ii = iisamples[i]
-        cov = H[ ii, 1:3, 1:3 ].squeeze()
+        cov = H[ ii, (1,3), (1,3) ].squeeze()
         if i in [0,3,100]:
             print( cov )
         if np.linalg.det(cov)>0:
-            plot_cov_ellipse( cov*rad*5, Y[ii,1:3], nstd=2, ax=ax, edgecolor='none', facecolor=[ 0, degrees[ii]/degmax, 0])
+            plot_cov_ellipse( cov*rad*5, Y[ii,(1,3)], nstd=2, ax=ax, edgecolor='none', facecolor=[ 0, degrees[ii]/degmax, 0])
 #        plot_cov_ellipse( cov0, Y[ii,:2], nstd=2, ax=ax, edgecolor='none', facecolor='pink')
 #    print( cov, np.linalg.det( cov ) )
     if save_fig:

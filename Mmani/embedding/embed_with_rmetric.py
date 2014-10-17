@@ -6,9 +6,10 @@
 import numpy as np
 from .geometry import *
 from .rmetric import *
-from .spectral_embedding_ import SpectralEmbedding, spectral_embedding
+from .spectral_embedding_ import SpectralEmbedding, spectral_embedding#, LocallyLinearEmbedding, locally_linear_embedding
+from sklearn.manifold import Isomap
 
-def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "points",  embedding = "spectral_embedding", invert_h = False ):
+def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "points",  embedding = "spectral_embedding", invert_h = False, **kwargs ):
     """
     Parameters:
     ----------
@@ -60,6 +61,9 @@ def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "point
     G: 3D array, optional. shape: (n_samples, n_dim, n_dim )
        G[ i, :,: ] contains the Riemannian metric at point i
        this is calculated by inverting each H matrix
+
+       TODO: - isomap, lle- get_affinity to get the graph out
+             - spectral_embedding - to take e-vectors directly
     """
 
     n_samples = X.shape[0]
@@ -91,9 +95,18 @@ def embed_with_rmetric( X, n_dim = 2, neighbors_radius=None, what_input = "point
             # about the similarity matrix
 
     # Embedding
-    model = SpectralEmbedding(n_components = n_dim,
-                              neighbors_radius=neighbors_radius,
-                              affinity="precomputed")
+    if embedding is "spectral_embedding":
+        model = SpectralEmbedding(n_components = n_dim,
+                                  neighbors_radius=neighbors_radius,
+                                  affinity="precomputed")
+    elif embedding is "isomap":
+#        model = Isomap(n_components = n_dim, affinity="precomputed")
+        raise ValueError("we need to be able to extract the affinity matrix to use Isomap")
+    elif embedding is "locally_linear":
+        raise ValueError("we need to be able to extract the affinity matrix to use locally_linear")
+    else:
+        raise ValueError(("%s is unknown embedding", embedding ))
+
     Y = model.fit_transform(similarity_matrix)
     # wasteful... computes the Laplacian internally. 
     # to rewrite spectral_embedding in the future
