@@ -24,82 +24,176 @@ Hence, I adopted the following convention:
    * affinity_matrix will perform a symmetrization by default
    * laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry
    * these conventions are the same for dense matrices, for consistency
-
-On internal sparse representations: currently the code contains some
-conversions between the coo and csr formats. In the near future I plan
-to clean these and use csr only.
-
 """
 #Authors: Marina Meila <mmp@stat.washington.edu>
-#         With help from Jake Vanderplas <vanderplas@astro.washington.edu>
+#         James McQueen <jmcq@u.washington.edu>
 # License: BSD 3 clause
-
+from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
-from pyflann import *     # how to import conditionally
-from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import radius_neighbors_graph
-from sklearn.neighbors import kneighbors_graph
+import subprocess, os, sys
 
-
-from sklearn.utils.graph import graph_shortest_path
-
-###############################################################################
-# Path and connected component analysis.
-# Code adapted from networkx
-# Code from sklean/graph (shall we keep this here)
-def single_source_shortest_path_length(graph, source, cutoff=None):
-    """Return the shortest path length from source to all reachable nodes.
-
-    Returns a dictionary of shortest path lengths keyed by target.
-
+def distance_matrix(X, flindex = None, neighbors_radius = None, cpp_distances = False):
+        if neighbors_radius is None:
+            neighbors_radius = 1/X.shape[1]
+        if flindex is not None:
+            distance_matrix = fl_radius_neighbors_graph(X, neighbors_radius, flindex, mode='distance')
+        elif cpp_distances:
+            distance_matrix = fl_cpp_radius_neighbors_graph(X, neighbors_radius)
+        else:
+            distance_matrix = radius_neighbors_graph(X, neighbors_radius, mode='distance')
+        return distance_matrix
+        
+def fl_cpp_radius_neighbors_graph(X, radius):
+    """
+    Constructs a sparse distance matrix called graph in coo
+    format. 
     Parameters
     ----------
-    graph: sparse matrix or 2D array (preferably LIL matrix)
-        Adjacency matrix of the graph
-    source : node label
-       Starting node for path
-    cutoff : integer, optional
-        Depth to stop the search - only
-        paths of length <= cutoff are returned.
-
-    Examples
-    --------
-    >>> from sklearn.utils.graph import single_source_shortest_path_length
-    >>> import numpy as np
-    >>> graph = np.array([[ 0, 1, 0, 0],
-    ...                   [ 1, 0, 1, 0],
-    ...                   [ 0, 1, 0, 1],
-    ...                   [ 0, 0, 1, 0]])
-    >>> single_source_shortest_path_length(graph, 0)
-    {0: 0, 1: 1, 2: 2, 3: 3}
-    >>> single_source_shortest_path_length(np.ones((6, 6)), 2)
-    {0: 1, 1: 1, 2: 0, 3: 1, 4: 1, 5: 1}
+    X: data matrix, array_like, shape = (n_samples, n_dimensions )
+    radius: neighborhood radius, scalar
+        the neighbors lying approximately within radius of a node will
+        be returned. Or, in other words, all distances will be less or equal
+        to radius. There will be entries in the matrix for zero distances.
+        
+        Attention when converting to dense: The rest of the distances
+        should not be considered 0, but "large".
+    
+    Returns
+    -------
+    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
+           sparse csr format
+    
+    Notes
+    -----
+    With approximate neiborhood search, the matrix is not necessarily symmetric. 
     """
-    if sparse.isspmatrix(graph):
-        graph = graph.tolil()
-    else:
-        graph = sparse.lil_matrix(graph)
-    seen = {}                   # level (number of hops) when seen in BFS
-    level = 0                   # the current level
-    next_level = [source]       # dict of nodes to check at next level
-    while next_level:
-        this_level = next_level     # advance to next level
-        next_level = set()          # and start a new list (fringe)
-        for v in this_level:
-            if v not in seen:
-                seen[v] = level     # set the level of vertex v
-                next_level.update(graph.rows[v])
-        if cutoff is not None and cutoff <= level:
-            break
-        level += 1
-    return seen  # return all path lengths as dictionary
+    # To run the C++ executable we must save the data to a binary file
+    nsam, ndim = X.shape
+    fname = os.getcwd() + "/test_data_file.dat"
+    X.tofile(fname)
+    geom_path = os.path.abspath(__file__) # this is where geometry.py is located
+    split_path = geom_path.split("/")
+    split_path[-1] = "compute_flann_neighbors_cpp"
+    cpp_file_path = "/".join(split_path)
+    unix_call = "{file_path} {N} {D} {radius} {fname}"
+    dist_call = unix_call.format(file_path = cpp_file_path, N=nsam, D=ndim, 
+                                    radius=radius, fname=fname)     
+    print dist_call 
+    ret_code = subprocess.call([dist_call], shell = True)
+    if ret_code != 0:
+        raise RuntimeError("shell call: " + dist_call + " failed with code: " + str(ret_code))
+    
+    # the resulting files from the C++ function are:
+    # neighbors.dat: contains nsam rows with space separated index of nbr
+    # distances.dat: contains nsam rows with space separated distance of nbr
+    with open("neighbors.dat", "rb") as handle:
+        allnbrs = handle.readlines()
+    with open("distances.dat", "rb") as handle:
+        alldists = handle.readlines()
+    allnbrs = [nbrs.split() for nbrs in allnbrs]
+    alldists = [dists.split() for dists in alldists]
+    
+    # for sparse storage
+    indices = np.array([int(nbr) for nbri in allnbrs for nbr in nbri])
+    data = np.array([float(dist) for disti in alldists for dist in disti])
+    lengths = [len(nbri) for nbri in allnbrs]
+    indpts = list(np.cumsum(lengths))
+    indpts.insert(0,0)
+    indpts = np.array(indpts)
+    graph = sparse.csr_matrix((data, indices, indpts), shape = (nsam, nsam))
+    return graph
+    
+def fl_radius_neighbors_graph(X, radius, flindex):
+    """
+    Constructs a sparse distance matrix called graph in coo
+    format. 
+    Parameters
+    ----------
+    X: data matrix, array_like, shape = (n_samples, n_dimensions )
+    radius: neighborhood radius, scalar
+        the neighbors lying approximately within radius of a node will
+        be returned. Or, in other words, all distances will be less or equal
+        to radius. There will be entries in the matrix for zero distances.
+        
+        Attention when converting to dense: The rest of the distances
+        should not be considered 0, but "large".
+   
+    flindex: FLANN index of the data X
 
+    Returns
+    -------
+    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
+           sparse coo or csr format
+    
+    Notes
+    -----
+    With approximate neighborhood search, the matrix is not
+    necessarily symmetric. 
+
+    mode = 'adjacency' not implemented
+    """
+    if radius < 0.:
+        raise ValueError('neighbors_radius must be >=0.')
+    nsam, ndim = X.shape
+    X = np.require(X, requirements = ['A', 'C']) # required for FLANN
+    
+    graph_jindices = []
+    graph_iindices = []
+    graph_data = []
+    for i in xrange(nsam):
+        jj, dd = flindex.nn_radius(X[i,:], radius)
+        graph_data.append(dd)
+        graph_jindices.append(jj)
+        graph_iindices.append(i*np.ones(jj.shape, dtype=int))
+
+    graph_data = np.concatenate( graph_data )
+    graph_iindices = np.concatenate( graph_iindices )
+    graph_jindices = np.concatenate( graph_jindices )
+    graph = sparse.coo_matrix((graph_data, (graph_iindices, graph_jindices)), shape=(nsam, nsam))
+    return graph
+
+def symmetrize_sparse(A):
+    """
+    Symmetrizes a sparse matrix in place (coo and csr formats only)
+
+    NOTES: 
+      1) if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them. 
+    """
+    if A.getformat() is not "csr":
+        A = A.tocsr()
+    A = (A + A.transpose(copy = True))/2
+    
+def affinity_matrix(distances, neighbors_radius, symmetrize = True):
+    if neighbors_radius <= 0.:
+        raise ValueError('neighbors_radius must be >0.')
+    A = distances.copy()
+    if sparse.isspmatrix( A ):
+        A.data = A.data**2
+        A.data = A.data/(-neighbors_radius**2)
+        np.exp( A.data, A.data )
+        if symmetrize:
+            symmetrize_sparse( A )  # converts to CSR; deletes 0's
+        else:
+            pass
+    else:
+        A **= 2
+        A /= (-neighbors_radius**2)
+        np.exp(A, A)
+        if symmetrize:
+            A = (A+A.T)/2
+            A = np.asarray( A, order="C" )  # is this necessary??
+        else:
+            pass
+    return A
 
 ###############################################################################
 # Graph laplacian
 # Code adapted from the Matlab function laplacian.m of Dominique Perrault-Joncas
-def graph_laplacian(csgraph, normed='geometric', symmetrize=False, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym=False):
+def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False, 
+                    scaling_epps = 0., renormalization_exponent = 1, 
+                    return_diag = False, return_lapsym = False):
     """ Return the Laplacian matrix of an undirected graph.
 
    Computes a consistent estimate of the Laplace-Beltrami operator L
@@ -194,30 +288,35 @@ def graph_laplacian(csgraph, normed='geometric', symmetrize=False, scaling_epps=
         csgraph = csgraph.astype(np.float)
 
     if sparse.isspmatrix(csgraph):
-        return _laplacian_sparse(csgraph, normed=normed, symmetrize=symmetrize, scaling_epps=scaling_epps, renormalization_exponent=renormalization_exponent, return_diag=return_diag, return_lapsym = return_lapsym)
+        return _laplacian_sparse(csgraph, normed = normed, symmetrize = symmetrize, 
+                                    scaling_epps = scaling_epps, 
+                                    renormalization_exponent = renormalization_exponent, 
+                                    return_diag = return_diag, return_lapsym = return_lapsym)
 
     else:
-        return _laplacian_dense(csgraph, normed=normed, symmetrize=symmetrize, scaling_epps=scaling_epps, renormalization_exponent=renormalization_exponent, return_diag=return_diag)
+        return _laplacian_dense(csgraph, normed = normed, symmetrize = symmetrize, 
+                                scaling_epps = scaling_epps, 
+                                renormalization_exponent = renormalization_exponent, 
+                                return_diag = return_diag)
 
-def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym = False):
+def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True, 
+                        scaling_epps = 0., renormalization_exponent = 1, 
+                        return_diag = False, return_lapsym = False):
     n_nodes = csgraph.shape[0]
     if not csgraph.format == 'coo':
         lap = csgraph.tocoo()
     else:
         lap = csgraph.copy()
-#    print( lap.getformat())
     if symmetrize:
         lapt = lap.copy()
         dum = lapt.row
         lapt.row = lapt.col
         lapt.col = dum
-#        print( 'lapt', lapt.getformat())
         lap = lap + lapt # coo is converted to csr here
-#        print( lap.getformat())
         lap.data /= 2.
     lap = lap.tocoo()
     diag_mask = (lap.row == lap.col)  # True/False
-
+    
     degrees = np.asarray(lap.sum(axis=1)).squeeze()
     if normed == 'symmetricnormalized':
         w = np.sqrt(degrees)
@@ -226,7 +325,7 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
         lap.data[diag_mask] -= 1. 
-
+    
     if normed == 'geometric':
         w = degrees.copy()     # normzlize one symmetrically by d
         w_zeros = (w == 0)
@@ -238,7 +337,7 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
             lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
-
+    
     if normed == 'renormalized':
         w = degrees**renormalization_exponent;
         # same as 'geoetric' from here on
@@ -251,7 +350,7 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
             lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
-
+    
     if normed == 'unnormalized':
         lap.data[diag_mask] -= degrees
     if normed == 'randomwalk':
@@ -270,7 +369,9 @@ def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True, scaling_epps
     else:
         return lap
 
-def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=0., renormalization_exponent=1, return_diag=False, return_lapsym = False):
+def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True, 
+                        scaling_epps = 0., renormalization_exponent = 1, 
+                        return_diag = False, return_lapsym = False):
     n_nodes = csgraph.shape[0]
     if symmetrize:
         lap = (csgraph + csgraph.T)/2.
@@ -278,7 +379,7 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
         lap = csgraph.copy()
     degrees = np.asarray(lap.sum(axis=1)).squeeze()
     di = np.diag_indices( lap.shape[0] )  # diagonal indices
-
+    
     if normed == 'symmetricnormalized':
         w = np.sqrt(degrees)
         w_zeros = (w == 0)
@@ -316,10 +417,10 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
     if normed == 'randomwalk':
         lap /= degrees[:,np.newaxis]
         lap -= np.eye(lap.shape[0])
-
+    
     if scaling_epps > 0.:
         lap *= 4/(scaling_epps**2)
-
+    
     if return_diag:
         diag = np.array( lap[di] )
         if return_lapsym:
@@ -331,161 +432,166 @@ def _laplacian_dense(csgraph, normed='geometric', symmetrize=True, scaling_epps=
     else:
         return lap
 
-def distance_matrix( X, flindex = None, mode='radius_neighbors', 
-                     neighbors_radius=None, symmetrize = True, n_neighbors=0 ):
-    # DNearest neighbors has issues. TB FIXED
-    if mode == 'nearest_neighbors':
-        warnings.warn("Nearest neighbors currently does not work"
-                      "falling back to radius neighbors")
-        mode = 'radius_neighbors'
+def single_source_shortest_path_length(graph, source, cutoff=None):
+    """Return the shortest path length from source to all reachable nodes.
 
-    if mode == 'radius_neighbors':
-        neighbors_radius_ = (neighbors_radius
-                             if neighbors_radius is not None else 1.0 / X.shape[1])   # to put another defaault value, like diam(X)/sqrt(dimensions)/10
-        if flindex is not None:
-            distance_matrix = fl_radius_neighbors_graph(X, neighbors_radius_, flindex, mode='distance')
-        else:
-            distance_matrix = radius_neighbors_graph(X, neighbors_radius_, mode='distance')
-        return distance_matrix
+    Returns a dictionary of shortest path lengths keyed by target.
 
-def fl_radius_neighbors_graph( X, radius, flindex, mode = 'distance'):
-    """
-    Constructs a sparse distance matrix called graph in coo
-    format. 
     Parameters
     ----------
-    X: data matrix, array_like, shape = (n_samples, n_dimensions )
-    radius: neighborhood radius, scalar
-        the neighbors lying approximately within radius of a node will
-        be returned. Or, in other words, all distances will be less or equal
-        to radius. There will be entries in the matrix for zero distances.
-        
-        Attention when converting to dense: The rest of the distances
-        should not be considered 0, but "large".
-   
-    flindex: FLANN index of the data X
+    graph: sparse matrix or 2D array (preferably LIL matrix)
+        Adjacency matrix of the graph
+    source : node label
+       Starting node for path
+    cutoff : integer, optional
+        Depth to stop the search - only
+        paths of length <= cutoff are returned.
 
-    mode: string, optional
-       "distance": graph contains pairwise distances
-       "adjacency": grah contains 0. or 1., i.e it is an adjacency matrix
-
-    Returns
-    -------
-    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
-           sparse coo or csr format
-    
-   Notes
-   -----
-    With approximate neiborhood search, the matrix is not
-    necessarily symmetric. 
-
-   mode = 'adjacency' not implemented yet
+    Examples
+    --------
+    >>> import numpy as np
+    >>> graph = np.array([[ 0, 1, 0, 0],
+    ...                   [ 1, 0, 1, 0],
+    ...                   [ 0, 1, 0, 1],
+    ...                   [ 0, 0, 1, 0]])
+    >>> single_source_shortest_path_length(graph, 0)
+    {0: 0, 1: 1, 2: 2, 3: 3}
+    >>> single_source_shortest_path_length(np.ones((6, 6)), 2)
+    {0: 1, 1: 1, 2: 0, 3: 1, 4: 1, 5: 1}
     """
-    if radius < 0.:
-        raise ValueError('neighbors_radius must be >=0.')
-    nsam, ndim = X.shape
+    if sparse.isspmatrix(graph):
+        graph = graph.tolil()
+    else:
+        graph = sparse.lil_matrix(graph)
+    seen = {}                   # level (number of hops) when seen in BFS
+    level = 0                   # the current level
+    next_level = [source]       # dict of nodes to check at next level
+    while next_level:
+        this_level = next_level     # advance to next level
+        next_level = set()          # and start a new list (fringe)
+        for v in this_level:
+            if v not in seen:
+                seen[v] = level     # set the level of vertex v
+                next_level.update(graph.rows[v])
+        if cutoff is not None and cutoff <= level:
+            break
+        level += 1
+    return seen  # return all path lengths as dictionary
     
-    graph_jindices = []
-    graph_iindices = []
-    graph_data = []
-    for i in range( nsam ):
-        jj, dd = flindex.nn_radius( X[i,:], radius )
-        graph_data.append( dd )
-        graph_jindices.append( jj )
-        graph_iindices.append( i*np.ones( jj.shape, dtype=int ))
-
-    graph_data = np.concatenate( graph_data )
-    graph_iindices = np.concatenate( graph_iindices )
-    graph_jindices = np.concatenate( graph_jindices )
-    graph = sparse.coo_matrix((graph_data, (graph_iindices, graph_jindices)), shape=(nsam, nsam))
-    return graph
-
-class DistanceMatrix:
-
-    def __init__(self, X, mode="radius_neighbors", use_flann = True, 
-                 gamma=None, neighbors_radius = None, n_neighbors=None):
-        self.mode = mode
-        self.gamma = gamma
+class Geometry:
+    """ The main class of this package. A Geometry object will contain all 
+    of the geometric information regarding the original data set. 
+    
+    All embedding functions either accept a Geometry object or create one. 
+    """
+    def __init__(self, X, use_flann = False, neighbors_radius = None, 
+                is_distance = False, is_affinity = False,
+                cpp_distances = False, path_to_flann = None):
         self.neighbors_radius = neighbors_radius
-        self.n_neighbors = n_neighbors
-        self.distance_matrix = None
-        if self.mode != "precomputed":
-            self.X_ = X
+        self.is_distance = is_distance
+        self.is_affinity = is_affinity
+        self.cpp_distances = cpp_distances
+        self.path_to_flann = path_to_flann
+        if self.is_distance and self.is_affinity:
+            raise ValueError("cannot be both distance and affinity")
+        if self.is_distance:
+            a, b = X.shape
+            if a != b:
+                raise ValueError("is_distance is True but X not square")
+            self.X = None
+            self.distance_matrix = X
+        elif self.is_affinity:
+            a, b = X.shape
+            if a != b:
+                raise ValueError("is_affinity is True but X not square")
+            self.X = None
+            self.distance_matrix = None
+            self.affinity_matrix = X
         else:
-            self.X_ = None
+            self.X = X
+            self.distance_matrix = None
+            self.affinity_matrix = None
         if use_flann:
-#            from pyflann import *
-            self.flindex_ = FLANN()
-            self.flparams_ = self.flindex_.build_index( X, algorithm = 'kmeans', target_precision = 0.9)
+            if self.path_to_flann is not None: # FLANN is installed in specific location
+                sys.path.insert(0, self.path_to_flann)
+            try:
+                import pyflann as pyf
+                self.flindex = pyf.FLANN()
+                self.flparams = self.flindex.build_index(X, algorithm = 'kmeans', target_precision = 0.9)
+            except ImportError:
+                raise ValueError("use_flann is set to True but pyflann is "
+                                "not available.")
         else:
-            self.flindex_ = None
-            self.flparams_ = None
-
-    @property
-    def _pairwise(self):
-        return self.mode == "precomputed"
-
-    def get_neighbors_radius( self ):
-        return self.neighbors_radius
-
-    def get_distance_matrix( self, neighbors_radius = None, copy=True ):
-        """ if a distance_matrix is already computed, and neighbors_radius not
-        given, return the existing distance_matrix. Otherwise, recompute
-        """
-        if (self.distance_matrix is None) or (neighbors_radius is not None):
-            if neighbors_radius is not None:
-                self.neighbors_radius = neighbors_radius
-            self.distance_matrix = distance_matrix(self.X_, self.flindex_, mode=self.mode, neighbors_radius=self.neighbors_radius, n_neighbors=self.n_neighbors)
+            self.flindex = None
+            self.flparams = None
+    # Functions to get distance, affinity, and Laplacian matrices:
+    def get_distance_matrix(self, neighbors_radius = None, copy = True):
+        if neighbors_radius is None:
+            radius = self.neighbors_radius
+        else:
+            radius = neighbors_radius
+        if self.is_affinity:
+            raise ValueError("is_affinity was passed as true. "
+                            "Distance matrix cannot be computed.")
+        elif self.distance_matrix is None:
+            self.distance_matrix = distance_matrix(self.X, self.flindex, neighbors_radius, 
+                                                    self.cpp_distances)
         if copy:
             return self.distance_matrix.copy()
         else:
             return self.distance_matrix
-
-"""
-Symmetrizes a sparse matrix in place (coo and csr formats only)
-
-NOTES: 
-  1) if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them. 
-  2) currently, if the matrix is in coo format, the symmetrization converts
-  automatically to csr. I did not find it necessary to revert to coo, as 
-  the plan is to migrate away from coo in the near future.
-  3 ) currently convert to coo; how to circumvent?
-"""
-
-def symmetrize_sparse( A ):
-    if A.getformat() is not "coo":
-        A = A.tocoo()
-    A = (A + A.transpose(copy = True))/2.
-
-# not used
-def symmetrize_sparse_coo( A ):
-    if A.format is not "csr":
-        raise ValueError('Matrix given must be of CSR format.')
-    At = A.copy()
-    dum = At.row
-    At.row = At.col
-    At.col = dum
-    A = A + At
-
-def affinity_matrix( distances, neighbors_radius, symmetrize = True ):
-    if neighbors_radius <= 0.:
-        raise ValueError('neighbors_radius must be >0.')
-    A = distances.copy()
-    if sparse.isspmatrix( A ):
-        A.data = A.data**2
-        A.data = A.data/(-neighbors_radius**2)
-        np.exp( A.data, A.data )
-        if symmetrize:
-            symmetrize_sparse( A )  # converts to CSR; deletes 0's
+    
+    def get_affinity_matrix(self, neighbors_radius = None, copy = True, 
+                            symmetrize = True):
+        if neighbors_radius is None:
+            radius = self.neighbors_radius
         else:
-            pass
-    else:
-        A **= 2
-        A /= (-neighbors_radius**2)
-        np.exp(A, A)
-        if symmetrize:
-            A = (A+A.T)/2
-            A = np.asarray( A, order="C" )  # is this necessary??
+            radius = neighbors_radius
+        if self.affinity_matrix is None:
+            if self.distance_matrix is None:
+                self.distance_matrix = self.get_distance_matrix(copy = False)
+            self.affinity_matrix = affinity_matrix(self.distance_matrix, 
+                                                    radius, symmetrize)
+        if copy:
+            return self.affinity_matrix.copy()
         else:
-            pass
-    return A
+            return self.affinity_matrix
+    
+    def get_laplacian_matrix(self, normed='geometric', symmetrize=False, 
+                            scaling_epps=0., renormalization_exponent=1, 
+                            return_diag=False, return_lapsym=False, copy = True):
+        if not hasattr(self, 'laplacian_matrix'):
+            if self.affinity_matrix is None:
+                self.affinity_matrix = self.get_affinity_matrix()
+            self.laplacian_matrix = graph_laplacian(self.affinity_matrix, normed, 
+                                                    symmetrize, scaling_epps, 
+                                                    renormalization_exponent, 
+                                                    return_diag, return_lapsym)
+        if copy:
+            return self.laplacian_matrix.copy()
+        else:
+            return self.laplacian_matrix
+    # functions to assign distance, affinity, and Laplacian matrices:
+        # the only checking done here is that they are square matrices
+    def assign_distance_matrix(self, distance_matrix):
+        (a, b) = distance_matrix.shape
+        if a != b:
+            raise ValueError("distance matrix is not square")
+        else:
+            self.distance_matrix = distance_matrix
+    
+    def assign_affinity_matrix(self, affinity_matrix):
+        (a, b) = affinity_matrix.shape
+        if a != b:
+            raise ValueError("affinity matrix is not square")
+        else:
+            self.affinity_matrix = affinity_matrix
+    
+    def assign_laplacian_matrix(self, laplacian_matrix):
+        (a, b) = laplacian_matrix.shape
+        if a != b:
+            raise ValueError("Laplacian matrix is not square")
+        else:
+            self.laplacian_matrix = laplacian_matrix
+    def assign_neighbors_radius(self, radius):
+        self.neighbors_radius = radius

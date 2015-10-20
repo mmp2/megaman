@@ -1,6 +1,9 @@
 benchmarks/bench_embed_with_rmetric.py in the works by MMP (not added)
 benchmarks/bench_laplacian_dense_temp.py added, to be deleted later
 
+JMCQ:
+Created Development Branch for compiling into working library.
+
 MMP: to do list October 2014
 
 1. accelerate distance computation with flann
