@@ -74,3 +74,63 @@ laplacian = geoX.get_laplacian_matrix() # distance and affinity matrices exist
 
 
 ### Performing a Spectral Embedding 
+import sys
+import time
+import numpy as np
+import Mmani.embedding.geometry as geom
+import Mmani.embedding.spectral_embedding as se 
+from scipy import sparse
+
+rad = 0.05
+n_samples = 1000
+
+X = np.random.random((n_samples, 2))
+thet = X[:,0]
+X1 = np.array( 3*thet*np.sin(2*thet ))
+X2 = np.array( 3*thet*np.cos(2*thet ))
+X = np.array( (X1, X2, X[:,1]) )
+X = X.T
+
+geoX = geom.Geometry(X, neighbors_radius = rad, cpp_distances = True)
+
+embedding = se.spectral_embedding(geoX, n_components=2, eigen_solver='arpack')
+embedding = se.spectral_embedding(geoX, n_components=2, eigen_solver='lobpcg') ## ERROR
+embedding = se.spectral_embedding(geoX, n_components=2, eigen_solver='amg')
+
+def _assert_symmetric(M, tol = 1e-10):
+    if sparse.isspmatrix(M):
+        conditions = (M - M.T).data < tol 
+    else:
+        conditions = (M - M.T) < tol
+    assert(np.all(conditions))
+
+
+rad = 5
+n_samples = 10
+
+X = np.random.random((n_samples, 2))
+thet = X[:,0]
+X1 = np.array( 3*thet*np.sin(2*thet ))
+X2 = np.array( 3*thet*np.cos(2*thet ))
+X = np.array( (X1, X2, X[:,1]) )
+X = X.T
+
+geoX = geom.Geometry(X, neighbors_radius = rad, cpp_distances = True)
+
+laplacian1 = geoX.get_laplacian_matrix(normed = 'symmetricnormalized', return_lapsym= True)
+laplacian2 = geoX.get_laplacian_matrix(normed = 'geometric', return_lapsym = True)
+laplacian3 = geoX.get_laplacian_matrix(normed = 'renormalized')
+laplacian4 = geoX.get_laplacian_matrix(normed = 'unnormalized')
+laplacian5 = geoX.get_laplacian_matrix(normed = 'randomwalk')
+
+    
+_assert_symmetric(laplacian1)
+_assert_symmetric(laplacian2) # false
+_assert_symmetric(laplacian3) # false
+_assert_symmetric(laplacian4)
+_assert_symmetric(laplacian5) # false 
+
+laplacian2 = geoX.get_laplacian_matrix(normed = 'geometric', return_lapsym = True)
+from numpy.linalg import eig
+(e1, v1) = eig(geoX.laplacian_matrix.todense())
+(e2, v2) = eig(geoX.laplacian_symmetric.todense())

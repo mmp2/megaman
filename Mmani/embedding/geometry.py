@@ -302,6 +302,7 @@ def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False,
 def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True, 
                         scaling_epps = 0., renormalization_exponent = 1, 
                         return_diag = False, return_lapsym = False):
+    print normed
     n_nodes = csgraph.shape[0]
     if not csgraph.format == 'coo':
         lap = csgraph.tocoo()
@@ -534,7 +535,7 @@ class Geometry:
             raise ValueError("is_affinity was passed as true. "
                             "Distance matrix cannot be computed.")
         elif self.distance_matrix is None:
-            self.distance_matrix = distance_matrix(self.X, self.flindex, neighbors_radius, 
+            self.distance_matrix = distance_matrix(self.X, self.flindex, radius, 
                                                     self.cpp_distances)
         if copy:
             return self.distance_matrix.copy()
@@ -559,18 +560,27 @@ class Geometry:
     
     def get_laplacian_matrix(self, normed='geometric', symmetrize=False, 
                             scaling_epps=0., renormalization_exponent=1, 
-                            return_diag=False, return_lapsym=False, copy = True):
-        if not hasattr(self, 'laplacian_matrix'):
+                            copy = True, return_lapsym = False):
+        if (not hasattr(self, 'laplacian_matrix') or self.laplacian_type != normed):
+            self.laplacian_type = normed
             if self.affinity_matrix is None:
                 self.affinity_matrix = self.get_affinity_matrix()
-            self.laplacian_matrix = graph_laplacian(self.affinity_matrix, normed, 
-                                                    symmetrize, scaling_epps, 
-                                                    renormalization_exponent, 
-                                                    return_diag, return_lapsym)
+            if not return_lapsym or self.laplacian_type in ['symmetricnormalized', 'unnormalize']:
+                self.laplacian_matrix = graph_laplacian(self.affinity_matrix, 
+                                                        self.laplacian_type, 
+                                                        symmetrize, scaling_epps, 
+                                                        renormalization_exponent)
+            else:
+                (self.laplacian_matrix, 
+                self.laplacian_symmetric, 
+                self.w) = graph_laplacian(self.affinity_matrix, self.laplacian_type, 
+                                        symmetrize, scaling_epps, renormalization_exponent,
+                                        return_lapsym = True)
         if copy:
             return self.laplacian_matrix.copy()
         else:
             return self.laplacian_matrix
+        
     # functions to assign distance, affinity, and Laplacian matrices:
         # the only checking done here is that they are square matrices
     def assign_distance_matrix(self, distance_matrix):

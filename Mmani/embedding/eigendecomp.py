@@ -1,13 +1,19 @@
 import warnings
 import numpy as np
-
 from scipy import sparse
 from scipy.sparse.linalg import lobpcg
 from scipy.sparse.linalg.eigen.lobpcg.lobpcg import symeig
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
-from sklearn.utils.arpack import eigsh
+from sklearn.utils.arpack import eigsh, eigs
 
+def _is_symmetric(M, tol = 1e-10):
+    if sparse.isspmatrix(M):
+        conditions = (M - M.T).data < tol 
+    else:
+        conditions = (M - M.T) < tol
+    return(np.all(conditions))
+    
 
 def eigen_decomposition(G, n_components=8, eigen_solver=None,
                        random_state=None, eigen_tol=0.0, 
@@ -50,9 +56,12 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
                          "Should be 'amg', 'arpack', or 'lobpcg'"
                          % eigen_solver)
 
-    # Initialize random state & Prameters 
+    # Initialize random state
     random_state = check_random_state(random_state)
     n_nodes = G.shape[0]
+    
+    is_symmetric = _is_symmetric(laplacian)
+    
     if drop_first:
         n_components = n_components + 1       
     
@@ -82,28 +91,33 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         # near 1.0 and leads to much faster convergence: potentially an
         # orders-of-magnitude speedup over simply using keyword which='LA'
         try:
-            lambdas, diffusion_map = eigsh(-G, k=n_components, sigma=1.0, 
-                                            which='LM',tol=eigen_tol)
+            if is_symmetric:
+                lambdas, diffusion_map = eigsh(-G, k=n_components, sigma=1.0, 
+                                                which='LM',tol=eigen_tol)
+            else:
+                lambdas, diffusion_map = eigs(-G, k=n_components, sigma=1.0, 
+                                                which='LM',tol=eigen_tol)            
         except RuntimeError:
             # When submatrices are exactly singular, an LU decomposition fails
             eigen_solver = "lobpcg"
             warnings.warn("submatrices exactlt singular, LU decomposition failed. Reverting to lobpcg")
-    
     if eigen_solver == 'amg':
-        # Use AMG to get a preconditioner and speed up the eigenvalue problem.
+        if not is_symmetric:
+            raise ValueError("lobpcg requires symmetric matrices.")
         if not sparse.issparse(G):
             warnings.warn("AMG works better for sparse matrices")
-        # AMG needs symmetric laplacians?
+        # Use AMG to get a preconditioner and speed up the eigenvalue problem.
         G = G.astype(np.float)  # lobpcg needs native floats
         ml = smoothed_aggregation_solver(check_array(G, accept_sparse = ['csr']))
         M = ml.aspreconditioner()
         X = random_state.rand(n_nodes, n_components + 1)
         X[:, 0] = (G.diagonal()).ravel()
-        lambdas, diffusion_map = lobpcg(G, X, M=M, tol=1.e-12, largest=False)
-
+        lambdas, diffusion_map = lobpcg(G, X, M=M, tol=1.e-12, largest=False)    
     elif eigen_solver == "lobpcg":
+        if not is_symmetric:
+            raise ValueError("lobpcg requires symmetric matrices.")
         G = G.astype(np.float)  # lobpcg needs native floats
-        if n_nodes < 5 * n_components + 1:
+        if (n_nodes < 5 * n_components + 1):
             # lobpcg has problems with small number of nodes
             # lobpcg will fallback to symeig, so we short circuit it
             if sparse.isspmatrix(G):

@@ -113,9 +113,7 @@ def _set_diag(laplacian, value):
 
 
 def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
-                       random_state=None, eigen_tol=0.0,
-                       norm_laplacian=True, drop_first=True,
-                       mode=None):
+                       random_state=None, eigen_tol=0.0, drop_first=True):
     """Project the sample on the first eigen vectors of the graph Laplacian.
     
     The adjacency matrix is used to compute a normalized graph Laplacian
@@ -180,22 +178,24 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
 
-    random_state = check_random_state(random_state)
-    n_nodes = adjacency.shape[0]
-    
+    random_state = check_random_state(random_state)    
 
     if not isinstance(Geometry, geom.Geometry):
         raise RuntimeError("Geometry object not Mmani.embedding.geometry Geometry class")
-    Geometry.set_neighbors_radius(radius)
     affinity_matrix = Geometry.get_affinity_matrix()
     if not _graph_is_connected(affinity_matrix):
-    warnings.warn("Graph is not fully connected, spectral embedding"
-                    " may not work as expected.")
+        warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
     
-    laplacian, dd = Geometry.get_laplacian_matrix(return_diag = True)
+    laplacian = Geometry.get_laplacian_matrix()
+    dd = laplacian.diagonal()
+    ## If the Laplacian is non-symmetric then we need to extract the w vector from geometry
+    ## and the symmetrixed Laplacian = S. The actual Laplacian is L = W^{-1}S 
+    ## Use the w vector to re-symmetrize: L* = W^{-1/2}SW^{-1/2}
+    ## Calculate the eigen-decomposition of L* = [V, D] which has the same spectrum as L
+    ## then use DW^{1/2}  to compute the eigen decomposition of L 
     
-    laplacian = _set_diag(laplacian, 1) ## do we need this?
-    lambdas, difussion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
+    # laplacian = _set_diag(laplacian, 1) ## do we need this?
+    lambdas, diffusion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
                                                 random_state, eigen_tol, drop_first)
     embedding = diffusion_map.T[n_components::-1] * dd
     if drop_first:
@@ -302,7 +302,7 @@ class SpectralEmbedding(BaseEstimator):
                                         self.use_flann, path_to_flann = 
                                         self.path_to_flann, cpp_distances = 
                                         self.cpp_distances)
-        self.embedding_ = spectral_embedding(affinity_matrix,
+        self.embedding_ = spectral_embedding(Geometry,
                                              n_components=self.n_components,
                                              eigen_solver=self.eigen_solver,
                                              random_state=random_state)
