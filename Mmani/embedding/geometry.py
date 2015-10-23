@@ -355,7 +355,10 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
     if normed == 'unnormalized':
         lap.data[diag_mask] -= degrees
     if normed == 'randomwalk':
-        lap.data /= degrees[lap.row]
+        w = degrees.copy()
+        if return_lapsym:
+            lapsym = lap.copy()
+        lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
     if scaling_epps > 0.:
         lap.data *= 4/(scaling_epps**2)
@@ -416,7 +419,10 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
         dum = lap[di]-degrees[np.newaxis,:]
         lap[di] = dum[0,:]
     if normed == 'randomwalk':
-        lap /= degrees[:,np.newaxis]
+        w = degres.copy()
+        if return_lapsym:
+            lapsym = lap.copy()
+        lap /= w[:,np.newaxis]
         lap -= np.eye(lap.shape[0])
     
     if scaling_epps > 0.:

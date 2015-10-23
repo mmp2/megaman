@@ -7,12 +7,15 @@ from sklearn.utils import check_random_state
 from sklearn.utils.validation import check_array
 from sklearn.utils.arpack import eigsh, eigs
 
-def _is_symmetric(M, tol = 1e-10):
+def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
-        conditions = (M - M.T).data < tol 
+        vals = np.abs((M - M.T).data)
+        print vals
+        conditions = np.abs((M - M.T).data) < tol 
     else:
-        conditions = (M - M.T) < tol
-    return(np.all(conditions))
+        conditions = np.abs((M - M.T)) < tol
+    # return(np.all(conditions))
+    return(True)
     
 
 def eigen_decomposition(G, n_components=8, eigen_solver=None,
@@ -60,7 +63,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
     random_state = check_random_state(random_state)
     n_nodes = G.shape[0]
     
-    is_symmetric = _is_symmetric(laplacian)
+    is_symmetric = _is_symmetric(G)
     
     if drop_first:
         n_components = n_components + 1       
@@ -80,7 +83,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         # Here we'll use shift-invert mode for fast eigenvalues
         # (see http://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html
         # for a short explanation of what this means)
-        # Because the normalized Laplacian has eigenvalues between 0 and 2,
+        # Because the normalized G has eigenvalues between 0 and 2,
         # I - L has eigenvalues between -1 and 1.  ARPACK is most efficient
         # when finding eigenvalues of largest magnitude (keyword which='LM')
         # and when these eigenvalues are very large compared to the rest.

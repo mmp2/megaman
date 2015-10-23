@@ -1,6 +1,7 @@
 """Spectral Embedding"""
 
 # Author: Marina Meila <mmp@stat.washington.edu>
+#         James McQueen <jmcq@u.washington.edu>
 #
 #         after the scikit-learn version by 
 #         Gael Varoquaux <gael.varoquaux@normalesup.org>
@@ -186,18 +187,48 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     if not _graph_is_connected(affinity_matrix):
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
     
-    laplacian = Geometry.get_laplacian_matrix()
+    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True)
     dd = laplacian.diagonal()
-    ## If the Laplacian is non-symmetric then we need to extract the w vector from geometry
-    ## and the symmetrixed Laplacian = S. The actual Laplacian is L = W^{-1}S 
-    ## Use the w vector to re-symmetrize: L* = W^{-1/2}SW^{-1/2}
-    ## Calculate the eigen-decomposition of L* = [V, D] which has the same spectrum as L
-    ## then use DW^{1/2}  to compute the eigen decomposition of L 
+    lapl_type = Geometry.laplacian_type
     
-    # laplacian = _set_diag(laplacian, 1) ## do we need this?
-    lambdas, diffusion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
-                                                random_state, eigen_tol, drop_first)
-    embedding = diffusion_map.T[n_components::-1] * dd
+    re_normalize = False
+    if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric matrix
+        if lapl_type not in ['symmetricnormalized', 'unnormalized']:
+            re_normalize = True
+            # If a symmetric eigedecomposition algorithm is chosen and 
+            # If the Laplacian is non-symmetric then we need to extract:
+            # the w (weight) vector from geometry
+            # and the symmetric Laplacian = S. 
+            # The actual Laplacian is L = W^{-1}S  (Where W is the diagonal matrix of w)
+            # Which has the same spectrum as: L* = W^{-1/2}SW^{-1/2} which is symmetric
+            # We calculate the eigen-decomposition of L*: [D, V]
+            # then use W^{-1/2}V  to compute the eigenvectors of L 
+            # See (Handbook for Cluster Analysis Chapter 2 Proposition 1)
+            w = np.array(Geometry.w)
+            v = np.sqrt(w)
+            symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
+            symmetrized_laplacian = symmetrized_laplacian.todense()
+            if sparse.isspmatrix(symmetrized_laplacian):
+                symmetrized_laplacian.data /= v[symmetrized_laplacian.row]
+                symmetrized_laplacian.data /= v[symmetrized_laplacian.col]
+                # some how this isn't symmetrizing??? 
+            else:
+                symmetrized_laplacian /= v
+                symmetrized_laplacian /= v[:,np.newaxis]
+    if re_normalize:
+        print 'using symmetrized laplacian'
+        lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components, eigen_solver,
+                                                    random_state, eigen_tol, drop_first)
+    else:
+        lambdas, diffusion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
+                                                    random_state, eigen_tol, drop_first)
+    
+    if re_normalize:
+        diffusion_map /= v[:, np.newaxis] # put back on original Laplacian space
+        diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
+        
+    embedding = diffusion_map.T[n_components::-1] 
+    # embedding *= dd # problem here...
     if drop_first:
         return embedding[1:n_components].T
     else:
