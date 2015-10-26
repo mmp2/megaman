@@ -9,13 +9,10 @@ from sklearn.utils.arpack import eigsh, eigs
 
 def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
-        vals = np.abs((M - M.T).data)
-        print vals
         conditions = np.abs((M - M.T).data) < tol 
     else:
         conditions = np.abs((M - M.T)) < tol
-    # return(np.all(conditions))
-    return(True)
+    return(np.all(conditions))
     
 
 def eigen_decomposition(G, n_components=8, eigen_solver=None,
@@ -83,7 +80,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         # Here we'll use shift-invert mode for fast eigenvalues
         # (see http://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html
         # for a short explanation of what this means)
-        # Because the normalized G has eigenvalues between 0 and 2,
+        # Because the normalized L has eigenvalues between 0 and 2,
         # I - L has eigenvalues between -1 and 1.  ARPACK is most efficient
         # when finding eigenvalues of largest magnitude (keyword which='LM')
         # and when these eigenvalues are very large compared to the rest.
@@ -95,11 +92,17 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         # orders-of-magnitude speedup over simply using keyword which='LA'
         try:
             if is_symmetric:
-                lambdas, diffusion_map = eigsh(-G, k=n_components, sigma=1.0, 
+#                lambdas, diffusion_map = eigsh(-G, k=n_components+1, sigma=1.0, 
+#                                                which='LM',tol=eigen_tol)
+                lambdas, diffusion_map = eigsh(G, k=n_components+1, 
                                                 which='LM',tol=eigen_tol)
             else:
-                lambdas, diffusion_map = eigs(-G, k=n_components, sigma=1.0, 
-                                                which='LM',tol=eigen_tol)            
+#                lambdas, diffusion_map = eigs(-G, k=n_components+1, sigma=1.0, 
+#                                                which='LM',tol=eigen_tol)
+                lambdas, diffusion_map = eigs(G, k=n_components+1, 
+                                                which='LM',tol=eigen_tol)
+            diffusion_map = np.real(diffusion_map)
+            lambdas = np.real(lambdas)         
         except RuntimeError:
             # When submatrices are exactly singular, an LU decomposition fails
             eigen_solver = "lobpcg"

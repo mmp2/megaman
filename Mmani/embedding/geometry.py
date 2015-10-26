@@ -34,6 +34,13 @@ from scipy import sparse
 from sklearn.neighbors import radius_neighbors_graph
 import subprocess, os, sys
 
+def _is_symmetric(M, tol = 1e-8):
+    if sparse.isspmatrix(M):
+        conditions = np.abs((M - M.T).data) < tol 
+    else:
+        conditions = np.abs((M - M.T)) < tol
+    return(np.all(conditions))
+
 def distance_matrix(X, flindex = None, neighbors_radius = None, cpp_distances = False):
         if neighbors_radius is None:
             neighbors_radius = 1/X.shape[1]
@@ -177,6 +184,7 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
             symmetrize_sparse( A )  # converts to CSR; deletes 0's
         else:
             pass
+        A.setdiag(1) # the 0 on the diagonal is a true zero
     else:
         A **= 2
         A /= (-neighbors_radius**2)
@@ -302,23 +310,17 @@ def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False,
 def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True, 
                         scaling_epps = 0., renormalization_exponent = 1, 
                         return_diag = False, return_lapsym = False):
-    print normed
     n_nodes = csgraph.shape[0]
-    if not csgraph.format == 'coo':
-        lap = csgraph.tocoo()
-    else:
-        lap = csgraph.copy()
+    lap = csgraph.copy()
     if symmetrize:
-        lapt = lap.copy()
-        dum = lapt.row
-        lapt.row = lapt.col
-        lapt.col = dum
-        lap = lap + lapt # coo is converted to csr here
-        lap.data /= 2.
-    lap = lap.tocoo()
-    diag_mask = (lap.row == lap.col)  # True/False
-    
+        if lap.format is not 'csr':
+            lap.tocsr()
+        lap = (lap + lap.T)/2.
+    if lap.format is not 'coo':
+        lap = lap.tocoo()
+    diag_mask = (lap.row == lap.col)  # True/False   
     degrees = np.asarray(lap.sum(axis=1)).squeeze()
+    
     if normed == 'symmetricnormalized':
         w = np.sqrt(degrees)
         w_zeros = (w == 0)
@@ -351,9 +353,10 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
             lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
-    
+        
     if normed == 'unnormalized':
         lap.data[diag_mask] -= degrees
+    
     if normed == 'randomwalk':
         w = degrees.copy()
         if return_lapsym:
@@ -564,7 +567,7 @@ class Geometry:
         else:
             return self.affinity_matrix
     
-    def get_laplacian_matrix(self, normed='geometric', symmetrize=False, 
+    def get_laplacian_matrix(self, normed='geometric', symmetrize=True, 
                             scaling_epps=0., renormalization_exponent=1, 
                             copy = True, return_lapsym = False):
         if (not hasattr(self, 'laplacian_matrix') or self.laplacian_type != normed):

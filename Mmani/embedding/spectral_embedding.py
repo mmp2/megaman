@@ -18,6 +18,13 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.utils.sparsetools import connected_components
 
+def _is_symmetric(M, tol = 1e-8):
+    if sparse.isspmatrix(M):
+        conditions = np.abs((M - M.T).data) < tol 
+    else:
+        conditions = np.abs((M - M.T)) < tol
+    return(np.all(conditions))
+
 def _graph_connected_component(graph, node_id):
     """Find the largest graph connected components the contains one
     given node
@@ -71,47 +78,6 @@ def _graph_is_connected(graph):
     else:
         # dense graph, find all connected components start from node 0
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
-
-
-def _set_diag(laplacian, value):
-    """Set the diagonal of the laplacian matrix and convert it to a
-    sparse format well suited for eigenvalue decomposition
-
-    Parameters
-    ----------
-    laplacian : array or sparse matrix
-        The graph laplacian
-    value : float
-        The value of the diagonal
-
-    Returns
-    -------
-    laplacian : array or sparse matrix
-        An array of matrix in a form that is well suited to fast
-        eigenvalue decomposition, depending on the band width of the
-        matrix.
-    """
-    n_nodes = laplacian.shape[0]
-    # We need all entries in the diagonal to values
-    if not sparse.isspmatrix(laplacian):
-        laplacian.flat[::n_nodes + 1] = value
-    else:
-        laplacian = laplacian.tocoo()
-        diag_idx = (laplacian.row == laplacian.col)
-        laplacian.data[diag_idx] = value
-        # If the matrix has a small number of diagonals (as in the
-        # case of structured matrices coming from images), the
-        # dia format might be best suited for matvec products:
-        n_diags = np.unique(laplacian.row - laplacian.col).size
-        if n_diags <= 7:
-            # 3 or less outer diagonals on each side
-            laplacian = laplacian.todia()
-        else:
-            # csr has the fastest matvec and is thus best suited to
-            # arpack
-            laplacian = laplacian.tocsr()
-    return laplacian
-
 
 def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
                        random_state=None, eigen_tol=0.0, drop_first=True):
@@ -187,9 +153,10 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     if not _graph_is_connected(affinity_matrix):
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
     
-    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True)
+    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True)
     dd = laplacian.diagonal()
     lapl_type = Geometry.laplacian_type
+    print lapl_type
     
     re_normalize = False
     if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric matrix
@@ -205,34 +172,39 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
             # then use W^{-1/2}V  to compute the eigenvectors of L 
             # See (Handbook for Cluster Analysis Chapter 2 Proposition 1)
             w = np.array(Geometry.w)
-            v = np.sqrt(w)
             symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
-            symmetrized_laplacian = symmetrized_laplacian.todense()
+            assert(_is_symmetric(symmetrized_laplacian))
             if sparse.isspmatrix(symmetrized_laplacian):
-                symmetrized_laplacian.data /= v[symmetrized_laplacian.row]
-                symmetrized_laplacian.data /= v[symmetrized_laplacian.col]
-                # some how this isn't symmetrizing??? 
+                symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.row])
+                symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.col])
             else:
-                symmetrized_laplacian /= v
-                symmetrized_laplacian /= v[:,np.newaxis]
+                symmetrized_laplacian /= np.sqrt(w)
+                symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
     if re_normalize:
         print 'using symmetrized laplacian'
+        assert(_is_symmetric(symmetrized_laplacian))
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components, eigen_solver,
                                                     random_state, eigen_tol, drop_first)
+        lambdas = 1 - lambdas
     else:
         lambdas, diffusion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
                                                     random_state, eigen_tol, drop_first)
-    
     if re_normalize:
-        diffusion_map /= v[:, np.newaxis] # put back on original Laplacian space
+        diffusion_map /= np.sqrt(w[:, np.newaxis]) # put back on original Laplacian space
         diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
-        
-    embedding = diffusion_map.T[n_components::-1] 
-    # embedding *= dd # problem here...
+    # sort 
+    ind = np.argsort(lambdas)
+    ind = ind[::-1]
+    lambdas = lambdas[ind]
+    print lambdas
+    diffusion_map = diffusion_map[:, ind]
+    embedding = diffusion_map.T[n_components::-1]
+    embedding *= dd
     if drop_first:
-        return embedding[1:n_components].T
+        embedding = embedding[1:n_components].T
     else:
-        return embedding[:n_components].T
+        embedding = embedding[:n_components].T 
+    return embedding
 
 
 class SpectralEmbedding(BaseEstimator):
