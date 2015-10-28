@@ -343,7 +343,7 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
     
     if normed == 'renormalized':
         w = degrees**renormalization_exponent;
-        # same as 'geoetric' from here on
+        # same as 'geometric' from here on
         w_zeros = (w == 0)
         w[w_zeros] = 1
         lap.data /= w[lap.row]

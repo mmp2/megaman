@@ -12,7 +12,6 @@ import warnings
 import numpy as np
 import Mmani.embedding.geometry as geom
 from Mmani.embedding.eigendecomp import eigen_decomposition
-
 from scipy import sparse
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -55,7 +54,6 @@ def _graph_connected_component(graph, node_id):
         if last_num_component >= connected_components.sum():
             break
     return connected_components
-
 
 def _graph_is_connected(graph):
     """ Return whether the graph is connected (True) or Not (False)
@@ -154,15 +152,14 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
     
     laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True)
-    dd = laplacian.diagonal()
+    n_nodes = laplacian.shape[0]
     lapl_type = Geometry.laplacian_type
-    print lapl_type
     
     re_normalize = False
-    if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric matrix
+    if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
         if lapl_type not in ['symmetricnormalized', 'unnormalized']:
             re_normalize = True
-            # If a symmetric eigedecomposition algorithm is chosen and 
+            # If lobpcg (or amg with lobpcg) is chosen and 
             # If the Laplacian is non-symmetric then we need to extract:
             # the w (weight) vector from geometry
             # and the symmetric Laplacian = S. 
@@ -170,40 +167,49 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
             # Which has the same spectrum as: L* = W^{-1/2}SW^{-1/2} which is symmetric
             # We calculate the eigen-decomposition of L*: [D, V]
             # then use W^{-1/2}V  to compute the eigenvectors of L 
-            # See (Handbook for Cluster Analysis Chapter 2 Proposition 1)
+            # See (Handbook for Cluster Analysis Chapter 2 Proposition 1).
+            # However, since we censor the affinity matrix A at a radius it is not guaranteed
+            # to be positive definite. But since L = W^{-1}S has maximum eigenvalue 1 (stochastic matrix)
+            # and L* has the same spectrum it also has largest e-value of 1.
+            # therefore if we look at I - L* then this has smallest eigenvalue of 0 and so 
+            # must be positive semi-definite. It also has the same spectrum as L* but
+            # lambda(I - L*) = 1 - lambda(L*). 
+            # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I 
+            # instead of I to make the smallest eigenvalue epsilon. 
+            epsilon = 1e-10 # machine epsilon ~ 2.2e-16
+            epsilon = 1e-6
             w = np.array(Geometry.w)
             symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
-            assert(_is_symmetric(symmetrized_laplacian))
             if sparse.isspmatrix(symmetrized_laplacian):
                 symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.row])
                 symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.col])
+                symmetrized_laplacian = (1+epsilon)*sparse.identity(n_nodes) - symmetrized_laplacian
             else:
                 symmetrized_laplacian /= np.sqrt(w)
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
+                symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
     if re_normalize:
         print 'using symmetrized laplacian'
-        assert(_is_symmetric(symmetrized_laplacian))
-        lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components, eigen_solver,
-                                                    random_state, eigen_tol, drop_first)
-        lambdas = 1 - lambdas
+        lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
+                                                    random_state, eigen_tol, drop_first, largest = False)
+        # print lambdas
+        # lambdas = -lambdas 
+        lambdas = -lambdas + epsilon
+        # print lambdas
     else:
-        lambdas, diffusion_map = eigen_decomposition(laplacian, n_components, eigen_solver,
-                                                    random_state, eigen_tol, drop_first)
+        lambdas, diffusion_map = eigen_decomposition(laplacian, n_components+1, eigen_solver,
+                                                    random_state, eigen_tol, drop_first, largest = True)
     if re_normalize:
         diffusion_map /= np.sqrt(w[:, np.newaxis]) # put back on original Laplacian space
         diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
-    # sort 
-    ind = np.argsort(lambdas)
-    ind = ind[::-1]
-    lambdas = lambdas[ind]
-    print lambdas
+    ind = np.argsort(lambdas); ind = ind[::-1]
+    lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
-    embedding = diffusion_map.T[n_components::-1]
-    embedding *= dd
+    print lambdas
     if drop_first:
-        embedding = embedding[1:n_components].T
+        embedding = diffusion_map[:, 1:(n_components+1)]
     else:
-        embedding = embedding[:n_components].T 
+        embedding = diffusion_map[:, :n_components]
     return embedding
 
 
