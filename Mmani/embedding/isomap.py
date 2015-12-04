@@ -17,19 +17,20 @@ from scipy.sparse.linalg.eigen.lobpcg.lobpcg import symeig
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.externals import six
 from sklearn.utils import check_random_state
-from sklearn.utils.validation import atleast2d_or_csr
-from sklearn.utils.graph import graph_laplacian
+from sklearn.utils.graph import graph_shortest_path
 from sklearn.utils.sparsetools import connected_components
 from sklearn.utils.arpack import eigsh
 from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.neighbors import radius_neighbors_graph
 from sklearn.neighbors import kneighbors_graph
+from sklearn.decomposition import KernelPCA
+from sklearn.manifold.mds import smacof
 timing = False
 
 
 def isomap_embedding(distance_matrix, n_components=2, mode=None, 
-                     path_method=Noneeigen_solver=None,
-                     tol=0, max_iter=None )
+                     path_method='auto', eigen_solver='auto',
+                     tol=0, max_iter=None):
     """
     MMP:TO update THIS
 
@@ -78,18 +79,19 @@ def isomap_embedding(distance_matrix, n_components=2, mode=None,
     G = all_dist** 2
     G *= -0.5
 
-    if mode="kernelPCA":
+    if mode=="kernelPCA":
         kpca = KernelPCA(n_components, kernel="precomputed",
                          eigen_solver=eigen_solver, tol=tol, max_iter=max_iter)
-
         embedding = kpca.fit_transform(G)
         return embedding, all_dist, kpca
-    else if mode="smacof":
+    elif mode=="smacof":
         embedding, stress = smacof(all_dist, metric=True, n_components=n_components,
                                    init=None, n_init=8, n_jobs=1, max_iter=300,
                                    verbose=0, eps=1e-3, random_state=None)
         #do i need to pass in more params? do i need to initialize/create
         return embedding, all_dist, stress
+    else:
+        print 'mode ' + str(mode) + ' not recognized.'
 
 
 class Isomap(BaseEstimator, TransformerMixin):

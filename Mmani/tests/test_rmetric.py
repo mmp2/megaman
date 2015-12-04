@@ -11,7 +11,7 @@ from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
 
 from ..embedding.rmetric import *
-from ..embedding.spectral_embedding_ import _graph_is_connected
+from ..embedding.spectral_embedding import _graph_is_connected
 
 def _load_test_data():
     """ Loads a .mat file from . and extract the following dense matrices
@@ -25,7 +25,8 @@ def _load_test_data():
         make it a scalar by rad = rad[0]
    
     """
-    xdict = scipy.io.loadmat('Mmani/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    # xdict = scipy.io.loadmat('Mmani/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    xdict = scipy.io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
     rad = xdict[ 'rad' ]
     test_dist_matrix = xdict[ 'S' ] # S contains squared distances
     test_dist_matrix = np.sqrt( test_dist_matrix ) #unused
@@ -57,21 +58,10 @@ def test_equal_original(almost_equal_decimals = 5):
     """
     rad, L, Gtest, Htest, phi = _load_test_data()
 
-    H, G, Hvv, Hsvals, Gsvals = riemann_metric( phi, laplacian = L, n_dim = 2,                                  invert_h = True )
+    H, G, Hvv, Hsvals, Gsvals = riemann_metric( phi, laplacian = L, n_dim = 2, invert_h = True )
     n = phi.shape[ 0 ]
-#    assert_array_equal( L, Lnew )
     assert_array_almost_equal( Htest, H, almost_equal_decimals )
 
-
-#    print( 'true H:' )
-#    print( Htest[0:3,:,:] )
-#    print( 'H:' )
-#    print( H[0:3,:,:] )
-#    print( 'py G:' )
-#    print( G[0:3,:,:] )
-#    print( 'true G:' )
-#    print( Gtest[0:3,:,:] )
-#    assert_array_almost_equal( Gtest, G, almost_equal_decimals )
     tol = np.mean( Gtest[:,0,0])*10**(-almost_equal_decimals )
     assert_allclose( Gtest, G, tol)
 #    assert_array_max_ulp( Gtest, G, almost_equal_decimals )

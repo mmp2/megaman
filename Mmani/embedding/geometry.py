@@ -7,7 +7,7 @@ sparse matrices.
 A note on symmetrization and internal sparse representations
 ------------------------------------------------------------ 
 
-For performance, this code uses the FLANN libarary to compute
+For performance, this code uses the FLANN library to compute
 approximate neighborhoods efficiently. The down side of approximation
 is that (1) the distance matrix (or adjacency matrix) produced is NOT
 GUARANTEED to be symmetric. We also use sparse representations, and
@@ -32,7 +32,7 @@ from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
 from sklearn.neighbors import radius_neighbors_graph
-import subprocess, os, sys
+import subprocess, os, sys, warnings
 
 def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
@@ -184,7 +184,10 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
             symmetrize_sparse( A )  # converts to CSR; deletes 0's
         else:
             pass
-        A.setdiag(1) # the 0 on the diagonal is a true zero
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            # sparse will complain that this is faster with lil_matrix
+            A.setdiag(1) # the 0 on the diagonal is a true zero
     else:
         A **= 2
         A /= (-neighbors_radius**2)
@@ -305,7 +308,7 @@ def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False,
         return _laplacian_dense(csgraph, normed = normed, symmetrize = symmetrize, 
                                 scaling_epps = scaling_epps, 
                                 renormalization_exponent = renormalization_exponent, 
-                                return_diag = return_diag)
+                                return_diag = return_diag, return_lapsym = return_lapsym)
 
 def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True, 
                         scaling_epps = 0., renormalization_exponent = 1, 
@@ -328,6 +331,8 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
         lap.data /= w[lap.row]
         lap.data /= w[lap.col]
         lap.data[diag_mask] -= 1. 
+        if return_lapsym:
+            lapsym = lap.copy()
     
     if normed == 'geometric':
         w = degrees.copy()     # normzlize one symmetrically by d
@@ -356,6 +361,8 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
         
     if normed == 'unnormalized':
         lap.data[diag_mask] -= degrees
+        if return_lapsym:
+            lapsym = lap.copy()
     
     if normed == 'randomwalk':
         w = degrees.copy()
@@ -395,6 +402,8 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
         lap /= w[:, np.newaxis]
         di = np.diag_indices( lap.shape[0] )
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
+        if return_lapsym:
+            lapsym = lap.copy()
     if normed == 'geometric':
         w = degrees.copy()     # normalize once symmetrically by d
         w_zeros = (w == 0)
@@ -421,8 +430,10 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
     if normed == 'unnormalized':
         dum = lap[di]-degrees[np.newaxis,:]
         lap[di] = dum[0,:]
+        if return_lapsym:
+            lapsym = lap.copy()
     if normed == 'randomwalk':
-        w = degres.copy()
+        w = degrees.copy()
         if return_lapsym:
             lapsym = lap.copy()
         lap /= w[:,np.newaxis]
@@ -489,19 +500,16 @@ def single_source_shortest_path_length(graph, source, cutoff=None):
     return seen  # return all path lengths as dictionary
     
 class Geometry:
-    """ The main class of this package. A Geometry object will contain all 
-    of the geometric information regarding the original data set. 
-    
-    All embedding functions either accept a Geometry object or create one. 
-    """
     def __init__(self, X, use_flann = False, neighbors_radius = None, 
                 is_distance = False, is_affinity = False,
-                cpp_distances = False, path_to_flann = None):
+                cpp_distances = False, path_to_flann = None,
+                normed = None):
         self.neighbors_radius = neighbors_radius
         self.is_distance = is_distance
         self.is_affinity = is_affinity
         self.cpp_distances = cpp_distances
         self.path_to_flann = path_to_flann
+        self.laplacian_type = normed
         if self.is_distance and self.is_affinity:
             raise ValueError("cannot be both distance and affinity")
         if self.is_distance:
@@ -534,7 +542,7 @@ class Geometry:
         else:
             self.flindex = None
             self.flparams = None
-    # Functions to get distance, affinity, and Laplacian matrices:
+
     def get_distance_matrix(self, neighbors_radius = None, copy = True):
         if neighbors_radius is None:
             radius = self.neighbors_radius
@@ -566,32 +574,47 @@ class Geometry:
             return self.affinity_matrix.copy()
         else:
             return self.affinity_matrix
-    
-    def get_laplacian_matrix(self, normed='geometric', symmetrize=True, 
-                            scaling_epps=0., renormalization_exponent=1, 
-                            copy = True, return_lapsym = False):
-        if (not hasattr(self, 'laplacian_matrix') or self.laplacian_type != normed):
-            self.laplacian_type = normed
-            if self.affinity_matrix is None:
-                self.affinity_matrix = self.get_affinity_matrix()
-            if not return_lapsym or self.laplacian_type in ['symmetricnormalized', 'unnormalize']:
-                self.laplacian_matrix = graph_laplacian(self.affinity_matrix, 
-                                                        self.laplacian_type, 
-                                                        symmetrize, scaling_epps, 
-                                                        renormalization_exponent)
+                
+    def get_laplacian_matrix(self, normed=None, symmetrize=True,
+                            scaling_epps=0., renormalization_exponent=1,
+                            copy=True, return_lapsym=False):
+        if hasattr(self, 'laplacian_matrix'):
+            if (normed == self.laplacian_type) or (normed is None):
+                if copy:
+                    return self.laplacian_matrix.copy()
+                else:
+                    return self.laplacian_matrix
             else:
-                (self.laplacian_matrix, 
-                self.laplacian_symmetric, 
-                self.w) = graph_laplacian(self.affinity_matrix, self.laplacian_type, 
-                                        symmetrize, scaling_epps, renormalization_exponent,
-                                        return_lapsym = True)
+                warnings.warn("current Laplacian matrix is of type " + str(self.laplacian_type) + 
+                              " but type " + str(normed) + " was requested."
+                              "Existing Laplacian matrix will be overwritten.")
+        if self.laplacian_type is None:
+            if normed is None:
+                normed = 'geometric' # default value
+            self.laplacian_type = normed
+        elif normed is not None and self.laplacian_type != normed:
+            warnings.warn("Laplcian type initialized at " + str(self.laplacian_type) + 
+                          " but type " + str(normed) + " was requested."
+                          "Existing Laplacian matrix will be overwritten.")
+            self.laplacian_type = normed
+        if self.affinity_matrix is None:
+            self.affinity_matrix = self.get_affinity_matrix()
+        if return_lapsym:
+            (self.laplacian_matrix, 
+            self.laplacian_symmetric, 
+            self.w) = graph_laplacian(self.affinity_matrix, self.laplacian_type, 
+                                      symmetrize, scaling_epps, renormalization_exponent,
+                                      return_diag=False, return_lapsym=True)
+        else:
+            self.laplacian_matrix = graph_laplacian(self.affinity_matrix, 
+                                                    self.laplacian_type, 
+                                                    symmetrize, scaling_epps, 
+                                                    renormalization_exponent)
         if copy:
             return self.laplacian_matrix.copy()
         else:
             return self.laplacian_matrix
-        
-    # functions to assign distance, affinity, and Laplacian matrices:
-        # the only checking done here is that they are square matrices
+    
     def assign_distance_matrix(self, distance_matrix):
         (a, b) = distance_matrix.shape
         if a != b:
@@ -606,11 +629,13 @@ class Geometry:
         else:
             self.affinity_matrix = affinity_matrix
     
-    def assign_laplacian_matrix(self, laplacian_matrix):
+    def assign_laplacian_matrix(self, laplacian_matrix, normed = "unknown"):
         (a, b) = laplacian_matrix.shape
         if a != b:
             raise ValueError("Laplacian matrix is not square")
         else:
             self.laplacian_matrix = laplacian_matrix
+            self.laplacian_type = normed;
+    
     def assign_neighbors_radius(self, radius):
         self.neighbors_radius = radius

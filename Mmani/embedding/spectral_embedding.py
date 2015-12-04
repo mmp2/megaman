@@ -13,7 +13,7 @@ import numpy as np
 import Mmani.embedding.geometry as geom
 from Mmani.embedding.eigendecomp import eigen_decomposition
 from scipy import sparse
-from sklearn.base import BaseEstimator, TransformerMixin
+# To update both of these: 
 from sklearn.utils import check_random_state
 from sklearn.utils.sparsetools import connected_components
 
@@ -176,8 +176,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
             # lambda(I - L*) = 1 - lambda(L*). 
             # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I 
             # instead of I to make the smallest eigenvalue epsilon. 
-            epsilon = 1e-10 # machine epsilon ~ 2.2e-16
-            epsilon = 1e-6
+            epsilon = 0.5
             w = np.array(Geometry.w)
             symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
             if sparse.isspmatrix(symmetrized_laplacian):
@@ -192,10 +191,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
         print 'using symmetrized laplacian'
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
                                                     random_state, eigen_tol, drop_first, largest = False)
-        # print lambdas
-        # lambdas = -lambdas 
         lambdas = -lambdas + epsilon
-        # print lambdas
     else:
         lambdas, diffusion_map = eigen_decomposition(laplacian, n_components+1, eigen_solver,
                                                     random_state, eigen_tol, drop_first, largest = True)
@@ -205,7 +201,6 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
-    print lambdas
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
     else:
@@ -213,7 +208,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     return embedding
 
 
-class SpectralEmbedding(BaseEstimator):
+class SpectralEmbedding():
     """Spectral embedding for non-linear dimensionality reduction.
 
     Forms an affinity matrix given by the specified function and
@@ -270,7 +265,8 @@ class SpectralEmbedding(BaseEstimator):
     """
     def __init__(self, n_components=2, is_affinity = False,
                  radius=None, random_state=None, eigen_solver=None,
-                 use_flann = False, path_to_flann = None, cpp_distances = False):
+                 use_flann = False, path_to_flann = None, cpp_distances = False,
+                 normed = 'geometric'):
         self.n_components = n_components
         self.is_affinity = is_affinity
         self.radius = radius
@@ -279,6 +275,7 @@ class SpectralEmbedding(BaseEstimator):
         self.use_flann = use_flann
         self.path_to_flann = path_to_flann
         self.cpp_distances = cpp_distances
+        self.normed = normed
 
     def fit(self, X, y=None):
         """Fit the model from data in X.
@@ -300,21 +297,24 @@ class SpectralEmbedding(BaseEstimator):
             Returns the instance itself.
         """
         random_state = check_random_state(self.random_state)
-        if is_affinity:
+        if self.is_affinity:
             Geometry = geom.Geometry(X, neighbors_radius = self.radius, 
                                         is_affinity = True, use_flann = 
                                         self.use_flann, path_to_flann = 
                                         self.path_to_flann, cpp_distances = 
-                                        self.cpp_distances)
+                                        self.cpp_distances, normed = self.normed)
         else:
             Geometry = geom.Geometry(X, neighbors_radius = self.radius, use_flann = 
                                         self.use_flann, path_to_flann = 
                                         self.path_to_flann, cpp_distances = 
-                                        self.cpp_distances)
+                                        self.cpp_distances, normed = self.normed)
         self.embedding_ = spectral_embedding(Geometry,
                                              n_components=self.n_components,
                                              eigen_solver=self.eigen_solver,
                                              random_state=random_state)
+        self.affinity_matrix_ = Geometry.affinity_matrix
+        self.laplacian_matrix_ = Geometry.laplacian_matrix
+        self.laplacian_matrix_type_ = Geometry.laplacian_type
         return self
 
     def fit_transform(self, X, y=None):
