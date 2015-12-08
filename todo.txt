@@ -1,0 +1,31 @@
+Wednesday: 
+* Spectral Embedding: add diffusion_map option 
+* Isomap: create K as a self.object and D_g
+* clean geometry parameters -> Need to be careful here 
+Thursday:
+* benchmarking
+    * C++ distance timing 
+    * Embedding time with N 
+Friday & Next Week 
+* test functions:
+    * isomap
+    * ltsa
+    * lle
+    * spectral -- output from matlab
+    * eigendecomp
+    * geometry 
+
+After Paper:
+
+* remove debugging code
+    * C++ code prints timing
+* comments
+* C++ work
+* turn into package
+
+Future Work:
+
+* k-nearest neighbors as well as radius 
+* Lazy R metric updates
+* R metric plotting tool
+

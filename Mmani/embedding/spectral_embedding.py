@@ -13,16 +13,8 @@ import numpy as np
 import Mmani.embedding.geometry as geom
 from Mmani.embedding.eigendecomp import eigen_decomposition
 from scipy import sparse
-# To update both of these: 
-from sklearn.utils import check_random_state
-from sklearn.utils.sparsetools import connected_components
-
-def _is_symmetric(M, tol = 1e-8):
-    if sparse.isspmatrix(M):
-        conditions = np.abs((M - M.T).data) < tol 
-    else:
-        conditions = np.abs((M - M.T)) < tol
-    return(np.all(conditions))
+from scipy.sparse.csgraph import connected_components
+from Mmani.utils.validation import check_random_state
 
 def _graph_connected_component(graph, node_id):
     """Find the largest graph connected components the contains one

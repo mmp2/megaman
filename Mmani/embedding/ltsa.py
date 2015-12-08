@@ -11,7 +11,7 @@
 import numpy as np
 from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
-from sklearn.utils import check_random_state, check_array # need to make copies 
+from Mmani.utils.validation import check_random_state, check_array
 from Mmani.embedding.eigendecomp import null_space
 import Mmani.embedding.geometry as geom
 import scipy.sparse as sparse

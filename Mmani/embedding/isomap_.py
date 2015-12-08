@@ -11,10 +11,8 @@ import numpy as np
 import Mmani.embedding.geometry as geom
 from Mmani.embedding.eigendecomp import eigen_decomposition
 from scipy import sparse
-# Update these two:
-from sklearn.utils import check_random_state
-from sklearn.utils.graph import graph_shortest_path
-
+from scipy.sparse.csgraph import shortest_path as graph_shortest_path
+from Mmani.utils.validation import check_random_state
 # debugging
 import time 
 

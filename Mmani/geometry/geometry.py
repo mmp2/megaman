@@ -25,21 +25,21 @@ Hence, I adopted the following convention:
    * laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry
    * these conventions are the same for dense matrices, for consistency
 """
-#Authors: Marina Meila <mmp@stat.washington.edu>
+# Authors: Marina Meila <mmp@stat.washington.edu>
 #         James McQueen <jmcq@u.washington.edu>
 # License: BSD 3 clause
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
-from sklearn.neighbors import radius_neighbors_graph
+from scipy.spatial.distance import pdist
 import subprocess, os, sys, warnings
 
-def _is_symmetric(M, tol = 1e-8):
-    if sparse.isspmatrix(M):
-        conditions = np.abs((M - M.T).data) < tol 
-    else:
-        conditions = np.abs((M - M.T)) < tol
-    return(np.all(conditions))
+def _row_col_from_condensed_index(N,compr_ind):
+    # convert from pdist compressed index format to (I, J) (upper triangular) pairs.
+    b = 1 -2*N 
+    i = np.floor((-b - np.sqrt(b**2 - 8*compr_ind))/2)
+    j = compr_ind + i*(b + i + 2)/2 + 1
+    return (i,j)  
 
 def distance_matrix(X, flindex = None, neighbors_radius = None, cpp_distances = False):
         if neighbors_radius is None:
@@ -51,6 +51,25 @@ def distance_matrix(X, flindex = None, neighbors_radius = None, cpp_distances = 
         else:
             distance_matrix = radius_neighbors_graph(X, neighbors_radius, mode='distance')
         return distance_matrix
+        
+def radius_neighbors_graph(X, radius):
+    """
+    X: data matrix, array_like, shape = (n_samples, n_dimensions)
+    radius: neighborhood radius, scalar
+    
+    Returns:
+    graph: the distance matrix, array_like, shape (X.shape[0]. X.shape[0])
+           sparse csr_format. Zeros on the diagonal are true zeros. 
+           Zeros not on the diagonal should be considered infinite 
+    """
+    N = X.shape[0]
+    all_dists = pdist(X)
+    compr_ind = np.where(all_dists <= radius)[0]
+    (I, J) = _row_col_from_condensed_index(X.shape[0],compr_ind)
+    graph = sparse.coo_matrix((all_dists[compr_ind], (I, J)), shape = (N, N))
+    graph = graph + graph.T #  symmetrize distance matrix (converts to csr)
+    graph.setdiag(0.0) # diagonal values are true zeros, otherwise they're infinite
+    return(graph)
         
 def fl_cpp_radius_neighbors_graph(X, radius):
     """
