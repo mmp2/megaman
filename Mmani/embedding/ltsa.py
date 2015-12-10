@@ -8,17 +8,18 @@
 #         Jake Vanderplas  -- <vanderplas@astro.washington.edu>
 # License: BSD 3 clause (C) INRIA 2011
 
+import warnings
 import numpy as np
+import scipy.sparse as sparse
+import Mmani.geometry.geometry as geom
 from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
 from Mmani.utils.validation import check_random_state, check_array
-from Mmani.embedding.eigendecomp import null_space
-import Mmani.embedding.geometry as geom
-import scipy.sparse as sparse
+from Mmani.utils.eigendecomp import null_space
 
 
 def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
-        max_iter=100,random_state=None):
+         max_iter=100,random_state=None):
     """
         Perform a Locally Linear Embedding analysis on the data.
         Read more in the :ref:`User Guide <locally_linear_embedding>`.
@@ -103,58 +104,95 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
         GiGiT = np.dot(Gi, Gi.T)
         
         nbrs_x, nbrs_y = np.meshgrid(neighbors_i, neighbors_i)
-        M[nbrs_x, nbrs_y] -= GiGiT
-        M[neighbors_i, neighbors_i] += 1
+        with warnings.catch_warnings():
+            # sparse will complain this is better with lil_matrix but it doesn't work
+            warnings.simplefilter("ignore")
+            M[nbrs_x, nbrs_y] -= GiGiT
+            M[neighbors_i, neighbors_i] += 1
 
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 
 class LTSA():
-    def __init__(self, radius=None, n_components=2,
-                 eigen_solver='auto', tol=1E-6, max_iter=100,
-                 random_state=None):
-        # update parameters 
-        self.radius = radius
+    """
+        Local Tangent Space Alignment
+        Parameters
+        ----------
+
+        References
+        ----------
+        .. [1] `Zhang, Z. & Zha, H. Principal manifolds and nonlinear
+            dimensionality reduction via tangent space alignment.
+            Journal of Shanghai Univ.  8:406 (2004)`
+    """        
+    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+                 tol = 1e-6, max_iter=100, neighborhood_radius = None, 
+                 affinity_radius = None,  distance_method = 'auto', 
+                 input_type = 'data', path_to_pyflann = None):
+        # embedding parameters:
         self.n_components = n_components
+        self.random_state = random_state
         self.eigen_solver = eigen_solver
         self.tol = tol
         self.max_iter = max_iter
-        self.random_state = random_state
-        # GEOMETRY ARGUMENTS
-
-    def _fit_transform(self, X):
-        self.Geometry = geom.Geometry(X) # add other arguments
-        random_state = check_random_state(self.random_state)
-        X = check_array(X)
-        self.nbrs_.fit(X)
-        self.embedding_, self.reconstruction_error_ = \
-                ltsa(
-                self.Geometry,self.n_components, maxiter = self.max_iter,
-                eigen_solver=self.eigen_solver, tol=self.tol,
-                random_state=random_state)
-
+        
+        # Geometry parameters:
+        self.neighborhood_radius = neighborhood_radius
+        self.affinity_radius = affinity_radius
+        self.distance_method = distance_method
+        self.input_type = input_type
+        self.path_to_pyflann = path_to_pyflann
+        
+    def fit_geometry(self, X):
+        self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
+                                      affinity_radius = self.affinity_radius,
+                                      distance_method = self.distance_method,
+                                      input_type = self.input_type,
+                                      path_to_pyflann = self.path_to_pyflann)
+    
     def fit(self, X, y=None):
-        """Compute the embedding vectors for data X
+        """Fit the model from data in X.
+
         Parameters
         ----------
-        X : array-like of shape [n_samples, n_features]
-            training set.
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
+
+            If is_affinity is True
+            X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed adjacency graph computed from
+            samples
+
         Returns
         -------
-        self : returns an instance of self.
+        self : object
+            Returns the instance itself.
         """
-        self._fit_transform(X)
+        self.fit_geometry(X)
+        random_state = check_random_state(self.random_state)
+        self.embedding_ = ltsa(self.Geometry,n_components=self.n_components,
+                               eigen_solver=self.eigen_solver, tol = self.tol,
+                               random_state=random_state, max_iter = self.max_iter)
         return self
 
     def fit_transform(self, X, y=None):
-        """Compute the embedding vectors for data X and transform X.
+        """Fit the model from data in X and transform X.
+
         Parameters
         ----------
-        X : array-like of shape [n_samples, n_features]
-            training set.
+        X: array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
+
+            If affinity is "precomputed"
+            X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed adjacency graph computed from
+            samples.
+
         Returns
         -------
         X_new: array-like, shape (n_samples, n_components)
         """
-        self._fit_transform(X)
+        self.fit(X)
         return self.embedding_

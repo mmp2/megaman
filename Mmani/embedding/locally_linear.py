@@ -8,12 +8,14 @@
 #         Jake Vanderplas  -- <vanderplas@astro.washington.edu>
 # License: BSD 3 clause (C) INRIA 2011
 
+import warnings
 import numpy as np
 import scipy.sparse as sparse
+import Mmani.geometry.geometry as geom
 from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
 from Mmani.utils.validation import check_random_state, check_array
-from Mmani.embedding.eigendecomp import null_space
+from Mmani.utils.eigendecomp import null_space
 
 def barycenter_graph(distance_matrix, X, reg=1e-3):
     """
@@ -31,7 +33,7 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
     """
     (N, d_in) = X.shape
     (rows, cols) = distance_matrix.nonzero()
-    W = sparse.csr_matrix((N, N))
+    W = sparse.lil_matrix((N, N)) # best for W[i, nbrs_i] = w/np.sum(w)
     for i in range(N):
         nbrs_i = cols[rows == i]
         n_neighbors_i = len(nbrs_i)
@@ -129,131 +131,82 @@ class LocallyLinearEmbedding():
         Locally Linear Embedding
         Read more in the :ref:`User Guide <locally_linear_embedding>`.
         Parameters
-        ----------
-        n_neighbors : integer
-            number of neighbors to consider for each point.
-        n_components : integer
-            number of coordinates for the manifold
-        reg : float
-            regularization constant, multiplies the trace of the local covariance
-            matrix of the distances.
-        eigen_solver : string, {'auto', 'arpack', 'dense'}
-            auto : algorithm will attempt to choose the best method for input data
-            arpack : use arnoldi iteration in shift-invert mode.
-                        For this method, M may be a dense matrix, sparse matrix,
-                        or general linear operator.
-                        Warning: ARPACK can be unstable for some problems.  It is
-                        best to try several random seeds in order to check results.
-            dense  : use standard dense matrix operations for the eigenvalue
-                        decomposition.  For this method, M must be an array
-                        or matrix type.  This method should be avoided for
-                        large problems.
-        tol : float, optional
-            Tolerance for 'arpack' method
-            Not used if eigen_solver=='dense'.
-        max_iter : integer
-            maximum number of iterations for the arpack solver.
-            Not used if eigen_solver=='dense'.
-        method : string ('standard', 'hessian', 'modified' or 'ltsa')
-            standard : use the standard locally linear embedding algorithm.  see
-                       reference [1]
-            hessian  : use the Hessian eigenmap method. This method requires
-                       ``n_neighbors > n_components * (1 + (n_components + 1) / 2``
-                       see reference [2]
-            modified : use the modified locally linear embedding algorithm.
-                       see reference [3]
-            ltsa     : use local tangent space alignment algorithm
-                       see reference [4]
-        hessian_tol : float, optional
-            Tolerance for Hessian eigenmapping method.
-            Only used if ``method == 'hessian'``
-        modified_tol : float, optional
-            Tolerance for modified LLE method.
-            Only used if ``method == 'modified'``
-        neighbors_algorithm : string ['auto'|'brute'|'kd_tree'|'ball_tree']
-            algorithm to use for nearest neighbors search,
-            passed to neighbors.NearestNeighbors instance
-        random_state: numpy.RandomState or int, optional
-            The generator or seed used to determine the starting vector for arpack
-            iterations.  Defaults to numpy.random.
-        Attributes
-        ----------
-        embedding_vectors_ : array-like, shape [n_components, n_samples]
-            Stores the embedding vectors
-        reconstruction_error_ : float
-            Reconstruction error associated with `embedding_vectors_`
-        nbrs_ : NearestNeighbors object
-            Stores nearest neighbors instance, including BallTree or KDtree
-            if applicable.
+
         References
         ----------
         .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
             by locally linear embedding.  Science 290:2323 (2000).`
-        .. [2] `Donoho, D. & Grimes, C. Hessian eigenmaps: Locally
-            linear embedding techniques for high-dimensional data.
-            Proc Natl Acad Sci U S A.  100:5591 (2003).`
-        .. [3] `Zhang, Z. & Wang, J. MLLE: Modified Locally Linear
-            Embedding Using Multiple Weights.`
-            http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.70.382
-        .. [4] `Zhang, Z. & Zha, H. Principal manifolds and nonlinear
-            dimensionality reduction via tangent space alignment.
-            Journal of Shanghai Univ.  8:406 (2004)`
     """
-
-    def __init__(self, n_neighbors=5, n_components=2, reg=1E-3,
-                 eigen_solver='auto', tol=1E-6, max_iter=100,
-                 method='standard', hessian_tol=1E-4, modified_tol=1E-12,
-                 neighbors_algorithm='auto', random_state=None):
-
-        self.n_neighbors = n_neighbors
+    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+                 tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None, 
+                 affinity_radius = None,  distance_method = 'auto', 
+                 input_type = 'data', path_to_pyflann = None):
+        # embedding parameters:
         self.n_components = n_components
-        self.reg = reg
+        self.random_state = random_state
         self.eigen_solver = eigen_solver
         self.tol = tol
         self.max_iter = max_iter
-        self.method = method
-        self.hessian_tol = hessian_tol
-        self.modified_tol = modified_tol
-        self.random_state = random_state
-        self.neighbors_algorithm = neighbors_algorithm
-
-    def _fit_transform(self, X):
-        self.nbrs_ = NearestNeighbors(self.n_neighbors,
-                                      algorithm=self.neighbors_algorithm)
-
-        random_state = check_random_state(self.random_state)
-        X = check_array(X)
-        self.nbrs_.fit(X)
-        self.embedding_, self.reconstruction_error_ = \
-            locally_linear_embedding(
-                self.nbrs_, self.n_neighbors, self.n_components,
-                eigen_solver=self.eigen_solver, tol=self.tol,
-                max_iter=self.max_iter, method=self.method,
-                hessian_tol=self.hessian_tol, modified_tol=self.modified_tol,
-                random_state=random_state, reg=self.reg)
-
+        self.reg = reg
+        
+        # Geometry parameters:
+        self.neighborhood_radius = neighborhood_radius
+        self.affinity_radius = affinity_radius
+        self.distance_method = distance_method
+        self.input_type = input_type
+        self.path_to_pyflann = path_to_pyflann
+        
+    def fit_geometry(self, X):
+        self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
+                                      affinity_radius = self.affinity_radius,
+                                      distance_method = self.distance_method,
+                                      input_type = self.input_type,
+                                      path_to_pyflann = self.path_to_pyflann)
+    
     def fit(self, X, y=None):
-        """Compute the embedding vectors for data X
+        """Fit the model from data in X.
+
         Parameters
         ----------
-        X : array-like of shape [n_samples, n_features]
-            training set.
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
+
+            If is_affinity is True
+            X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed adjacency graph computed from
+            samples
+
         Returns
         -------
-        self : returns an instance of self.
+        self : object
+            Returns the instance itself.
         """
-        self._fit_transform(X)
+        self.fit_geometry(X)
+        random_state = check_random_state(self.random_state)
+        self.embedding_ = locally_linear(self.Geometry, n_components=self.n_components,
+                                         eigen_solver=self.eigen_solver, tol = self.tol,
+                                         random_state=random_state, reg = self.reg,
+                                         max_iter = self.max_iter)
         return self
 
     def fit_transform(self, X, y=None):
-        """Compute the embedding vectors for data X and transform X.
+        """Fit the model from data in X and transform X.
+
         Parameters
         ----------
-        X : array-like of shape [n_samples, n_features]
-            training set.
+        X: array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
+
+            If affinity is "precomputed"
+            X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed adjacency graph computed from
+            samples.
+
         Returns
         -------
         X_new: array-like, shape (n_samples, n_components)
         """
-        self._fit_transform(X)
+        self.fit(X)
         return self.embedding_

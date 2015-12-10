@@ -10,8 +10,8 @@
 
 import warnings
 import numpy as np
-import Mmani.embedding.geometry as geom
-from Mmani.embedding.eigendecomp import eigen_decomposition
+import Mmani.geometry.geometry as geom
+from Mmani.utils.eigendecomp import eigen_decomposition
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 from Mmani.utils.validation import check_random_state
@@ -70,7 +70,8 @@ def _graph_is_connected(graph):
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
 
 def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
-                       random_state=None, eigen_tol=0.0, drop_first=True):
+                       random_state=None, eigen_tol=0.0, drop_first=True,
+                       diffusion_maps = False):
     """Project the sample on the first eigen vectors of the graph Laplacian.
     
     The adjacency matrix is used to compute a normalized graph Laplacian
@@ -134,7 +135,6 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
       Andrew V. Knyazev
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
-
     random_state = check_random_state(random_state)    
 
     if not isinstance(Geometry, geom.Geometry):
@@ -193,6 +193,8 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
+    if diffusion_maps:
+        diffusion_map = diffusion_map * np.sqrt(lambdas)
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
     else:
@@ -201,74 +203,87 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
 
 
 class SpectralEmbedding():
-    """Spectral embedding for non-linear dimensionality reduction.
-
-    Forms an affinity matrix given by the specified function and
-    applies spectral decomposition to the corresponding graph laplacian.
-    The resulting transformation is given by the value of the
-    eigenvectors for each data point.
-
-    Parameters
-    -----------
-    n_components : integer, default: 2
-        The dimension of the projected subspace.
-
-    eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-        The eigenvalue decomposition strategy to use. AMG requires pyamg
-        to be installed. It can be faster on very large, sparse problems,
-        but may also lead to instabilities.
-
-    random_state : int seed, RandomState instance, or None, default : None
-        A pseudo random number generator used for the initialization of the
-        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-
-    is_affinity : string or callable, default : "nearest_neighbors"
-         - True : interpret X as precomputed affinity matrix
-
-    radius : float, optional, default : 1/n_features
-        Kernel coefficient for rbf kernel.
-
-    Attributes
-    ----------
-
-    `embedding_` : array, shape = (n_samples, n_components)
-        Spectral embedding of the training matrix.
-
-    `affinity_matrix_` : array, shape = (n_samples, n_samples)
-        Affinity_matrix constructed from samples or precomputed.
-
-    References
-    ----------
-
-    - A Tutorial on Spectral Clustering, 2007
-      Ulrike von Luxburg
-      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
-
-    - On Spectral Clustering: Analysis and an algorithm, 2011
-      Andrew Y. Ng, Michael I. Jordan, Yair Weiss
-      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
-
-    - Normalized cuts and image segmentation, 2000
-      Jianbo Shi, Jitendra Malik
-      http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
+        Spectral embedding for non-linear dimensionality reduction.
 
-    """ 
+        Forms an affinity matrix given by the specified function and
+        applies spectral decomposition to the corresponding graph laplacian.
+        The resulting transformation is given by the value of the
+        eigenvectors for each data point.
+        
+        Parameters
+        -----------
+        n_components : integer, default: 2
+            The dimension of the projected subspace.
+
+        eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
+            The eigenvalue decomposition strategy to use. AMG requires pyamg
+            to be installed. It can be faster on very large, sparse problems,
+            but may also lead to instabilities.
+
+        random_state : int seed, RandomState instance, or None, default : None
+            A pseudo random number generator used for the initialization of the
+            lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
+
+        is_affinity : string or callable, default : "nearest_neighbors"
+             - True : interpret X as precomputed affinity matrix
+
+        affinity_radius : float, optional, default : 1/n_features
+            Kernel coefficient for rbf kernel.
+
+        Attributes
+        ----------
+
+        `embedding_` : array, shape = (n_samples, n_components)
+            Spectral embedding of the training matrix.
+
+        `affinity_matrix_` : array, shape = (n_samples, n_samples)
+            Affinity_matrix constructed from samples or precomputed.
+
+        References
+        ----------
+
+        - A Tutorial on Spectral Clustering, 2007
+          Ulrike von Luxburg
+          http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
+
+        - On Spectral Clustering: Analysis and an algorithm, 2011
+          Andrew Y. Ng, Michael I. Jordan, Yair Weiss
+          http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
+
+        - Normalized cuts and image segmentation, 2000
+          Jianbo Shi, Jitendra Malik
+          http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
-    def __init__(self, n_components=2, is_affinity = False,
-                 radius=None, random_state=None, eigen_solver=None,
-                 use_flann = False, path_to_flann = None, cpp_distances = False,
-                 normed = 'geometric'):
+    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+                 eigen_tol = 0.0, drop_first = True, diffusion_maps = False,
+                 neighborhood_radius = None, affinity_radius = None, 
+                 distance_method = 'auto', input_type = 'data',
+                 laplacian_type = 'geometric', path_to_pyflann = None):
+        # embedding parameters:
         self.n_components = n_components
-        self.is_affinity = is_affinity
-        self.radius = radius
         self.random_state = random_state
         self.eigen_solver = eigen_solver
-        self.use_flann = use_flann
-        self.path_to_flann = path_to_flann
-        self.cpp_distances = cpp_distances
-        self.normed = normed
-
+        self.diffusion_maps = diffusion_maps
+        self.eigen_tol = eigen_tol
+        self.drop_first = drop_first
+        
+        # Geometry parameters:
+        self.neighborhood_radius = neighborhood_radius
+        self.affinity_radius = affinity_radius
+        self.distance_method = distance_method
+        self.input_type = input_type
+        self.path_to_pyflann = path_to_pyflann
+        self.laplacian_type = laplacian_type
+        
+    def fit_geometry(self, X):
+        self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
+                                      affinity_radius = self.affinity_radius,
+                                      distance_method = self.distance_method,
+                                      input_type = self.input_type,
+                                      laplacian_type = self.laplacian_type,
+                                      path_to_pyflann = self.path_to_pyflann)
+    
     def fit(self, X, y=None):
         """Fit the model from data in X.
 
@@ -281,32 +296,25 @@ class SpectralEmbedding():
             If is_affinity is True
             X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed adjacency graph computed from
-            samples.
+            samples
 
         Returns
         -------
         self : object
             Returns the instance itself.
         """
+        self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
-        if self.is_affinity:
-            Geometry = geom.Geometry(X, neighbors_radius = self.radius, 
-                                        is_affinity = True, use_flann = 
-                                        self.use_flann, path_to_flann = 
-                                        self.path_to_flann, cpp_distances = 
-                                        self.cpp_distances, normed = self.normed)
-        else:
-            Geometry = geom.Geometry(X, neighbors_radius = self.radius, use_flann = 
-                                        self.use_flann, path_to_flann = 
-                                        self.path_to_flann, cpp_distances = 
-                                        self.cpp_distances, normed = self.normed)
-        self.embedding_ = spectral_embedding(Geometry,
-                                             n_components=self.n_components,
-                                             eigen_solver=self.eigen_solver,
-                                             random_state=random_state)
-        self.affinity_matrix_ = Geometry.affinity_matrix
-        self.laplacian_matrix_ = Geometry.laplacian_matrix
-        self.laplacian_matrix_type_ = Geometry.laplacian_type
+        self.embedding_ = spectral_embedding(self.Geometry,
+                                             n_components = self.n_components,
+                                             eigen_solver = self.eigen_solver,
+                                             random_state = random_state,
+                                             eigen_tol = self.eigen_tol,
+                                             drop_first = self.drop_first,
+                                             diffusion_maps = self.diffusion_maps)
+        self.affinity_matrix_ = self.Geometry.affinity_matrix
+        self.laplacian_matrix_ = self.Geometry.laplacian_matrix
+        self.laplacian_matrix_type_ = self.Geometry.laplacian_type
         return self
 
     def fit_transform(self, X, y=None):
