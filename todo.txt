@@ -1,4 +1,5 @@
-Friday:
+Before submission: 
+
 * benchmarking (plots of time vs. ...)
     * C++ distance
         * N (update auto in distance_matrix)
@@ -8,21 +9,20 @@ Friday:
         * N
         * radius
 
-Next Week:
-* test functions
+* test functions (check for Sklearn imports and then run those tests)
     * embedding/
-        * isomap.py
-        * ltsa.py -- null_space for different solvers
-        * locally_linear.py -- null_space for different solvers 
+        * isomap.py ( check inputs )  -- look @ sklearn test function 
+        * ltsa.py -- null_space for different solvers, check inputs 
+        * locally_linear.py -- null_space for different solvers, check inputs 
         * spectral_decomposition.py -- compare output with D's matlab
     * utils/
         * eigendecomp.py -- don't test validity of eigh, lobpcg etc just warnings, failures etc. 
     * geometry/
         * distance.py -- done 
-        * geometry.py -- 
-            * affinity_matrix()
-            * laplacian_matrix()
-            * Geometry class
+        * geometry.py
+            * affinity_matrix() -- test_laplacian might have some testing for this? Compare with rbf kernel
+            * laplacian_matrix() -- a lot of testing already in test_laplacian
+            * Geometry class -- test input methods, changing the laplacian etc. 
 
 After Paper:
 
@@ -30,7 +30,7 @@ After Paper:
 * Update comments 
 * C++ integration 
 * Turn into package
-* Handbook/README 
+* Complete README 
 
 Future Work:
 

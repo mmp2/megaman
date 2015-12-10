@@ -259,7 +259,8 @@ class SpectralEmbedding():
                  eigen_tol = 0.0, drop_first = True, diffusion_maps = False,
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
-                 laplacian_type = 'geometric', path_to_pyflann = None):
+                 laplacian_type = 'geometric', path_to_pyflann = None,
+                 Geometry = None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -269,6 +270,7 @@ class SpectralEmbedding():
         self.drop_first = drop_first
         
         # Geometry parameters:
+        self.Geometry = None
         self.neighborhood_radius = neighborhood_radius
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
@@ -303,7 +305,8 @@ class SpectralEmbedding():
         self : object
             Returns the instance itself.
         """
-        self.fit_geometry(X)
+        if not isinstance(self.Geometry, geom.Geometry):
+            self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
         self.embedding_ = spectral_embedding(self.Geometry,
                                              n_components = self.n_components,

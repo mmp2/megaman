@@ -132,7 +132,7 @@ class Isomap():
                  eigen_tol = 0.0, path_method = 'auto',
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
-                 path_to_pyflann = None):
+                 path_to_pyflann = None, Geometry = None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -141,6 +141,7 @@ class Isomap():
         self.path_method = path_method
         
         # Geometry parameters:
+        self.Geometry = Geometry 
         self.neighborhood_radius = neighborhood_radius
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
@@ -179,7 +180,8 @@ class Isomap():
         self : object
             Returns the instance itself.
         """
-        self.fit_geometry(X)
+        if not isinstance(self.Geometry, geom.Geometry):
+            self.fit_geometry(X)
         # might want to change the eigen solver
         if ((eigen_solver is not None) and (eigen_sovler != self.eigen_solver)):
             self.eigen_solver = eigen_solver

@@ -140,7 +140,7 @@ class LocallyLinearEmbedding():
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
                  tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None, 
                  affinity_radius = None,  distance_method = 'auto', 
-                 input_type = 'data', path_to_pyflann = None):
+                 input_type = 'data', path_to_pyflann = None, Geometry = None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -150,6 +150,7 @@ class LocallyLinearEmbedding():
         self.reg = reg
         
         # Geometry parameters:
+        self.Geometry = Geometry
         self.neighborhood_radius = neighborhood_radius
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
@@ -182,7 +183,8 @@ class LocallyLinearEmbedding():
         self : object
             Returns the instance itself.
         """
-        self.fit_geometry(X)
+        if not isinstance(self.Geometry, geom.Geometry):
+            self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
         self.embedding_ = locally_linear(self.Geometry, n_components=self.n_components,
                                          eigen_solver=self.eigen_solver, tol = self.tol,
