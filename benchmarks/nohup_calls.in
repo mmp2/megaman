@@ -1,0 +1,30 @@
+
+N:
+
+nohup python -u bench_marker.py -function distance_cy distance_brute \
+                                -parameter N \
+                                -par_min 1000 1000 \
+                                -par_max 10000 10000 \
+                                -par_len 10 10 \
+                                -seed 36 \
+                                > nohup_brute_dist_N & 
+
+
+D:
+nohup python -u bench_marker.py -function distance_cy distance_brute \
+                                -parameter D \
+                                -par_min 2 2 \
+                                -par_max 10000 10000 \
+                                -par_len 10 10 \
+                                -seed 36 \
+                                > nohup_brute_dist_D & 
+
+                                
+radius:
+nohup python -u bench_marker.py -function distance_cy distance_brute \
+                                -parameter radius \
+                                -par_min ? ? \
+                                -par_max ?? ?? \
+                                -par_len 10 10 \
+                                -seed 36 \
+                                > nohup_brute_dist_rad & 

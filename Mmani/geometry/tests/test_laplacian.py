@@ -10,8 +10,8 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
 
-from ..embedding.geometry import *
-from ..embedding.spectral_embedding import _graph_is_connected
+from ..geometry import *
+from Mmani.embedding.spectral_embedding import _graph_is_connected
 
 def _load_test_data():
     """ Loads a .mat file from . that contains the following dense matrices
@@ -21,8 +21,8 @@ def _load_test_data():
         Note: rad is returned as an array of dimension 1. Outside one must
         make it a scalar by rad = rad[0]
     """
-    # xdict = scipy.io.loadmat('Mmani/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
-    xdict = scipy.io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    xdict = scipy.io.loadmat('Mmani/geometry/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    # xdict = scipy.io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
     rad = xdict[ 'rad' ]
     test_dist_matrix = xdict[ 'S' ] # S contains squared distances
     test_dist_matrix = np.sqrt( test_dist_matrix ) 

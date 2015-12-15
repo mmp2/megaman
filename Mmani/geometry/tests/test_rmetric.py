@@ -10,8 +10,8 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_
 from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
 
-from ..embedding.rmetric import *
-from ..embedding.spectral_embedding import _graph_is_connected
+from Mmani.geometry.rmetric import *
+from Mmani.embedding.spectral_embedding import _graph_is_connected
 
 def _load_test_data():
     """ Loads a .mat file from . and extract the following dense matrices
