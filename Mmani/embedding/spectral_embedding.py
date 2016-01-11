@@ -168,7 +168,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
             # lambda(I - L*) = 1 - lambda(L*). 
             # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I 
             # instead of I to make the smallest eigenvalue epsilon. 
-            epsilon = 0.5
+            epsilon = 2
             w = np.array(Geometry.w)
             symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
             if sparse.isspmatrix(symmetrized_laplacian):
@@ -224,9 +224,6 @@ class SpectralEmbedding():
         random_state : int seed, RandomState instance, or None, default : None
             A pseudo random number generator used for the initialization of the
             lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-
-        is_affinity : string or callable, default : "nearest_neighbors"
-             - True : interpret X as precomputed affinity matrix
 
         affinity_radius : float, optional, default : 1/n_features
             Kernel coefficient for rbf kernel.

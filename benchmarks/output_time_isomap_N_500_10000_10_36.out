@@ -1,0 +1,12 @@
+Benchmarking function: isomap
+Fixed D: 3. Fixed radius: 1.0. Fixed d: 2.
+N: 499, Time: 2.61366486549
+N: 697, Time: 1.89653587341
+N: 972, Time: 3.35142397881
+N: 1357, Time: 5.75033593178
+N: 1893, Time: 10.8991568089
+2640: failed with error <class 'scipy.sparse.linalg.eigen.arpack.arpack.ArpackNoConvergence'>
+3684: failed with error <class 'scipy.sparse.linalg.eigen.arpack.arpack.ArpackNoConvergence'>
+5139: failed with error <class 'scipy.sparse.linalg.eigen.arpack.arpack.ArpackNoConvergence'>
+7168: failed with error <class 'scipy.sparse.linalg.eigen.arpack.arpack.ArpackNoConvergence'>
+10000: failed with error <class 'scipy.sparse.linalg.eigen.arpack.arpack.ArpackNoConvergence'>

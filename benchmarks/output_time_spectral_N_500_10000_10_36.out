@@ -1,0 +1,12 @@
+Benchmarking function: spectral
+Fixed D: 3. Fixed radius: 1.0. Fixed d: 2.
+N: 499, Time: 2.04056310654
+N: 697, Time: 1.68439912796
+N: 972, Time: 1.70126390457
+N: 1357, Time: 1.51532196999
+N: 1893, Time: 2.12255692482
+N: 2640, Time: 2.01977300644
+N: 3684, Time: 2.5882229805
+N: 5139, Time: 2.63859605789
+N: 7168, Time: 3.93937587738
+N: 10000, Time: 4.24184298515

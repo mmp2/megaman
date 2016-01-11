@@ -1,6 +1,8 @@
-import numpy as np
-import Mmani.embedding.geometry as geom
 import sys
+sys.path.append('/homes/jmcq/Mmani/') # this is stupid 
+
+import numpy as np
+import Mmani.geometry.geometry as geom
 import scipy as sp
 import scipy.sparse as sparse
 import time
@@ -53,3 +55,30 @@ sk_Y_iso = manifold.Isomap(n_neighbors, n_components, eigen_solver = 'arpack').f
 import Mmani.embedding.isomap_ as iso
 mm_Y_iso = iso.isomap(Geometry, n_components)
 assert(_check_with_col_sign_flipping(sk_Y_iso, mm_Y_iso, 0.05))
+
+from scipy.spatial.distance import pdist, squareform
+
+
+Geometry = geom.Geometry(X, neighborhood_radius = 2, distance_method = 'brute')
+
+distance_mat = Geometry.get_distance_matrix()
+graph_distance_matrix = graph_shortest_path(distance_mat)
+A = graph_distance_matrix.copy()
+A **= 2
+A = np.exp(-A)
+
+centered_matrix = center_matrix(graph_distance_matrix)
+center_matrix_A = center_matrix(A)
+
+lambdas, diffusion_map = eigen_decomposition(centered_matrix, n_components,largest = True)    
+ind = np.argsort(lambdas); ind = ind[::-1] # sort largest 
+lambdas = lambdas[ind];
+diffusion_map = diffusion_map[:, ind]
+embedding = diffusion_map[:, 0:n_components] * np.sqrt(lambdas[0:n_components])
+
+lambdas2, diffusion_map2 = eigen_decomposition(A, n_components,largest = True)    
+ind2 = np.argsort(lambdas2); ind2 = ind2[::-1] # sort largest 
+lambdas2 = lambdas2[ind2];
+diffusion_map2 = diffusion_map2[:, ind2]
+embedding2 = diffusion_map2[:, 0:n_components] * np.sqrt(lambdas2[0:n_components])
+

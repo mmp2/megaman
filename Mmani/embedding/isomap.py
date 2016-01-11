@@ -13,10 +13,10 @@ from scipy.sparse.csgraph import shortest_path as graph_shortest_path
 from Mmani.utils.validation import check_random_state
 
 
-def center_matrix(graph_distance_matrix):
+def center_matrix(G):
     # Let S = -1/2* D_g^2 and  N_1 = np.ones([N, N])/N 
     # Compute centred version: K = S - N_1*S - S*N_1  + N_1*S*N_1
-    S = graph_distance_matrix ** 2 
+    S = G ** 2 
     S *= -0.5
     N = S.shape[0]
     K = S.copy()
@@ -27,11 +27,10 @@ def center_matrix(graph_distance_matrix):
     return(K)
 
 def isomap(Geometry, n_components=8, eigen_solver=None,
-           random_state=None, eigen_tol=0.0, path_method='auto',
+           random_state=None, eigen_tol=1e-6, path_method='auto',
            distance_matrix = None, graph_distance_matrix = None, 
            centered_matrix = None):
     """
-    TO UPDATE!!!
     Parameters
     ----------        
     Geometry : a Geometry object from Mmani.embedding.geometry
@@ -79,15 +78,26 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
         graph_distance_matrix = graph_shortest_path(distance_matrix,
                                                     method=path_method,
                                                     directed=False)
+                                                    
+    if False:
+        print 'testing alternate method'        
+        radius = 1
+        # Set distance > radius = 0 
+        graph_distance_matrix[graph_distance_matrix>radius] = 0
+        # Convert to sparse matrix 
+        graph_distance_matrix = sparse.csr_matrix(graph_distance_matrix)
+        # Convert to affinity matrix 
+        graph_distance_matrix = geom.affinity_matrix(graph_distance_matrix, radius)
+        
     # Step 3: center graph distance matrix 
     if centered_matrix is None:
-        K = center_matrix(graph_distance_matrix)
-        
-    # Step 4: compute d largest eigenvectors/values of K 
-    lambdas, diffusion_map = eigen_decomposition(K, n_components, eigen_solver,
-                                                 random_state, eigen_tol, 
-                                                 largest = True)
+        centered_matrix = center_matrix(graph_distance_matrix)
     
+        
+    # Step 4: compute d largest eigenvectors/values of centered_matrix 
+    lambdas, diffusion_map = eigen_decomposition(centered_matrix, n_components, eigen_solver,
+                                                 random_state, eigen_tol, 
+                                                 largest = True)    
     # Step 5: 
     # return Y = [sqrt(lambda_1)*V_1, ..., sqrt(lambda_d)*V_d]
     ind = np.argsort(lambdas); ind = ind[::-1] # sort largest 
@@ -98,7 +108,6 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
 
 class Isomap():
     """
-        TO UPDATE!!!
         Parameters
         -----------
         n_components : integer, default: 2
@@ -113,12 +122,6 @@ class Isomap():
             A pseudo random number generator used for the initialization of the
             lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
 
-        is_affinity : string or callable, default : "nearest_neighbors"
-             - True : interpret X as precomputed affinity matrix
-
-        radius : float, optional, default : 1/n_features
-            Kernel coefficient for rbf kernel.
-
         Attributes
         ----------
 
@@ -129,7 +132,7 @@ class Isomap():
         ----------
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
-                 eigen_tol = 0.0, path_method = 'auto',
+                 eigen_tol = 1e-6, path_method = 'auto',
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
                  path_to_pyflann = None, Geometry = None):
@@ -189,11 +192,11 @@ class Isomap():
         # don't re-compute these if it's already been done.
         # This might be the case if an eigendecompostion fails and a different sovler is selected
         if self.distance_matrix is None:
-            self.distance_matrix = Geometry.get_distance_matrix()
+            self.distance_matrix = self.Geometry.get_distance_matrix()
         if self.graph_distance_matrix is None:
-            self.graph_distance_matrix = graph_shortest_path(distance_matrix,
-                                                            path_method = self.path_method,
-                                                            directed = False)
+            self.graph_distance_matrix = graph_shortest_path(self.distance_matrix,
+                                                             method = self.path_method,
+                                                             directed = False)
         if self.centered_matrix is None:
             self.centered_matrix = center_matrix(self.graph_distance_matrix)
         

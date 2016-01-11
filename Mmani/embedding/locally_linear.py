@@ -57,12 +57,6 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         Read more in the :ref:`User Guide <locally_linear_embedding>`.
         Parameters
         ----------
-        X : {array-like, sparse matrix, BallTree, KDTree, NearestNeighbors}
-            Sample data, shape = (n_samples, n_features), in the form of a
-            numpy array, sparse array, precomputed tree, or NearestNeighbors
-            object.
-        n_neighbors : integer
-            number of neighbors to consider for each point.
         n_components : integer
             number of coordinates for the manifold.
         reg : float
@@ -98,15 +92,6 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         ----------
         .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
             by locally linear embedding.  Science 290:2323 (2000).`
-        .. [2] `Donoho, D. & Grimes, C. Hessian eigenmaps: Locally
-            linear embedding techniques for high-dimensional data.
-            Proc Natl Acad Sci U S A.  100:5591 (2003).`
-        .. [3] `Zhang, Z. & Wang, J. MLLE: Modified Locally Linear
-            Embedding Using Multiple Weights.`
-            http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.70.382
-        .. [4] `Zhang, Z. & Zha, H. Principal manifolds and nonlinear
-            dimensionality reduction via tangent space alignment.
-            Journal of Shanghai Univ.  8:406 (2004)`
     """
     if eigen_solver not in ('auto', 'arpack', 'dense', 'amg', 'lobpcg'):
         raise ValueError("unrecognized eigen_solver '%s'" % eigen_solver)
@@ -186,10 +171,10 @@ class LocallyLinearEmbedding():
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = locally_linear(self.Geometry, n_components=self.n_components,
-                                         eigen_solver=self.eigen_solver, tol = self.tol,
-                                         random_state=random_state, reg = self.reg,
-                                         max_iter = self.max_iter)
+        self.embedding_ = locally_linear_embedding(self.Geometry, n_components=self.n_components,
+                                                    eigen_solver=self.eigen_solver, tol = self.tol,
+                                                    random_state=random_state, reg = self.reg,
+                                                    max_iter = self.max_iter)
         return self
 
     def fit_transform(self, X, y=None):

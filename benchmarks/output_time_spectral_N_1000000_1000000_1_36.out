@@ -1,0 +1,3 @@
+Benchmarking function: spectral
+Fixed D: 100. Fixed radius: 1.0. Fixed d: 2.
+999999: failed with error <class 'numpy.linalg.linalg.LinAlgError'>

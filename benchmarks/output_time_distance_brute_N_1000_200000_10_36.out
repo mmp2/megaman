@@ -1,0 +1,10 @@
+Benchmarking function: distance_brute
+Fixed D: 3. Fixed radius: 0.333333333333. Fixed d: 2.
+N: 999, Time: 0.0642919540405
+N: 1801, Time: 0.1674721241
+N: 3245, Time: 0.227812051773
+N: 5848, Time: 0.741970062256
+N: 10536, Time: 3.30022192001
+N: 18982, Time: 6.51866817474
+N: 34199, Time: 18.8253018856
+N: 61615, Time: 96.1357579231

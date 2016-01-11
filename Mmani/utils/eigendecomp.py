@@ -89,7 +89,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         M = ml.aspreconditioner()
         X = random_state.rand(n_nodes, n_components)
         X[:, 0] = (G.diagonal()).ravel()
-        lambdas, diffusion_map = lobpcg(G, X, M=M, tol=1.e-12, largest=largest)    
+        lambdas, diffusion_map = lobpcg(G, X, M=M, tol=1.e-10, largest=largest)    
     elif eigen_solver == "lobpcg":
         print 'using lobpcg'
         if not is_symmetric:
@@ -107,14 +107,14 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
             diffusion_map = diffusion_map[:, :n_components]
         else:            
             X = random_state.rand(n_nodes, n_components)
-            lambdas, diffusion_map = lobpcg(G, X, tol=1.e-12, largest=largest)
+            lambdas, diffusion_map = lobpcg(G, X, tol=1.e-10, largest=largest)
     return (lambdas, diffusion_map)
 
 def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
                random_state=None):
     # Here we need to replace the call with a eigendecomp call 
     """
-    Find the null space of a matrix M.
+    Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues
     Parameters
     ----------
     M : {array, matrix, sparse matrix, LinearOperator}
@@ -169,7 +169,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
     elif eigen_solver == 'dense':
         if hasattr(M, 'toarray'):
             M = M.toarray()
-        eigen_values, eigen_vectors = eigh(M)
+        eigen_values, eigen_vectors = eigh(M, eigvals=(0, k+k_skip),overwrite_a=True)
         index = np.argsort(np.abs(eigen_values))
         eigen_vectors = eigen_vectors[:, index]
         eigen_values = eigen_values[index]
@@ -181,17 +181,31 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
         # print eigen_values[index]
         # return eigen_vectors[:, index], np.sum(eigen_values)
     elif (eigen_solver == 'amg' or eigen_solver == 'lobpcg'):
-        # M should be positive semi-definite. Add 1.5 to make it pos. def. 
-        # M = (1)*sparse.identity(M.shape[0]) - M
-        n_components = min(k + k_skip + 10, M.shape[0])
-        eigen_values, eigen_vectors = eigen_decomposition(M, n_components,
-                                                          eigen_solver = eigen_solver,
-                                                          drop_first = False, 
-                                                          largest = False)
-        # eigen_values = -eigen_values +1 
-        index = np.argsort(np.abs(eigen_values))
-        eigen_values = eigen_values[index]
-        eigen_vectors = eigen_vectors[:, index]
-        return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
+        # M should be positive semi-definite. Add 1 to make it pos. def. 
+        try:
+            M = sparse.identity(M.shape[0]) + M
+            n_components = min(k + k_skip + 10, M.shape[0])
+            eigen_values, eigen_vectors = eigen_decomposition(M, n_components,
+                                                              eigen_solver = eigen_solver,
+                                                              drop_first = False, 
+                                                              largest = False)
+            eigen_values = eigen_values -1 
+            index = np.argsort(np.abs(eigen_values))
+            eigen_values = eigen_values[index]
+            eigen_vectors = eigen_vectors[:, index]
+            return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
+        except LinAlgError: # try again with bigger increase
+            warnings.warn("LOBPCG failed the first time. Increasing Pos Def adjustment.")
+            M = 2.0*sparse.identity(M.shape[0]) + M
+            n_components = min(k + k_skip + 10, M.shape[0])
+            eigen_values, eigen_vectors = eigen_decomposition(M, n_components,
+                                                              eigen_solver = eigen_solver,
+                                                              drop_first = False, 
+                                                              largest = False)
+            eigen_values = eigen_values - 2
+            index = np.argsort(np.abs(eigen_values))
+            eigen_values = eigen_values[index]
+            eigen_vectors = eigen_vectors[:, index]
+            return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
     else:
         raise ValueError("Unrecognized eigen_solver '%s'" % eigen_solver)

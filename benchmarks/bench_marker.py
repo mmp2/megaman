@@ -8,12 +8,14 @@ import numpy as np
 sys.path.append('/homes/jmcq/Mmani/') # this is stupid 
 from Mmani.geometry.distance import distance_matrix
 
-BENCH_FUNCTIONS = ['distance_cy', 'distance_py', 'distance_brute']
+BENCH_FUNCTIONS = ['distance_cy', 'distance_py', 'distance_brute',
+                    'spectral', 'isomap', 'ltsa', 'lle']
 VARY_PARAMETERS = ['N', 'D', 'd', 'radius']
 SEED = 36
-D_FIX = 3
+D_FIX = 100
 d_FIX = 2
-N_FIX = 10000
+N_FIX = 5000
+RAD_FIX = 1.3
 
 def generate_data(random_state, N, D):
     # generate a data set uniformly distributed on a unit (D-1)-sphere
@@ -23,8 +25,7 @@ def generate_data(random_state, N, D):
     X = X / dist[:, None]
     return X
 
-def time_function(X, method, radius, d = None):
-    ''' To do: add embedding functions'''
+def time_function(X, method, radius, d = None, random_state = None):
     if method == 'distance_cy':
         t0 = time.time()
         dmat = distance_matrix(X, method = 'cyflann', radius = radius)
@@ -46,43 +47,45 @@ def time_function(X, method, radius, d = None):
         t1 = time.time()
         return (t1 - t0)
     elif method == 'spectral':
+        from Mmani.embedding.spectral_embedding import SpectralEmbedding
         t0 = time.time()
-        
+        SE = SpectralEmbedding(n_components=d, eigen_solver='amg',random_state=random_state,
+                                neighborhood_radius=radius, distance_method='cyflann',
+                                input_type='data',laplacian_type='geometric')
+        embedding = SE.fit_transform(X)
         t1 = time.time()
         return (t1 - t0)
     elif method == 'isomap':
+        from Mmani.embedding.isomap import Isomap
         t0 = time.time()
-        
+        try:
+            isomap = Isomap(n_components=d, eigen_solver='amg',random_state=random_state,
+                            neighborhood_radius=radius, distance_method='cyflann',
+                            input_type='data')
+            embedding = isomap.fit_transform(X)
+        except:
+            isomap = Isomap(n_components=d, eigen_solver='arpack',random_state=random_state,
+                            neighborhood_radius=radius, distance_method='cyflann',
+                            input_type='data')
+            embedding = isomap.fit_transform(X)        
         t1 = time.time()
         return (t1 - t0)
     elif method == 'ltsa':
+        from Mmani.embedding.ltsa import LTSA
         t0 = time.time()
-        
+        ltsa = LTSA(n_components=d, eigen_solver='amg',random_state=random_state,
+                    neighborhood_radius=radius, distance_method='cyflann',
+                    input_type='data')
+        embedding = ltsa.fit_transform(X)
         t1 = time.time()
         return (t1 - t0)
     elif method == 'lle':
+        from Mmani.embedding.locally_linear import LocallyLinearEmbedding
         t0 = time.time()
-        
-        t1 = time.time()
-        return (t1 - t0)
-    elif method == 'sk_spectral':
-        t0 = time.time()
-        
-        t1 = time.time()
-        return (t1 - t0)
-    elif method == 'sk_isomap':
-        t0 = time.time()
-        
-        t1 = time.time()
-        return (t1 - t0)
-    elif method == 'sk_ltsa':
-        t0 = time.time()
-        
-        t1 = time.time()
-        return (t1 - t0)
-    elif method == 'sk_spectral':
-        t0 = time.time()
-        
+        lle = LocallyLinearEmbedding(n_components=d, eigen_solver='amg',random_state=random_state,
+                                    neighborhood_radius=radius, distance_method='cyflann',
+                                    input_type='data')
+        embedding = lle.fit_transform(X)
         t1 = time.time()
         return (t1 - t0)
     else:
@@ -95,16 +98,16 @@ def run_single_benchmark(bench_function, vary_parameter, par_min, par_max, par_l
     
     # set-up benchmarking parameters depending on which parameter is varying:
     if vary_parameter == 'N':
-        fixed_par_line = 'Fixed D: ' + str(D_FIX) + '. Fixed radius: ' + str(1.0/D_FIX) +  '. Fixed d: ' + str(d_FIX) + '.\n'
+        fixed_par_line = 'Fixed D: ' + str(D_FIX) + '. Fixed radius: ' + str(RAD_FIX) +  '. Fixed d: ' + str(d_FIX) + '.\n'
         Ns = np.array(np.exp(np.linspace(np.log(int(par_min)), np.log(int(par_max)), num = par_len)), dtype = 'int')
         Ds = np.repeat(D_FIX, par_len)
-        radii = np.repeat(1.0/D_FIX, par_len)
+        radii = np.repeat(RAD_FIX, par_len)
         ds = np.repeat(d_FIX, par_len)
     if vary_parameter == 'D':
-        fixed_par_line = 'Fixed N: ' + str(N_FIX) + '. Fixed radius: ' + str(1.0/D_FIX) +  '. Fixed d: ' + str(d_FIX) + '.\n'
+        fixed_par_line = 'Fixed N: ' + str(N_FIX) + '. Fixed radius: ' + str(RAD_FIX) +  '. Fixed d: ' + str(d_FIX) + '.\n'
         Ns = np.repeat(N_FIX, par_len)
         Ds = np.array(np.exp(np.linspace(np.log(int(par_min)), np.log(int(par_max)), num = par_len)), dtype = 'int')
-        radii = np.repeat(1.0/D_FIX, par_len) # or 1.0/Ds?
+        radii = np.repeat(RAD_FIX, par_len)
         ds = np.repeat(d_FIX, par_len)
     if vary_parameter == 'radius':
         fixed_par_line = 'Fixed D: ' + str(D_FIX) + '. Fixed N: ' + str(N_FIX) +  '. Fixed d: ' + str(d_FIX) + '.\n'
@@ -113,10 +116,10 @@ def run_single_benchmark(bench_function, vary_parameter, par_min, par_max, par_l
         radii = np.linspace(par_min, par_max, num = par_len)
         ds = np.repeat(d_FIX, par_len)
     if vary_parameter == 'd':
-        fixed_par_line = 'Fixed D: ' + str(par_max + 1) + '. Fixed radius: ' + str(1.0/(par_max +1)) +  '. Fixed N: ' + str(N_FIX) + '.\n'
+        fixed_par_line = 'Fixed D: ' + str(par_max + 1) + '. Fixed radius: ' + str(RAD_FIX) +  '. Fixed N: ' + str(N_FIX) + '.\n'
         Ns = np.repeat(N_FIX, par_len)
         Ds = np.repeat(par_max + 1, par_len) # must be at least max(ds)
-        radii = np.repeat(1.0/(par_max +1), par_len)
+        radii = np.repeat(RAD_FIX, par_len)
         ds = np.linspace(int(par_min), int(par_max), num = par_len, dtype = 'int')        
     
     random_state = np.random.RandomState(int(seed))
@@ -133,8 +136,10 @@ def run_single_benchmark(bench_function, vary_parameter, par_min, par_max, par_l
                 D = int(Ds[i])
                 radius = radii[i]
                 d = int(ds[i])
+                print 'generating data'
                 X = generate_data(random_state, N, D)
-                ftime = time_function(X, method = bench_function, radius = radius, d = d)
+                print 'running function'
+                ftime = time_function(X, method = bench_function, radius = radius, d = d, random_state = random_state)
                 if vary_parameter == 'N':
                     current_param = int(N)
                 elif vary_parameter == 'D':

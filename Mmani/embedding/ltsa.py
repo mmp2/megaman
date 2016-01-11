@@ -25,10 +25,6 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
         Read more in the :ref:`User Guide <locally_linear_embedding>`.
         Parameters
         ----------
-        X : {array-like, sparse matrix, BallTree, KDTree, NearestNeighbors}
-            Sample data, shape = (n_samples, n_features), in the form of a
-            numpy array, sparse array, precomputed tree, or NearestNeighbors
-            object.
         n_components : integer
             number of coordinates for the manifold.
         eigen_solver : string, {'auto', 'arpack', 'dense'}
