@@ -11,8 +11,8 @@ from sklearn import datasets
 N = 10
 X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
 n_components = 2
-n_radius = 2 # ignore distances above this radius
-a_radius = 2 # A = exp(-||x - y||/a_radius^2) (if not passed a_radius = n_radius)
+n_radius = 5 # ignore distances above this radius
+a_radius = 5 # A = exp(-||x - y||/a_radius^2) (if not passed a_radius = n_radius)
 
 # Geometry is the main class that will Cache things like distance, affinity, and laplacian.
 
@@ -28,13 +28,13 @@ Geometry = geom.Geometry(X, distance_method = 'brute',
 
 # LTSA
 import Mmani.embedding.ltsa as ltsa
-LTSA = ltsa.LTSA(n_components = n_components, eigen_solver = 'dense',
+LTSA = ltsa.LTSA(n_components = n_components, eigen_solver = 'arpack',
                 Geometry = Geometry)
 (embed_ltsa, err) = LTSA.fit_transform(X)
 
 # LLE
 import Mmani.embedding.locally_linear as lle
-LLE = lle.LocallyLinearEmbedding(n_components = n_components, eigen_solver = 'dense',
+LLE = lle.LocallyLinearEmbedding(n_components = n_components, eigen_solver = 'arpack',
                                 Geometry = Geometry)
 (embed_lle, err) = LLE.fit_transform(X)
 
@@ -51,7 +51,6 @@ Spectral = se.SpectralEmbedding(n_components = n_components, eigen_solver = 'arp
 embed_spectral = Spectral.fit_transform(X)
 
 # Visulize them in a 4x4 plot:
-
 
 import matplotlib.pyplot as plt
 f, axarr = plt.subplots(2, 2)

@@ -3,8 +3,8 @@ import numpy as np
 from scipy import sparse
 from scipy.linalg import eigh 
 from scipy.sparse.linalg import lobpcg, eigs, eigsh
-from sklearn.utils import check_random_state
-from sklearn.utils.validation import check_array
+from Mmani.utils.validation import check_random_state
+from Mmani.utils.validation import check_array
 
 def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
