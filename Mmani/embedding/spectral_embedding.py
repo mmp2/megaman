@@ -180,7 +180,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
     if re_normalize:
-        print 'using symmetrized laplacian'
+        print('using symmetrized laplacian')
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
                                                     random_state, eigen_tol, drop_first, largest = False)
         lambdas = -lambdas + epsilon

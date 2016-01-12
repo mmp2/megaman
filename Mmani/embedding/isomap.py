@@ -80,7 +80,7 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
                                                     directed=False)
                                                     
     if False:
-        print 'testing alternate method'        
+        print('testing alternate method')        
         radius = 1
         # Set distance > radius = 0 
         graph_distance_matrix[graph_distance_matrix>radius] = 0
