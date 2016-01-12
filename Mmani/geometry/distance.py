@@ -92,8 +92,7 @@ def fl_cpp_radius_neighbors_graph(X, radius):
     cpp_file_path = "/".join(split_path)
     unix_call = "{file_path} {N} {D} {radius} {fname}"
     dist_call = unix_call.format(file_path = cpp_file_path, N=nsam, D=ndim, 
-                                    radius=radius, fname=fname)     
-    print dist_call 
+                                    radius=radius, fname=fname)
     ret_code = subprocess.call([dist_call], shell = True)
     if ret_code != 0:
         raise RuntimeError("shell call: " + dist_call + " failed with code: " + str(ret_code))
