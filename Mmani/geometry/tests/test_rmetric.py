@@ -25,8 +25,8 @@ def _load_test_data():
         make it a scalar by rad = rad[0]
    
     """
-    # xdict = scipy.io.loadmat('Mmani/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
-    xdict = scipy.io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    xdict = scipy.io.loadmat('Mmani/geometry/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    #xdict = scipy.io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
     rad = xdict[ 'rad' ]
     test_dist_matrix = xdict[ 'S' ] # S contains squared distances
     test_dist_matrix = np.sqrt( test_dist_matrix ) #unused

@@ -55,7 +55,7 @@ def test_ltsa_eigendecomps():
 def test_ltsa_scale():
     from sklearn import manifold
     from sklearn import datasets
-    N = 10000
+    N = 1000
     X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
     print X
     n_components = 2

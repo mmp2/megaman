@@ -26,8 +26,8 @@ def _load_test_data():
         Note: rad is returned as an array of dimension 1. Outside one must
         make it a scalar by rad = rad[0]
     """
-#    xdict = io.loadmat('Mmani/geometry/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
-    xdict = io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    xdict = io.loadmat('Mmani/geometry/tests/testMmani_laplacian_rad0_2_lam1_5_n200.mat')
+    #xdict = io.loadmat('testMmani_laplacian_rad0_2_lam1_5_n200.mat')
     rad = xdict[ 'rad' ]
     test_dist_matrix = xdict[ 'S' ] # S contains squared distances
     test_dist_matrix = np.sqrt( test_dist_matrix ) 
