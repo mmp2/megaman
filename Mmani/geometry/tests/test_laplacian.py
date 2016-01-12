@@ -94,6 +94,3 @@ def test_equal_original(almost_equal_decimals = 5):
                 di = np.diag_indices( L.shape[0] )
                 assert_array_equal(diag, np.array( L[di] )) 
             
-#TODO: test symmetry 
-# test radius
-# test with flann
