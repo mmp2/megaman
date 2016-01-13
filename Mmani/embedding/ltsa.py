@@ -169,10 +169,10 @@ class LTSA():
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = ltsa(self.Geometry,n_components=self.n_components,
-                               eigen_solver=self.eigen_solver, tol = self.tol,
-                               random_state=random_state, max_iter = self.max_iter)
-        return self
+        (self.embedding_, self.error_) = ltsa(self.Geometry,n_components=self.n_components,
+                                                eigen_solver=self.eigen_solver, tol = self.tol,
+                                                random_state=random_state, max_iter = self.max_iter)
+        return self 
 
     def fit_transform(self, X, y=None):
         """Fit the model from data in X and transform X.

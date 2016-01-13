@@ -145,36 +145,3 @@ def test_connectivity(seed=36):
     assert_equal(_graph_is_connected(graph), True)
     assert_equal(_graph_is_connected(csr_matrix(graph)), True)
     assert_equal(_graph_is_connected(csc_matrix(graph)), True)
-
-# def test_equal_original(seed=36, almost_equal_decimals=5):
-    # """Produce embedding via our spectral_embedding and via sklearn. Saves plots"""
-    # n = 1000
-    # rad = 0.5
-    # gamma = 1./rad**2
-    # k = np.round( np.pi*n*rad**2/4 )
-    ##generate points on a circle  -- move this function outside
-    # X = np.random.normal(0,1,(n, 2 ))
-    # xr = np.sqrt(np.sum(X**2, axis=1))
-    # X /= xr[ :,np.newaxis]
-    # random_state = np.random.RandomState(seed)
-    # Geometry = geom.Geometry(X, neighbors_radius = rad, normed = 'symmetricnormalized')    
-    # A_radn = Geometry.get_affinity_matrix()
-    # laplacian_sklearn = graph_laplacian(A_radn,normed=True)
-    ##Geometry.assign_laplacian_matrix(laplacian_sklearn, 'symmetricnormalized')
-    # se1 = SE0(n_components=2, affinity="precomputed",random_state=random_state)
-    # Y0radn = se1.fit_transform(A_radn)
-    # myYradn = spectral_embedding(Geometry, n_components=2, 
-                                # random_state=random_state)    
-    # import matplotlib.pyplot as plt
-    # plt.plot(Y0radn[:, 0], Y0radn[:,1], '.')
-    # plt.savefig('sklearn_spectral.pdf', format = 'pdf')
-    # plt.close()
-    # plt.plot(myYradn[:,0], myYradn[:, 1], '.')
-    # plt.savefig('mmani_spectral.pdf', format = 'pdf')
-    # plt.close()
-    # assert_true(True)
-    ##This fails:
-    # assert_true(_check_with_col_sign_flipping(Y0radn, myYradn, 0.05))
-    ## It fails because:
-        ## 1) sklearn sets the Laplacian diagonal to 1 before computing the decompositon 
-        ## 2) it multiplies the embedding by the diagonal of the laplacian 

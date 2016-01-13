@@ -1,10 +1,11 @@
 import warnings
 import numpy as np
 from scipy import sparse
-from scipy.linalg import eigh 
+from scipy.linalg import eigh, eig
 from scipy.sparse.linalg import lobpcg, eigs, eigsh
 from Mmani.utils.validation import check_random_state
 from Mmani.utils.validation import check_array
+eigen_solvers = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
 
 def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
@@ -40,6 +41,11 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
     lambdas, diffusion_map : eigenvalues, eigenvectors 
     """
     n_nodes = G.shape[0]
+    if eigen_solver == 'auto':
+        if G.shape[0] > 200:
+            eigen_solver = 'arpack'
+        else:
+            eigen_solver = 'dense'
     
     # Check eigen_solver method
     try:
@@ -50,10 +56,10 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
                              "not available.")
     if eigen_solver is None:
         eigen_solver = 'arpack'
-    elif not eigen_solver in ('arpack', 'lobpcg', 'amg'):
+    elif not eigen_solver in eigen_solvers:
         raise ValueError("Unknown value for eigen_solver: '%s'."
-                         "Should be 'amg', 'arpack', or 'lobpcg'"
-                         % eigen_solver)
+                         "Should be: '%s'"
+                         % eigen_solver, eigen_solvers)
     # Check input values
     if not isinstance(largest, bool):
         raise ValueError("largest should be True if you want largest eigenvalues otherwise False")
@@ -74,12 +80,18 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
         
     # Try Eigen Methods:
     if eigen_solver == 'arpack':
-        if largest:
-            which = 'LR'
+        if is_symmetric:
+            if largest:
+                which = 'LM'
+            else:
+                which = 'SM'
+            lambdas, diffusion_map = eigsh(G, k=n_components, which=which,tol=eigen_tol)
         else:
-            which = 'SR'
-        print('using arpack')
-        lambdas, diffusion_map = eigs(G, k=n_components, which=which,tol=eigen_tol)
+            if largest:
+                which = 'LR'
+            else:
+                which = 'SR'
+            lambdas, diffusion_map = eigs(G, k=n_components, which=which,tol=eigen_tol)
         lambdas = np.real(lambdas)         
         diffusion_map = np.real(diffusion_map)
     elif eigen_solver == 'amg':
@@ -87,23 +99,44 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
             raise ValueError("lobpcg requires symmetric matrices.")
         if not sparse.issparse(G):
             warnings.warn("AMG works better for sparse matrices")
-        print('using amg')
         # Use AMG to get a preconditioner and speed up the eigenvalue problem.
         ml = smoothed_aggregation_solver(check_array(G, accept_sparse = ['csr']))
         M = ml.aspreconditioner()
-        X = random_state.rand(n_nodes, n_components)
+        n_find = min(n_nodes, 5 + 2*n_components)
+        X = random_state.rand(n_nodes, n_find)
         X[:, 0] = (G.diagonal()).ravel()
-        lambdas, diffusion_map = lobpcg(G, X, M=M, tol=1.e-10, largest=largest)    
+        lambdas, diffusion_map = lobpcg(G, X, M=M, largest=largest)   
+        sort_order = np.argsort(lambdas)
+        if largest:
+            lambdas = lambdas[sort_order[::-1]]
+            diffusion_map = diffusion_map[:, sort_order[::-1]]
+        else:
+            lambdas = lambdas[sort_order]
+            diffusion_map = diffusion_map[:, sort_order]
+        lambdas = lambdas[:n_components]
+        diffusion_map = diffusion_map[:, :n_components]
     elif eigen_solver == "lobpcg":
-        print('using lobpcg')
         if not is_symmetric:
             raise ValueError("lobpcg requires symmetric matrices.")
-        X = random_state.rand(n_nodes, n_components)
-        lambdas, diffusion_map = lobpcg(G, X, tol=1.e-10, largest=largest)
+        n_find = min(n_nodes, 5 + 2*n_components)
+        X = random_state.rand(n_nodes, n_find)
+        lambdas, diffusion_map = lobpcg(G, X, largest=largest)
+        sort_order = np.argsort(lambdas)
+        if largest:
+            lambdas = lambdas[sort_order[::-1]]
+            diffusion_map = diffusion_map[:, sort_order[::-1]]
+        else:
+            lambdas = lambdas[sort_order]
+            diffusion_map = diffusion_map[:, sort_order]
+        lambdas = lambdas[:n_components]
+        diffusion_map = diffusion_map[:, :n_components]
     elif eigen_solver == 'dense':
         if sparse.isspmatrix(G):
             G = G.todense()
-        lambdas, diffusion_map = eigh(G)
+        if is_symmetric:
+            lambdas, diffusion_map = eigh(G)
+        else:
+            lambdas, diffusion_map = eig(G)
         if largest:# eigh always returns eigenvalues in ascending order
             lambdas = lambdas[::-1] # reverse order the e-values
             diffusion_map = diffusion_map[:, ::-1] # reverse order the vectors

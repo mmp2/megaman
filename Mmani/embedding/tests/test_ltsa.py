@@ -2,11 +2,14 @@ import sys
 import numpy as np
 import scipy as sp
 import scipy.sparse as sparse
+from itertools import product
 
 from numpy.testing import assert_array_almost_equal
-sys.path.append('/homes/jmcq/Mmani/') # this is stupid 
 import Mmani.embedding.ltsa as ltsa
+from Mmani.embedding.locally_linear import barycenter_graph
 import Mmani.geometry.geometry as geom
+
+eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
@@ -52,13 +55,24 @@ def test_ltsa_eigendecomps():
     assert(_check_with_col_sign_flipping(mm_ltsa_ar, mm_ltsa_amg, 0.05))
     assert(_check_with_col_sign_flipping(mm_ltsa_amg, mm_ltsa_de, 0.05))
     
-def test_ltsa_scale():
-    from sklearn import manifold
-    from sklearn import datasets
-    N = 1000
-    X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
-    print X
+def test_ltsa_manifold():
+    rng = np.random.RandomState(0)
+    # similar test on a slightly more complex manifold
+    X = np.array(list(product(np.arange(18), repeat=2)))
+    X = np.c_[X, X[:, 0] ** 2 / 18]
+    X = X + 1e-10 * rng.uniform(size=X.shape)
     n_components = 2
-    Geometry = geom.Geometry(X, neighborhood_radius = 2, distance_method = 'cyflann')
-    (mm_Y_ltsa3, err3) = ltsa.ltsa(Geometry, n_components, eigen_solver = 'amg')
-    assert(mm_Y_ltsa3 is not None)
+    Geometry = geom.Geometry(X, neighborhood_radius = 3)
+    distance_matrix = Geometry.get_distance_matrix()
+    tol = 1.5 
+    N = barycenter_graph(distance_matrix, X).todense()
+    reconstruction_error = np.linalg.norm(np.dot(N, X) - X)
+    assert(reconstruction_error < tol)
+    for eigen_solver in eigen_solvers:
+        clf = ltsa.LTSA(n_components = n_components, Geometry = Geometry,
+                        eigen_solver = eigen_solver, random_state = rng)
+        clf.fit(X)
+        assert(clf.embedding_.shape[1] == n_components)
+        reconstruction_error = np.linalg.norm(
+            np.dot(N, clf.embedding_) - clf.embedding_, 'fro') ** 2
+        assert(reconstruction_error < tol)

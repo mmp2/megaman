@@ -171,7 +171,7 @@ class LocallyLinearEmbedding():
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = locally_linear_embedding(self.Geometry, n_components=self.n_components,
+        (self.embedding_, self.error_) = locally_linear_embedding(self.Geometry, n_components=self.n_components,
                                                     eigen_solver=self.eigen_solver, tol = self.tol,
                                                     random_state=random_state, reg = self.reg,
                                                     max_iter = self.max_iter)

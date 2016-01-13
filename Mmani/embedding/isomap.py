@@ -27,7 +27,7 @@ def center_matrix(G):
     return(K)
 
 def isomap(Geometry, n_components=8, eigen_solver=None,
-           random_state=None, eigen_tol=1e-6, path_method='auto',
+           random_state=None, eigen_tol=1e-12, path_method='auto',
            distance_matrix = None, graph_distance_matrix = None, 
            centered_matrix = None):
     """
@@ -78,17 +78,7 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
         graph_distance_matrix = graph_shortest_path(distance_matrix,
                                                     method=path_method,
                                                     directed=False)
-                                                    
-    if False:
-        print('testing alternate method')        
-        radius = 1
-        # Set distance > radius = 0 
-        graph_distance_matrix[graph_distance_matrix>radius] = 0
-        # Convert to sparse matrix 
-        graph_distance_matrix = sparse.csr_matrix(graph_distance_matrix)
-        # Convert to affinity matrix 
-        graph_distance_matrix = geom.affinity_matrix(graph_distance_matrix, radius)
-        
+                                                            
     # Step 3: center graph distance matrix 
     if centered_matrix is None:
         centered_matrix = center_matrix(graph_distance_matrix)
