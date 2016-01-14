@@ -103,3 +103,171 @@ def test_equal_original(almost_equal_decimals = 5):
                 assert_array_almost_equal( L, Ltest, 5 )
                 di = np.diag_indices( L.shape[0] )
                 assert_array_equal(diag, np.array( L[di] )) 
+def test_get_distance_matrix():
+    # For [existing distance, no existing distance]:
+        # For [passed radius no passed radius]:
+            # for [existing radius no existing radius]:
+                # for [passed equal to existing, not equal to existing]:
+                
+    # 0) Input type = Affinity 
+    ## Raise error Affinity matrix passed 
+
+    # No Existing Distance:
+        # 1) No passed radius
+            # 1a) no self.radius
+                # 1aa) Input type = Data
+    ## Default radius 
+                # 1ab) Input type = Distance
+    ## Pass back existing distance matrix
+            # 1b) existing self.radius
+                # 1ba) Input type = Data
+    ## Calculate with existing radius
+                # 1bb) Input type = Distance
+    ## Pass back distance matrix 
+        # 2) passed radius
+            # 2a) no existing radius
+                # 2aa) Input type = Data
+    ## Set current radius to passed, calcualte with passed radius
+                # 2ab) Input type = Distance
+    ## Raise error
+            # 2b) passed radius equal to existing radius 
+                # 2ba) Input type = Data
+    ## Calculate with passed radius
+                # 2bb) Input type = Distance
+    ## pass back existing radius
+            # 2c) passed radius not equal to existing radius
+                # 2ca) Input type = Data
+    ## set new radius to passed radius, re calculate with new radius
+                # 2cb) Input type = Distance
+    ## Raise error
+    
+    # Existing Distance:
+        # 1) No passed radius
+            # 1a) no self.radius
+                # 1aa) Input type = Data
+    ## Return existing distance matrix
+                # 1ab) Input type = Distance
+    ## Return existing distance matrix
+            # 1b) existing self.radius
+                # 1ba) Input type = Data
+    ## Return existing distance Matrix
+                # 1bb) Input type = Distance
+    ## Return existing distance matrix 
+        # 2) passed radius
+            # 2a) no existing radius
+                # 2aa) Input type = Data
+    ## Re-calculate with passed radius
+                # 2ab) Input type = Distance
+    ## Raise error, can't re-calculate 
+            # 2b) passed radius equal to existing radius 
+                # 2ba) Input type = Data
+    ## Return existing distance matrix
+                # 2bb) Input type = Distance
+    ## Return existing distance matrix
+            # 2c) passed radius not equal to existing radius
+                # 2ca) Input type = Data
+    ## recompute with passed radius
+                # 2cb) Input type = Distance
+    ## raise error, can't recalculate
+    assert(True)
+
+def test_get_affinity_matrix():
+    # No Existing Affinity:
+        # 1) No passed radius
+            # 1a) no self.radius
+                # 1aa) Input type = Data
+    ## Return default 
+                # 1ab) Input type = Distance
+    ## Return default
+            # 1b) existing self.radius
+                # 1ba) Input type = Data
+    ## Return default
+                # 1bb) Input type = Distance
+    ## Return default 
+        # 2) passed radius
+            # 2a) no existing radius
+                # 2aa) Input type = Data
+    ## return passed radius affinity, set radius to passed
+                # 2ab) Input type = Distance
+    ## return passed radius affinity, set radius to passed
+            # 2b) passed radius equal to existing radius 
+                # 2ba) Input type = Data
+    ## return self.radius affinity 
+                # 2bb) Input type = Distance
+    ## return self.radius affinity 
+            # 2c) passed radius not equal to existing radius
+                # 2ca) Input type = Data
+    ## return passed radius affinity, set radius to passed
+                # 2cb) Input type = Distance
+    ## return passed radius affinity, set radius to passed
+
+    # Existing Affinity:
+        # 1) No passed radius
+            # 1a) no self.radius
+                # 1aa) Input type = Data
+    ## return existing affinity
+                # 1ab) Input type = Distance
+    ## return existing affinity
+                # 1ac) Input type = Affinity 
+    ## return existing affinity
+            # 1b) existing self.radius
+                # 1ba) Input type = Data
+    ## return existing affinity
+                # 1bb) Input type = Distance
+    ## return existing affinity
+                # 1cc) Input type = Affinity 
+    ## return existing affinity
+        # 2) passed radius
+            # 2a) no existing radius
+                # 2aa) Input type = Data
+    ## Compute with passed radius, set self.radius to passed radius
+                # 2ab) Input type = Distance
+    ## Compute with passed radius, set self.radius to passed radius
+                # 2ac) Input type = Affinity 
+    ## Raise error, unknown existing radius passed affinity
+            # 2b) passed radius equal to existing radius 
+                # 2ba) Input type = Data
+    ## return existing affinity
+                # 2bb) Input type = Distance
+    ## return existing affinity
+                # 2bc) Input type = Affinity 
+    ## return existing affinity
+            # 2c) passed radius not equal to existing radius
+                # 2ca) Input type = Data
+    ## re-calculate with passed radius, set self.radius to passed radius
+                # 2cb) Input type = Distance
+    ## re-calculate with passed radius, set self.radius to passed radius
+                # 2cc) Input type = Affinity 
+    ## raise error, passed affinity re-calculateion not currently supported. 
+    assert(True)
+
+def test_get_laplacian_matrix():
+    # No Existing Laplacian:
+        # 1) No passed type
+            # 1a) No self.type
+    ## Return default laplacian
+            # 1b) Existing self.type
+    ## Return self.type laplacian
+        # 2) Passed type            
+            # 2a) no self.type
+    ## Return passed type laplacian
+            # 2b) passed type equal to self.type
+    ## Return passed type laplacian
+            # 2c) passed type not equal to self.type
+    ## Set type to passed type, return passed type laplacian
+    
+    # Existing Laplacian:
+        # 1) No passed type
+            # 1a) No self.type
+    ## Return existing laplacian
+            # 1b) Existing self.type
+    ## Return existing laplacian
+        # 2) Passed type            
+            # 2a) no self.type
+    ## Return existing laplacian
+            # 2b) passed type equal to self.type
+    ## Return existing laplacian
+            # 2c) passed type not equal to self.typ
+    ## Set type to passed type, overwrite laplacian with passed type. 
+    assert(True)
+
