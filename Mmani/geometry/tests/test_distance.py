@@ -1,12 +1,13 @@
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
-import sys
+import sys, os
 from nose.tools import assert_true, assert_equal, assert_raises
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from scipy.spatial.distance import pdist, squareform
 import warnings
 from Mmani.geometry.distance import distance_matrix
+import time
 
 random_state = np.random.RandomState(36)
 n_sample = 10
@@ -16,31 +17,40 @@ D = squareform(pdist(X))
 D[D > 1/d] = 0
 
 def test_all_methods_close(almost_equal_decimals = 5):
+    flindex = None
     try:
         import pyflann as pyf
-        flindex = pyf.FLANN()
-        flparams = flindex.build_index(X, algorithm = 'kmeans', target_precision = 0.9)
-        D2 = distance_matrix(X, method = 'pyflann', flindex = flindex) 
-        assert_array_almost_equal(D2.todense(), D, almost_equal_decimals)
     except ImportError:
         try: 
-            # This path is only valid on newton.stat.washington.edu 
-            path_to_flann = '/homes/jmcq/flann-1.8.4-src/src/python'
+            # use "export FLANN_ROOT=<FLANN_ROOT>"to set enviromental variable 
+            path_to_flann = os.environ['FLANN_ROOT'] + '/src/python'
             sys.path.insert(0, path_to_flann)
             import pyflann as pyf
-            flindex = pyf.FLANN()
-            flparams = flindex.build_index(X, algorithm = 'kmeans', target_precision = 0.9)
-            D2 = distance_matrix(X, method = 'pyflann', flindex = flindex) 
-            assert_array_almost_equal(D2.todense(), D, almost_equal_decimals)
         except ImportError:
             warnings.warn("pyflann not installed. Will not test pyflann method")
     
+    t1 = time.clock()
     D1 = distance_matrix(X, method = 'auto') 
+    print "cython version:",time.clock() - t1
+    
+    flindex = pyf.FLANN()
+    flparams = flindex.build_index(X, algorithm = 'kmeans', target_precision = 0.9)
+    t2 = time.clock()
+    D2 = distance_matrix(X, method = 'pyflann', flindex = flindex)
+    print "pyflann version:",time.clock() - t2
+    
+    t3 = time.clock()
     D3 = distance_matrix(X, method = 'cyflann')
+    print "cyflann version:",time.clock() - t3
+    
+    t4 = time.clock()
     D4 = distance_matrix(X, method = 'brute')
+    print "brute version:",time.clock() - t4
+    
     D5 = distance_matrix(X)
 
     assert_array_almost_equal(D1.todense(), D, almost_equal_decimals)
+    assert_array_almost_equal(D2.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D3.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D4.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D5.todense(), D, almost_equal_decimals)
