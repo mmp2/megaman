@@ -3,6 +3,8 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import os
 
+# to build: python setup.py build_ext --inplace 
+
 flann_path = os.environ['FLANN_ROOT']   
 
 setup(ext_modules = cythonize(
