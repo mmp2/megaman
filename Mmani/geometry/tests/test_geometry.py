@@ -252,7 +252,7 @@ def test_get_distance_matrix(almost_equal_decimals = 5):
            "distance matrix cannot be re-calculated.")
     assert_raise_message(ValueError, msg, Geometry.get_distance_matrix, neighborhood_radius=3)
 
-def test_get_affinity_matrix():
+def test_get_affinity_matrix(almost_equal_decimals=5):
     """ test different ways to call get_affinity_matrix """
     # 1. (No existing affinity, no passed radius, no self.radius, input_type = data)
     X = np.random.uniform(size = (10,10))
@@ -261,7 +261,7 @@ def test_get_affinity_matrix():
     Geometry = geom.Geometry(X, input_type = 'data')
     ## Return default Affinity
     A = Geometry.get_affinity_matrix()
-    assert_array_almost_equal(A, A2, )
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 2. (No existing affinity, no passed radius, no self.radius, input_type = distance)
     ## Return default

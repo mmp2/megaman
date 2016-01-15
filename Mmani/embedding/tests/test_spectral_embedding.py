@@ -82,28 +82,28 @@ def test_spectral_embedding_two_components(seed=36):
     assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
 
 
-def test_spectral_embedding_precomputed_affinity(seed=36):
-    """Test spectral embedding with precomputed kernel"""
-    radius = 1.0
-    se_precomp = SpectralEmbedding(n_components=2, input_type = 'affinity',
-                                   random_state=np.random.RandomState(seed))
-    se_rbf = SpectralEmbedding(n_components=2, neighborhood_radius = radius,
-                               random_state=np.random.RandomState(seed))
-    A = radius_neighbors_graph(S, radius, mode='distance') 
-    A.data = A.data**2
-    A.data = A.data/(-radius**2)
-    np.exp( A.data, A.data )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        # sparse will complain that this is faster with lil_matrix
-        A.setdiag(1) # the 0 on the diagonal is a true zero
+# def test_spectral_embedding_precomputed_affinity(seed=36):
+    # """Test spectral embedding with precomputed kernel"""
+    # radius = 1.0
+    # se_precomp = SpectralEmbedding(n_components=2, input_type = 'affinity',
+                                   # random_state=np.random.RandomState(seed))
+    # se_rbf = SpectralEmbedding(n_components=2, neighborhood_radius = radius,
+                               # random_state=np.random.RandomState(seed))
+    # A = radius_neighbors_graph(S, radius, mode='distance') 
+    # A.data = A.data**2
+    # A.data = A.data/(-radius**2)
+    # np.exp( A.data, A.data )
+    # with warnings.catch_warnings():
+        # warnings.simplefilter("ignore")
+        ## sparse will complain that this is faster with lil_matrix
+        # A.setdiag(1) # the 0 on the diagonal is a true zero
 
-    embed_precomp = se_precomp.fit_transform(A)
-    embed_rbf = se_rbf.fit_transform(S)
+    # embed_precomp = se_precomp.fit_transform(A)
+    # embed_rbf = se_rbf.fit_transform(S)
     
-    assert_array_almost_equal(
-        se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense())
-    assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
+    # assert_array_almost_equal(
+        # se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense())
+    # assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
 
 def test_spectral_embedding_amg_solver(seed=36):
     """Test spectral embedding with amg solver"""

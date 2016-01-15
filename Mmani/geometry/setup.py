@@ -3,7 +3,9 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import os
 
-# to build: python setup.py build_ext --inplace 
+# in the command line Mmani/Mmani/Geometry
+# first set your FLANN path: with e.g. export FLANN_ROOT=/homes/jmcq/flann-1.8.4-src
+# then to build: python setup.py build_ext --inplace 
 
 flann_path = os.environ['FLANN_ROOT']   
 
