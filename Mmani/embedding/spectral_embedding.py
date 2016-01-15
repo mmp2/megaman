@@ -256,7 +256,7 @@ class SpectralEmbedding():
                  eigen_tol = 0.0, drop_first = True, diffusion_maps = False,
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
-                 laplacian_type = 'geometric', path_to_pyflann = None,
+                 laplacian_type = 'geometric', path_to_flann = None,
                  Geometry = None):
         # embedding parameters:
         self.n_components = n_components
@@ -272,7 +272,7 @@ class SpectralEmbedding():
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
         self.input_type = input_type
-        self.path_to_pyflann = path_to_pyflann
+        self.path_to_flann = path_to_flann
         self.laplacian_type = laplacian_type
         
     def fit_geometry(self, X):
@@ -281,7 +281,7 @@ class SpectralEmbedding():
                                       distance_method = self.distance_method,
                                       input_type = self.input_type,
                                       laplacian_type = self.laplacian_type,
-                                      path_to_pyflann = self.path_to_pyflann)
+                                      path_to_flann = self.path_to_flann)
     
     def fit(self, X, y=None):
         """Fit the model from data in X.

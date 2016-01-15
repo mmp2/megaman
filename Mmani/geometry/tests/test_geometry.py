@@ -1,6 +1,7 @@
 from __future__ import division ## removes integer division
 
 import sys
+import os
 import warnings
 import numpy as np
 from scipy import io
@@ -107,7 +108,26 @@ def test_equal_original(almost_equal_decimals = 5):
                 assert_array_almost_equal( L, Ltest, 5 )
                 di = np.diag_indices( L.shape[0] )
                 assert_array_equal(diag, np.array( L[di] )) 
-
+def test_distance_types(almost_equal_decimals = 5):
+    X = np.random.uniform(size=(20,2))
+    G1 = geom.Geometry(X, input_type = 'data', distance_method = 'cython', 
+                        neighborhood_radius = 1)
+    G2 = geom.Geometry(X, input_type = 'data', distance_method = 'brute', 
+                        neighborhood_radius = 1)
+    G3 = geom.Geometry(X, input_type = 'data', distance_method = 'cyflann', 
+                        neighborhood_radius = 1)
+    path_to_flann = os.environ['FLANN_ROOT'] + '/src/python'
+    G4 = geom.Geometry(X, input_type = 'data', distance_method = 'pyflann', 
+                        neighborhood_radius = 1, path_to_flann = path_to_flann)
+    d1 = G1.get_distance_matrix()
+    d2 = G2.get_distance_matrix()
+    d3 = G3.get_distance_matrix()
+    d4 = G4.get_distance_matrix()
+    # if they're all close to d1 then they're all close enough together. 
+    assert_array_almost_equal(d1.todense(), d2.todense(), almost_equal_decimals)
+    assert_array_almost_equal(d1.todense(), d3.todense(), almost_equal_decimals)
+    assert_array_almost_equal(d1.todense(), d4.todense(), almost_equal_decimals)
+    
 def test_get_distance_matrix(almost_equal_decimals = 5):
     """ test different ways to call get_distance_matrix """
     # 1. (Input type = Affinity)
@@ -264,76 +284,284 @@ def test_get_affinity_matrix(almost_equal_decimals=5):
     assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 2. (No existing affinity, no passed radius, no self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1/X.shape[1])
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 1/X.shape[1])
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance')
     ## Return default
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 3. (No existing affinity, no passed radius, existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius,
+                            affinity_radius = radius)
     ## Return with existing radius
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 4. (No existing affinity, no passed radius, existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius,
+                            affinity_radius = radius)
     ## Return with existing radius
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 5. (No existing affinity, passed radius, no existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius)
     ## Return passed radius affinity, set radius to passed
+    A = Geometry.get_affinity_matrix(affinity_radius=2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 6. (No existing affinity, passed radius, no existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius)
     ## Return passed radius affinity, set radius to passed
+    A = Geometry.get_affinity_matrix(affinity_radius=2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 7. (No existing affinity, passed radius equal to existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius, 
+                            affinity_radius = radius)
     ## Return self.radius affinity 
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 8. (No existing affinity, passed radius equal to existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius, 
+                            affinity_radius = radius)
     ## Return self.radius affinity 
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
     
     # 9. (No existing affinity, passed radius not equal to existing self.radius, input_type = data)
-    ## Return passed radius affinity, set radius to passed
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    radius2 = 2
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius2)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius, 
+                            affinity_radius = radius)
+    ## Return passed radius affinity, set radius to passed    
+    A = Geometry.get_affinity_matrix(affinity_radius=radius2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
+    assert(Geometry.affinity_radius == radius2)
     
     # 10. (No existing affinity, passed radius not equal to existing self.radius, input_type = distance)
-    ## Return passed radius affinity, set radius to passed
-
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    radius2 = 2
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius2)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius, 
+                            affinity_radius = radius)
+    ## Return passed radius affinity, set radius to passed    
+    A = Geometry.get_affinity_matrix(affinity_radius=radius2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
+    assert(Geometry.affinity_radius == radius2)
+    
     # 11. (Existing affinity, no passed radius, no self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data')
+    Geometry.assign_affinity_matrix(A2)
     ## Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 12. (Existing affinity, no passed radius, no self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance')
+    Geometry.assign_affinity_matrix(A2)
     ## Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 13. (Existing affinity, no passed radius, no self.radius, input_type = affinity)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(A2, input_type = 'affinity')
     ### Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 14. (Existing affinity, no passed radius, existing self.radius, input_type = data)
-    ### Return existing affinity, raise warning that it wasn't recalculated. 
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
+    ### Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 15. (Existing affinity, no passed radius, existing self.radius, input_type = distance)
-    ### Return existing affinity, raise warning that it wasn't recalculated.
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
+    ### Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 16. (Existing affinity, no passed radius, existing self.radius, input_type = affinity)
-    ## Return existing affinity, raise warning that it wasn't recalculated.
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(A2, input_type = 'affinity', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    ## Return existing affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 17. (Existing affinity, passed radius, no self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Compute with passed radius, set self.radius to passed radius
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 18. (Existing affinity, passed radius, no self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Compute with passed radius, set self.radius to passed radius
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 19. (Existing affinity, passed radius, no self.radius, input_type = affinity)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(A2, input_type = 'affinity', neighborhood_radius = radius)
     ## Raise error, unknown existing radius, passed radius but input type affinity
+    msg = ("Input_method was passed as affinity."
+           "Requested radius was not equal to self.affinity_radius."
+           "Affinity Matrix cannot be recalculated.")
+    assert_raise_message(ValueError, msg, Geometry.get_affinity_matrix,
+                        affinity_radius=radius)
 
     # 20. (Existing affinity, passed radius equal to self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Return existing affinity
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 21. (Existing affinity, passed radius equal to self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Return existing affinity
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 22. (Existing affinity, passed radius equal to self.radius, input_type = affinity)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(A2, input_type = 'affinity', neighborhood_radius = radius,
+                            affinity_radius = radius)
     ## Return existing affinity
+    A = Geometry.get_affinity_matrix(affinity_radius=radius)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
 
     # 23. (Existing affinity, passed radius not equal to self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Re-calculate with passed radius, set self.radius to passed radius
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    A = Geometry.get_affinity_matrix(affinity_radius=2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
+    assert(Geometry.affinity_radius == 2)
 
     # 24. (Existing affinity, passed radius not equal to self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = radius)
+    Geometry = geom.Geometry(dist_mat, input_type = 'distance', neighborhood_radius = radius,
+                            affinity_radius = radius)
+    Geometry.assign_affinity_matrix(A2)
     ## Re-calculate with passed radius, set self.radius to passed radius
+    A2 = affinity_matrix(dist_mat, neighbors_radius=2)
+    A = Geometry.get_affinity_matrix(affinity_radius=2)
+    assert_array_almost_equal(A.todense(), A2.todense(), almost_equal_decimals)
+    assert(Geometry.affinity_radius == 2)
 
     # 25. (Existing affinity, passed radius not equal to self.radius, input_type = affinity)
+    X = np.random.uniform(size = (10,10))
+    radius = 1
+    dist_mat = distance_matrix(X, radius = radius)
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 2)
+    Geometry = geom.Geometry(A2, input_type = 'affinity', neighborhood_radius = radius, 
+                            affinity_radius = 2)
     ## Raise error, passed affinity re-calculateion not supported. 
+    msg = ("Input_method was passed as affinity."
+           "Requested radius was not equal to self.affinity_radius."
+           "Affinity Matrix cannot be recalculated.")
+    assert_raise_message(ValueError, msg, Geometry.get_affinity_matrix,
+                        affinity_radius=radius)
 
 def test_get_laplacian_matrix(almost_equal_decimals = 5):
     """ test different ways to call get_laplacian_matrix """

@@ -37,7 +37,7 @@ from Mmani.geometry.distance import distance_matrix
 from Mmani.utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
-distance_methods = ['auto', 'brute', 'cyflann', 'pyflann']
+distance_methods = ['auto', 'brute', 'cyflann', 'pyflann', 'cython']
 laplacian_types = ['symmetricnormalized', 'geometric', 'renormalized', 'unnormalized', 'randomwalk']
 
 def symmetrize_sparse(A):
@@ -335,20 +335,23 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
 class Geometry:
     def __init__(self, X, neighborhood_radius = None, affinity_radius = None,
                  distance_method = 'auto', input_type = 'data', 
-                 laplacian_type = None, path_to_pyflann = None):
+                 laplacian_type = None, path_to_flann = None):
         """ parameters:
             X 
             neighborhood_radius 
             affinity_radius
             laplacian_type
             path_to_pyflann
-            distance_method: 'auto', 'pyflann', 'cyflann', 'brute'
+            distance_method: 'auto', 'pyflann', 'cyflann', 'brute', 'cython'
             input_type: 'data', 'distance', 'affinity'
         """
         self.distance_method = distance_method
         self.input_type = input_type
-        self.path_to_pyflann = path_to_pyflann
+        self.path_to_flann = path_to_flann
         self.laplacian_type = laplacian_type
+        
+        if self.distance_method not in distance_methods:
+            raise ValueError("invalid distance method.")
                 
         if neighborhood_radius is None:
             self.neighborhood_radius = 1/X.shape[1]
@@ -360,10 +363,12 @@ class Geometry:
                 raise ValueError("neighborhood_radius must be convertable to float")
         if affinity_radius is None:
             self.affinity_radius = self.neighborhood_radius
+            self.default_affinity = True
         else:
             try:
                 affinity_radius = np.float(affinity_radius)
                 self.affinity_radius = affinity_radius
+                self.default_affinity = False
             except ValueError:
                 raise ValueError("affinity_radius must be convertable to float")
         
@@ -374,6 +379,8 @@ class Geometry:
                 raise ValueError("input_type is distance but input matrix is not square")
             self.X = None
             self.distance_matrix = X
+            self.affinity_matrix = None
+            self.laplacian_matrix = None
         elif self.input_type == 'affinity':
             X = check_array(X, accept_sparse = sparse_formats)
             a, b = X.shape
@@ -382,13 +389,24 @@ class Geometry:
             self.X = None
             self.distance_matrix = None
             self.affinity_matrix = X
+            self.laplacian_matrix = None
         elif self.input_type == 'data':
             X = check_array(X, accept_sparse = sparse_formats)
             self.X = X
             self.distance_matrix = None
             self.affinity_matrix = None
+            self.laplacian_matrix = None
         else:
             raise ValueError('input_type must be one of: data, distance, affinity.')
+            
+        if distance_method == 'cython':
+            try:
+                from Mmani.geometry.cyflann_index import cyflann_index
+                self.cyindex = cyflann_index()
+            except ImportError:
+                raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
+        else:
+            self.cyindex = None
         
         if distance_method == 'pyflann':
             if self.path_to_flann is not None: 
@@ -419,7 +437,8 @@ class Geometry:
                 self.neighborhood_radius = neighborhood_radius
             self.distance_matrix = distance_matrix(self.X, method = self.distance_method,
                                                     flindex = self.flindex, 
-                                                    radius = self.neighborhood_radius)
+                                                    radius = self.neighborhood_radius,
+                                                    cyindex = self.cyindex)
         else:
             # if there is an existing matrix we have to see if we need to overwrite
             if neighborhood_radius is not None and neighborhood_radius != self.neighborhood_radius:
@@ -434,7 +453,8 @@ class Geometry:
                     self.neighborhood_radius = neighborhood_radius
                     self.distance_matrix = distance_matrix(self.X, method = self.distance_method,
                                                             flindex = self.flindex, 
-                                                            radius = self.neighborhood_radius)            
+                                                            radius = self.neighborhood_radius,
+                                                            cyindex = self.cyindex)            
         
         if copy:
             return self.distance_matrix.copy()
@@ -443,15 +463,37 @@ class Geometry:
     
     def get_affinity_matrix(self, affinity_radius = None, copy = True, 
                             symmetrize = True):
-        if affinity_radius is None:
-            radius = self.affinity_radius
-        else:
-            radius = affinity_radius
         if self.affinity_matrix is None:
+            # if there's no existing affinity matrix we make one
             if self.distance_matrix is None:
+                # first check to see if we have the distance matrix
                 self.distance_matrix = self.get_distance_matrix(copy = False)
+            if affinity_radius is not None and affinity_radius != self.affinity_radius:
+                self.affinity_radius = affinity_radius
+                self.default_affinity = False
             self.affinity_matrix = affinity_matrix(self.distance_matrix, 
-                                                    radius, symmetrize)
+                                                    self.affinity_radius, symmetrize)
+        else: 
+            # if there is an existing matrix we have to see if we need to overrwite
+            if (affinity_radius is not None and affinity_radius != self.affinity_radius) or (
+                affinity_radius is not None and self.default_affinity):
+                # if there's a new radius we need to re-calculate 
+                # or there's a passed radius and the current radius was set to default 
+                if self.input_type == 'affinity':
+                    # but if we were passed affinity this is impossible
+                    raise ValueError("Input_method was passed as affinity."
+                                     "Requested radius was not equal to self.affinity_radius."
+                                     "Affinity Matrix cannot be recalculated.")
+                else:
+                    # if we were passed distance or data we can recalculate:
+                    if self.distance_matrix is None:
+                        # first check to see if we have the distance matrix
+                        self.distance_matrix = self.get_distance_matrix(copy = False)
+                    self.affinity_radius = affinity_radius
+                    self.default_affinity = False
+                    self.affinity_matrix = affinity_matrix(self.distance_matrix, 
+                                                            self.affinity_radius, symmetrize)
+            
         if copy:
             return self.affinity_matrix.copy()
         else:
@@ -461,7 +503,7 @@ class Geometry:
                             scaling_epps=0., renormalization_exponent=1,
                             copy=True, return_lapsym=False):
         # First check if there's an existing Laplacian: 
-        if hasattr(self, 'laplacian_matrix'):
+        if self.laplacian_matrix is not None:
             if (laplacian_type == self.laplacian_type) or (laplacian_type is None):
                 if copy:
                     return self.laplacian_matrix.copy()
@@ -480,7 +522,7 @@ class Geometry:
         elif laplacian_type is not None and self.laplacian_type != laplacian_type:
             self.laplacian_type = laplacian_type
             
-        # next check if we have a distance matrix:
+        # next check if we have an affinity matrix:
         if self.affinity_matrix is None:
             self.affinity_matrix = self.get_affinity_matrix()
             
@@ -505,21 +547,26 @@ class Geometry:
         X = check_array(X, accept_sparse = sparse_formats)
         self.X = X
 
-    def assign_distance_matrix(self, distance_mat):
+    def assign_distance_matrix(self, distance_mat, neighborhood_radius = None):
         distance_mat = check_array(distance_mat, accept_sparse = sparse_formats)
         (a, b) = distance_mat.shape
         if a != b:
             raise ValueError("distance matrix is not square")
         else:
             self.distance_matrix = distance_mat
+            if neighborhood_radius is not None:
+                self.neighborhood_radius = neighborhood_radius
     
-    def assign_affinity_matrix(self, affinity_matrix):
+    def assign_affinity_matrix(self, affinity_matrix, affinity_radius = None):
         affinity_matrix = check_array(affinity_matrix, accept_sparse = sparse_formats)
         (a, b) = affinity_matrix.shape
         if a != b:
             raise ValueError("affinity matrix is not square")
         else:
             self.affinity_matrix = affinity_matrix
+            if affinity_radius is not None:
+                self.affinity_radius = affinity_radius
+                self.default_affinity = False
     
     def assign_laplacian_matrix(self, laplacian_matrix, laplacian_type = "unknown"):
         laplacian_matrix = check_array(laplacian_matrix, accept_sparse = sparse_formats)

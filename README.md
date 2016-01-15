@@ -3,13 +3,11 @@ Created Development Branch for compiling into working library.
  
 TO DO: (no particular order)
 
-* Finish testing functions (embedding & geometry input/output checking, warnings) 
-* Update any 'auto' modes -- based on benchmarking times
 * Update function comments with parameters & attributes
 * Complete README w/ examples
 * Covar plotter example
-* Migrate C++ executable code to cython or ctypes 
 * Turn into 'proper' package
+* Update any 'auto' modes -- based on benchmarking times
 
 Version 2:
 

@@ -13,15 +13,11 @@ from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
 
 from Mmani.embedding.spectral_embedding import SpectralEmbedding, spectral_embedding
-from sklearn.manifold.spectral_embedding_ import SpectralEmbedding as SE0
 from Mmani.embedding.spectral_embedding import _graph_is_connected
-from sklearn.metrics.pairwise import rbf_kernel
-from sklearn.metrics import normalized_mutual_info_score
-from sklearn.cluster import KMeans
-from sklearn.datasets.samples_generator import make_blobs
-from sklearn.neighbors import radius_neighbors_graph
-from sklearn.utils.graph import graph_laplacian
 import Mmani.geometry.geometry as geom
+
+from sklearn.metrics import normalized_mutual_info_score
+from sklearn.datasets.samples_generator import make_blobs
 
 
 # non centered, sparse centers to check the
@@ -48,7 +44,6 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
         if not sign:
             return False
     return True
-
 
 def test_spectral_embedding_two_components(seed=36):
     """Test spectral embedding with two components"""
@@ -82,28 +77,26 @@ def test_spectral_embedding_two_components(seed=36):
     assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
 
 
-# def test_spectral_embedding_precomputed_affinity(seed=36):
-    # """Test spectral embedding with precomputed kernel"""
-    # radius = 1.0
-    # se_precomp = SpectralEmbedding(n_components=2, input_type = 'affinity',
-                                   # random_state=np.random.RandomState(seed))
-    # se_rbf = SpectralEmbedding(n_components=2, neighborhood_radius = radius,
-                               # random_state=np.random.RandomState(seed))
-    # A = radius_neighbors_graph(S, radius, mode='distance') 
-    # A.data = A.data**2
-    # A.data = A.data/(-radius**2)
-    # np.exp( A.data, A.data )
-    # with warnings.catch_warnings():
-        # warnings.simplefilter("ignore")
-        ## sparse will complain that this is faster with lil_matrix
-        # A.setdiag(1) # the 0 on the diagonal is a true zero
+def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
+    """Test spectral embedding with precomputed kernel"""
+    radius = 1.0
+    se_precomp = SpectralEmbedding(n_components=2, input_type = 'affinity',
+                                   random_state=np.random.RandomState(seed))
+    se_rbf = SpectralEmbedding(n_components=2, neighborhood_radius = radius,
+                                affinity_radius = radius, input_type = 'data',
+                               random_state=np.random.RandomState(seed),
+                               distance_method = 'brute')
+    G = geom.Geometry(S, input_type = 'data', neighborhood_radius = radius,
+                        affinity_radius = radius, distance_method = 'brute')
+    A = G.get_affinity_matrix()
 
-    # embed_precomp = se_precomp.fit_transform(A)
-    # embed_rbf = se_rbf.fit_transform(S)
-    
-    # assert_array_almost_equal(
-        # se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense())
-    # assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
+    embed_precomp = se_precomp.fit_transform(A)
+    embed_rbf = se_rbf.fit_transform(S)
+        
+    assert_array_almost_equal(
+        se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense(),
+        almost_equal_decimals)
+    assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
 
 def test_spectral_embedding_amg_solver(seed=36):
     """Test spectral embedding with amg solver"""

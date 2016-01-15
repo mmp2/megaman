@@ -15,7 +15,7 @@ def _row_col_from_condensed_index(N,compr_ind):
     j = compr_ind + i*(b + i + 2)/2 + 1
     return (i,j)  
 
-def distance_matrix(X, method = 'auto', flindex = None, radius = None):
+def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex = None):
     if radius is None:
         radius = 1/X.shape[1]
     if method == 'auto':
@@ -30,8 +30,9 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None):
     elif method == 'cyflann':
         distance_matrix = fl_cpp_radius_neighbors_graph(X, radius)
     elif method == 'cython':
-        index = cyflann_index()
-        distance_matrix = index.radius_neighbors_graph(X, radius)
+        if cyindex is None:
+            cyindex = cyflann_index()
+        distance_matrix = cyindex.radius_neighbors_graph(X, radius)
     elif method == 'brute':
         distance_matrix = radius_neighbors_graph(X, radius)
     else: 
