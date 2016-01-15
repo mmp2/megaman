@@ -10,6 +10,10 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 from scipy.spatial.distance import pdist, squareform
 from Mmani.geometry.geometry import * 
 from Mmani.geometry.distance import distance_matrix
+import Mmani.geometry.geometry as geom
+from Mmani.utils.testing import assert_raise_message
+from Mmani.geometry.distance import distance_matrix
+from Mmani.geometry.geometry import laplacian_types
 
 random_state = np.random.RandomState(36)
 n_sample = 10
@@ -103,171 +107,364 @@ def test_equal_original(almost_equal_decimals = 5):
                 assert_array_almost_equal( L, Ltest, 5 )
                 di = np.diag_indices( L.shape[0] )
                 assert_array_equal(diag, np.array( L[di] )) 
-def test_get_distance_matrix():
-    # For [existing distance, no existing distance]:
-        # For [passed radius no passed radius]:
-            # for [existing radius no existing radius]:
-                # for [passed equal to existing, not equal to existing]:
-                
-    # 0) Input type = Affinity 
-    ## Raise error Affinity matrix passed 
 
-    # No Existing Distance:
-        # 1) No passed radius
-            # 1a) no self.radius
-                # 1aa) Input type = Data
-    ## Default radius 
-                # 1ab) Input type = Distance
-    ## Pass back existing distance matrix
-            # 1b) existing self.radius
-                # 1ba) Input type = Data
-    ## Calculate with existing radius
-                # 1bb) Input type = Distance
-    ## Pass back distance matrix 
-        # 2) passed radius
-            # 2a) no existing radius
-                # 2aa) Input type = Data
-    ## Set current radius to passed, calcualte with passed radius
-                # 2ab) Input type = Distance
-    ## Raise error
-            # 2b) passed radius equal to existing radius 
-                # 2ba) Input type = Data
-    ## Calculate with passed radius
-                # 2bb) Input type = Distance
-    ## pass back existing radius
-            # 2c) passed radius not equal to existing radius
-                # 2ca) Input type = Data
-    ## set new radius to passed radius, re calculate with new radius
-                # 2cb) Input type = Distance
-    ## Raise error
+def test_get_distance_matrix(almost_equal_decimals = 5):
+    """ test different ways to call get_distance_matrix """
+    # 1. (Input type = Affinity)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'affinity')
+    ## Raise error Affinity matrix passed
+    msg = ( "input_method was passed as affinity. " "Distance matrix cannot be computed.")
+    assert_raise_message(ValueError, msg, Geometry.get_distance_matrix)
+        
+    # 2. (No existing distance, no passed radius, no self.radius, input_type = Data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data')    
+    ## Calculate with default radius
+    distance_mat = Geometry.get_distance_matrix()
+    distance_mat2 = distance_matrix(X, radius = 1/X.shape[1])
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
     
-    # Existing Distance:
-        # 1) No passed radius
-            # 1a) no self.radius
-                # 1aa) Input type = Data
+    # 3. (No existing distance, no passed radius, existing self.radius, input_type = Data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = 1)    
+    ## Calculate with existing radius
+    distance_mat = Geometry.get_distance_matrix()
+    distance_mat2 = distance_matrix(X, radius = 1)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+   
+    # 4. (No existing distance, passed radius, no existing self.radius, input_type = Data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data')    
+    ## Set current radius to passed, calcualte with passed radius
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius = 1)
+    distance_mat2 = distance_matrix(X, radius = 1)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+    assert(Geometry.neighborhood_radius == 1)
+    
+    # 5. (No existing distance, passed radius equal to existing self.radius, input_type = Data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = 1)    
+    ## Calculate with passed radius
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius = 1)
+    distance_mat2 = distance_matrix(X, radius = 1)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+    
+    # 6. (No existing distance, passed radius not equal to existing self.radius, input_type = Data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = 1)    
+    ## Calculate with passed radius, set new self.radius
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius = 2)
+    distance_mat2 = distance_matrix(X, radius = 2)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+    assert(Geometry.neighborhood_radius == 2)
+    
+    # 7. (Existing distance, no passed radius, no self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data')    
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry.assign_distance_matrix(distance_mat2)
     ## Return existing distance matrix
-                # 1ab) Input type = Distance
+    distance_mat = Geometry.get_distance_matrix()
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 8. (Existing distance, no passed radius, no self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(distance_mat2, input_type = 'distance')    
     ## Return existing distance matrix
-            # 1b) existing self.radius
-                # 1ba) Input type = Data
+    distance_mat = Geometry.get_distance_matrix()
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 9. (Existing distance, no passed radius, existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius = 1)    
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry.assign_distance_matrix(distance_mat2)
     ## Return existing distance Matrix
-                # 1bb) Input type = Distance
+    distance_mat = Geometry.get_distance_matrix()
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 10. (Existing distance, no passed radius, existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(distance_mat2, input_type = 'distance', neighborhood_radius = 1)    
     ## Return existing distance matrix 
-        # 2) passed radius
-            # 2a) no existing radius
-                # 2aa) Input type = Data
-    ## Re-calculate with passed radius
-                # 2ab) Input type = Distance
+    distance_mat = Geometry.get_distance_matrix()
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 11. (Existing distance, passed radius, no existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(X, input_type = 'data')    
+    Geometry.assign_distance_matrix(distance_mat2)
+    ## Re-calculate with passed radius, set self.radius to passed radius
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius=3)
+    distance_mat2 = distance_matrix(X, radius = 3)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+    assert(Geometry.neighborhood_radius == 3)
+
+    # 12. (Existing distance, passed radius, no existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(distance_mat2, input_type = 'distance')    
     ## Raise error, can't re-calculate 
-            # 2b) passed radius equal to existing radius 
-                # 2ba) Input type = Data
+    msg = ("input_method was passed as distance."
+           "requested radius not equal to self.neighborhood_radius."
+           "distance matrix cannot be re-calculated.")
+    assert_raise_message(ValueError, msg, Geometry.get_distance_matrix, neighborhood_radius=3)
+
+    # 13. (Existing distance, passed radius equal to existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius=1)    
+    Geometry.assign_distance_matrix(distance_mat2)
     ## Return existing distance matrix
-                # 2bb) Input type = Distance
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius=1)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 14. (Existing distance, passed radius equal to existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(distance_mat2, input_type = 'distance', neighborhood_radius = 1)    
     ## Return existing distance matrix
-            # 2c) passed radius not equal to existing radius
-                # 2ca) Input type = Data
-    ## recompute with passed radius
-                # 2cb) Input type = Distance
-    ## raise error, can't recalculate
-    assert(True)
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius=1)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+
+    # 15. (Existing distance, passed radius not equal to existing self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(X, input_type = 'data', neighborhood_radius=1)    
+    Geometry.assign_distance_matrix(distance_mat2)
+    ## Recompute with passed radius, set self.radius to passed radius
+    distance_mat2 = distance_matrix(X, radius = 3)
+    distance_mat = Geometry.get_distance_matrix(neighborhood_radius=3)
+    assert_array_almost_equal(distance_mat.todense(), distance_mat2.todense(), almost_equal_decimals)
+    assert(Geometry.neighborhood_radius == 3)
+
+    # 16. (Existing distance, passed radius not equal to existing self.radius, input_type = distance)
+    X = np.random.uniform(size = (10,10))
+    distance_mat2 = distance_matrix(X, radius = 1)
+    Geometry = geom.Geometry(distance_mat2, input_type = 'distance', neighborhood_radius = 1)    
+    ## Raise error, can't recalculate
+    msg = ("input_method was passed as distance."
+           "requested radius not equal to self.neighborhood_radius."
+           "distance matrix cannot be re-calculated.")
+    assert_raise_message(ValueError, msg, Geometry.get_distance_matrix, neighborhood_radius=3)
 
 def test_get_affinity_matrix():
-    # No Existing Affinity:
-        # 1) No passed radius
-            # 1a) no self.radius
-                # 1aa) Input type = Data
-    ## Return default 
-                # 1ab) Input type = Distance
-    ## Return default
-            # 1b) existing self.radius
-                # 1ba) Input type = Data
-    ## Return default
-                # 1bb) Input type = Distance
-    ## Return default 
-        # 2) passed radius
-            # 2a) no existing radius
-                # 2aa) Input type = Data
-    ## return passed radius affinity, set radius to passed
-                # 2ab) Input type = Distance
-    ## return passed radius affinity, set radius to passed
-            # 2b) passed radius equal to existing radius 
-                # 2ba) Input type = Data
-    ## return self.radius affinity 
-                # 2bb) Input type = Distance
-    ## return self.radius affinity 
-            # 2c) passed radius not equal to existing radius
-                # 2ca) Input type = Data
-    ## return passed radius affinity, set radius to passed
-                # 2cb) Input type = Distance
-    ## return passed radius affinity, set radius to passed
-
-    # Existing Affinity:
-        # 1) No passed radius
-            # 1a) no self.radius
-                # 1aa) Input type = Data
-    ## return existing affinity
-                # 1ab) Input type = Distance
-    ## return existing affinity
-                # 1ac) Input type = Affinity 
-    ## return existing affinity
-            # 1b) existing self.radius
-                # 1ba) Input type = Data
-    ## return existing affinity
-                # 1bb) Input type = Distance
-    ## return existing affinity
-                # 1cc) Input type = Affinity 
-    ## return existing affinity
-        # 2) passed radius
-            # 2a) no existing radius
-                # 2aa) Input type = Data
-    ## Compute with passed radius, set self.radius to passed radius
-                # 2ab) Input type = Distance
-    ## Compute with passed radius, set self.radius to passed radius
-                # 2ac) Input type = Affinity 
-    ## Raise error, unknown existing radius passed affinity
-            # 2b) passed radius equal to existing radius 
-                # 2ba) Input type = Data
-    ## return existing affinity
-                # 2bb) Input type = Distance
-    ## return existing affinity
-                # 2bc) Input type = Affinity 
-    ## return existing affinity
-            # 2c) passed radius not equal to existing radius
-                # 2ca) Input type = Data
-    ## re-calculate with passed radius, set self.radius to passed radius
-                # 2cb) Input type = Distance
-    ## re-calculate with passed radius, set self.radius to passed radius
-                # 2cc) Input type = Affinity 
-    ## raise error, passed affinity re-calculateion not currently supported. 
-    assert(True)
-
-def test_get_laplacian_matrix():
-    # No Existing Laplacian:
-        # 1) No passed type
-            # 1a) No self.type
-    ## Return default laplacian
-            # 1b) Existing self.type
-    ## Return self.type laplacian
-        # 2) Passed type            
-            # 2a) no self.type
-    ## Return passed type laplacian
-            # 2b) passed type equal to self.type
-    ## Return passed type laplacian
-            # 2c) passed type not equal to self.type
-    ## Set type to passed type, return passed type laplacian
+    """ test different ways to call get_affinity_matrix """
+    # 1. (No existing affinity, no passed radius, no self.radius, input_type = data)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1/X.shape[1])
+    A2 = affinity_matrix(dist_mat, neighbors_radius = 1/X.shape[1])
+    Geometry = geom.Geometry(X, input_type = 'data')
+    ## Return default Affinity
+    A = Geometry.get_affinity_matrix()
+    assert_array_almost_equal(A, A2, )
     
-    # Existing Laplacian:
-        # 1) No passed type
-            # 1a) No self.type
-    ## Return existing laplacian
-            # 1b) Existing self.type
-    ## Return existing laplacian
-        # 2) Passed type            
-            # 2a) no self.type
-    ## Return existing laplacian
-            # 2b) passed type equal to self.type
-    ## Return existing laplacian
-            # 2c) passed type not equal to self.typ
-    ## Set type to passed type, overwrite laplacian with passed type. 
-    assert(True)
+    # 2. (No existing affinity, no passed radius, no self.radius, input_type = distance)
+    ## Return default
+    
+    # 3. (No existing affinity, no passed radius, existing self.radius, input_type = data)
+    ## Return with existing radius
+    
+    # 4. (No existing affinity, no passed radius, existing self.radius, input_type = distance)
+    ## Return with existing radius
+    
+    # 5. (No existing affinity, passed radius, no existing self.radius, input_type = data)
+    ## Return passed radius affinity, set radius to passed
+    
+    # 6. (No existing affinity, passed radius, no existing self.radius, input_type = distance)
+    ## Return passed radius affinity, set radius to passed
+    
+    # 7. (No existing affinity, passed radius equal to existing self.radius, input_type = data)
+    ## Return self.radius affinity 
+    
+    # 8. (No existing affinity, passed radius equal to existing self.radius, input_type = distance)
+    ## Return self.radius affinity 
+    
+    # 9. (No existing affinity, passed radius not equal to existing self.radius, input_type = data)
+    ## Return passed radius affinity, set radius to passed
+    
+    # 10. (No existing affinity, passed radius not equal to existing self.radius, input_type = distance)
+    ## Return passed radius affinity, set radius to passed
 
+    # 11. (Existing affinity, no passed radius, no self.radius, input_type = data)
+    ## Return existing affinity
+
+    # 12. (Existing affinity, no passed radius, no self.radius, input_type = distance)
+    ## Return existing affinity
+
+    # 13. (Existing affinity, no passed radius, no self.radius, input_type = affinity)
+    ### Return existing affinity
+
+    # 14. (Existing affinity, no passed radius, existing self.radius, input_type = data)
+    ### Return existing affinity, raise warning that it wasn't recalculated. 
+
+    # 15. (Existing affinity, no passed radius, existing self.radius, input_type = distance)
+    ### Return existing affinity, raise warning that it wasn't recalculated.
+
+    # 16. (Existing affinity, no passed radius, existing self.radius, input_type = affinity)
+    ## Return existing affinity, raise warning that it wasn't recalculated.
+
+    # 17. (Existing affinity, passed radius, no self.radius, input_type = data)
+    ## Compute with passed radius, set self.radius to passed radius
+
+    # 18. (Existing affinity, passed radius, no self.radius, input_type = distance)
+    ## Compute with passed radius, set self.radius to passed radius
+
+    # 19. (Existing affinity, passed radius, no self.radius, input_type = affinity)
+    ## Raise error, unknown existing radius, passed radius but input type affinity
+
+    # 20. (Existing affinity, passed radius equal to self.radius, input_type = data)
+    ## Return existing affinity
+
+    # 21. (Existing affinity, passed radius equal to self.radius, input_type = distance)
+    ## Return existing affinity
+
+    # 22. (Existing affinity, passed radius equal to self.radius, input_type = affinity)
+    ## Return existing affinity
+
+    # 23. (Existing affinity, passed radius not equal to self.radius, input_type = data)
+    ## Re-calculate with passed radius, set self.radius to passed radius
+
+    # 24. (Existing affinity, passed radius not equal to self.radius, input_type = distance)
+    ## Re-calculate with passed radius, set self.radius to passed radius
+
+    # 25. (Existing affinity, passed radius not equal to self.radius, input_type = affinity)
+    ## Raise error, passed affinity re-calculateion not supported. 
+
+def test_get_laplacian_matrix(almost_equal_decimals = 5):
+    """ test different ways to call get_laplacian_matrix """
+    # 1. (No existing laplacian, no passed type, no self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    Geometry = geom.Geometry(A, input_type = 'affinity')    
+    ## Return default laplacian
+    lapl = Geometry.get_laplacian_matrix()
+    lapl2 = graph_laplacian(A)
+    assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+
+    # 2. (No existing laplacian, no passed type, existing self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        Geometry = geom.Geometry(A, input_type = 'affinity', laplacian_type = laplacian_type)    
+        ## Return self.type laplacian
+        lapl = Geometry.get_laplacian_matrix()
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+
+    # 3. (No existing laplacian, passed type, no self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        Geometry = geom.Geometry(A, input_type = 'affinity')    
+        ## Return passed type laplacian, set self.type to passed type
+        lapl = Geometry.get_laplacian_matrix(laplacian_type = laplacian_type)
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+        assert(Geometry.laplacian_type == laplacian_type)
+
+    # 4. (No existing laplacian, passed type equal to self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        Geometry = geom.Geometry(A, input_type = 'affinity',laplacian_type = laplacian_type)    
+        ## Return passed type laplacian
+        lapl = Geometry.get_laplacian_matrix(laplacian_type = laplacian_type)
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+        assert(Geometry.laplacian_type == laplacian_type)
+
+    # 5. (No existing laplacian, passed type not equal to self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        if laplacian_type == 'geometric':
+            existing_type = 'randomwalk'
+        else:
+            existing_type = 'geometric'
+        Geometry = geom.Geometry(A, input_type = 'affinity', laplacian_type = existing_type)    
+        ## Set type to passed type, return passed type laplacian
+        lapl = Geometry.get_laplacian_matrix(laplacian_type = laplacian_type)
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+        assert(Geometry.laplacian_type == laplacian_type)
+    
+    # 6. (Existing laplacian, no passed type, no self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    Geometry = geom.Geometry(A, input_type = 'affinity')    
+    lapl2 = graph_laplacian(A)
+    Geometry.assign_laplacian_matrix(lapl2)
+    ## Return existing laplacian
+    lapl = Geometry.get_laplacian_matrix()
+    assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+
+    # 7. (Existing laplacian, no passed type, existing self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    Geometry = geom.Geometry(A, input_type = 'affinity', laplacian_type = 'geometric')    
+    lapl2 = graph_laplacian(A)
+    Geometry.assign_laplacian_matrix(lapl2)
+    ## Return existing laplacian
+    lapl = Geometry.get_laplacian_matrix()
+    assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+
+    # 8. (Existing laplacian, passed type, no self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    Geometry = geom.Geometry(A, input_type = 'affinity')    
+    lapl2 = graph_laplacian(A)
+    Geometry.assign_laplacian_matrix(lapl2)
+    ## Calculate passed type, set self.type to passed type
+    # this will warn that it will overwrite:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        lapl = Geometry.get_laplacian_matrix(laplacian_type = 'randomwalk')
+    lapl2 = graph_laplacian(A, normed = 'randomwalk')
+    assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+    
+    # 9. (Existing laplacian, passed type equal to self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        Geometry = geom.Geometry(A, input_type = 'affinity', laplacian_type = laplacian_type)    
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        Geometry.assign_laplacian_matrix(lapl2, laplacian_type = laplacian_type)
+        ## Return existing laplacian
+        lapl = Geometry.get_laplacian_matrix(laplacian_type = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+        assert(Geometry.laplacian_type == laplacian_type)
+
+    # 10. (Existing laplacian, passed type not equal to self.type)
+    X = np.random.uniform(size = (10,10))
+    dist_mat = distance_matrix(X, radius = 1)
+    A = affinity_matrix(dist_mat, neighbors_radius = 1)
+    for laplacian_type in laplacian_types:
+        if laplacian_type == 'geometric':
+            existing_type = 'randomwalk'
+        else:
+            existing_type = 'geometric'
+        Geometry = geom.Geometry(A, input_type = 'affinity', laplacian_type = existing_type)    
+        lapl2 = graph_laplacian(A, normed = existing_type)
+        Geometry.assign_laplacian_matrix(lapl2, laplacian_type = existing_type)
+        ## Calculate passed type, set self.type to passed type
+        # this will warn that it will overwrite:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            lapl = Geometry.get_laplacian_matrix(laplacian_type = laplacian_type)
+        lapl2 = graph_laplacian(A, normed = laplacian_type)
+        assert_array_almost_equal(lapl.todense(), lapl2.todense(),almost_equal_decimals)
+        assert(Geometry.laplacian_type == laplacian_type)
