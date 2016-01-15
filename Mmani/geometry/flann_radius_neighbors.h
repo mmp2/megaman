@@ -2,13 +2,12 @@
 
 License: BSD 3 clause
 ================================================= */
-
 #ifndef FLANN_RADIUS_NEIGHBORS_H_
 #define FLANN_RADIUS_NEIGHBORS_H_
 
-#include "flann_radius_neighbors.h"
-
-//using namespace flann;
+#include <flann/flann.hpp> 
+#include <vector>
+using namespace flann;
 
 // Takes a flattened matrix queries, with dimension num_dims.
 // For each data point in queries, search for neighbors within the radius.
