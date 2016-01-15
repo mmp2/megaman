@@ -9,8 +9,6 @@ License: BSD 3 clause
 #include <vector>
 using namespace flann;
 
-//using namespace flann;
-
 // Takes a flattened matrix queries, with dimension num_dims.
 // For each data point in queries, search for neighbors within the radius.
 int radiusSearch(const std::vector<float>& queries,
