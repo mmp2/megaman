@@ -2,11 +2,12 @@
 
 License: BSD 3 clause
 ================================================= */
-
 #ifndef FLANN_RADIUS_NEIGHBORS_H_
 #define FLANN_RADIUS_NEIGHBORS_H_
 
-#include "flann_radius_neighbors.h"
+#include <flann/flann.hpp> 
+#include <vector>
+using namespace flann;
 
 //using namespace flann;
 

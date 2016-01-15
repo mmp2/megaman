@@ -2,6 +2,8 @@
 #include <vector>
 using namespace flann;
 
+#include "flann_radius_neighbors.h"
+
 int radiusSearch(const std::vector<float>& queries,
 		 std::vector< std::vector<int> >& indices,
                  std::vector< std::vector<float> >& dists,
