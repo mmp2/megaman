@@ -1,0 +1,4 @@
+include *.md
+include *.py
+recursive-include Mmani *.py
+include LICENSE
