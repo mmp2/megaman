@@ -5,7 +5,7 @@ from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import pdist
-from Mmani.geometry.cyflann_index import cyflann_index
+from Mmani.geometry.cyflann.index import Index
 import subprocess, os, sys, warnings
 
 def _row_col_from_condensed_index(N,compr_ind):
@@ -20,7 +20,7 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
         radius = 1/X.shape[1]
     if method == 'auto':
         # change this based on benchmarking results
-        method = 'cython'
+        method = 'brute'
     if method == 'pyflann':
         if flindex is None:
             raise ValueError('must pass a flindex when using pyflann')
@@ -31,7 +31,8 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
         distance_matrix = fl_cpp_radius_neighbors_graph(X, radius)
     elif method == 'cython':
         if cyindex is None:
-            cyindex = cyflann_index()
+            cyindex = Index(X)
+        cyindex.buildIndex()
         distance_matrix = cyindex.radius_neighbors_graph(X, radius)
     elif method == 'brute':
         distance_matrix = radius_neighbors_graph(X, radius)

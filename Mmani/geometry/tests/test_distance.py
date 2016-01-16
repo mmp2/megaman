@@ -28,9 +28,8 @@ def test_all_methods_close(almost_equal_decimals = 5):
             import pyflann as pyf
         except ImportError:
             warnings.warn("pyflann not installed. Will not test pyflann method")
-    
     t1 = time.clock()
-    D1 = distance_matrix(X, method = 'auto') 
+    D1 = distance_matrix(X, method = 'cython') 
     print "cython version:",time.clock() - t1
     
     flindex = pyf.FLANN()
