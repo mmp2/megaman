@@ -1,3 +1,6 @@
+# Authors: Zhongyue Zhang <zhangz6@cs.washington.edu>
+# License: BSD 3 clause
+
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
@@ -10,8 +13,8 @@ flann_path = os.environ['FLANN_ROOT']
 
 setup(ext_modules = cythonize(
     Extension(
-           "cyflann_index",
-           sources=["cyflann_index.pyx","flann_radius_neighbors.cc"],
+           "index",
+           sources=["index.pyx","cyflann_index.cc"],
            language="c++",
            extra_compile_args=["-O3", "-I" + flann_path + "/src/cpp/"],
     )))

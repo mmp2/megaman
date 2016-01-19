@@ -401,8 +401,8 @@ class Geometry:
             
         if distance_method == 'cython':
             try:
-                from Mmani.geometry.cyflann_index import cyflann_index
-                self.cyindex = cyflann_index()
+                from Mmani.geometry.cyflann.index import Index
+                self.cyindex = Index(X)
             except ImportError:
                 raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
         else:
