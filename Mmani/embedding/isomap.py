@@ -33,15 +33,27 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
     """
     Parameters
     ----------        
-    Geometry : a Geometry object from Mmani.embedding.geometry
+    Geometry : a Geometry object from Mmani.geometry.geometry
 
     n_components : integer, optional
         The dimension of the projection subspace.
 
-    eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-        The eigenvalue decomposition strategy to use. AMG requires pyamg
-        to be installed. It can be faster on very large, sparse problems,
-        but may also lead to instabilities.
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        auto : algorithm will attempt to choose the best method for input data
+        dense  : use standard dense matrix operations for the eigenvalue
+                    decomposition.  For this method, M must be an array
+                    or matrix type.  This method should be avoided for
+                    large problems.
+        arpack : use arnoldi iteration in shift-invert mode.
+                    For this method, M may be a dense matrix, sparse matrix,
+                    or general linear operator.
+                    Warning: ARPACK can be unstable for some problems.  It is
+                    best to try several random seeds in order to check results.
+        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            a preconditioned eigensolver for large symmetric positive definite 
+            (SPD) generalized eigenproblems.
+        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.
 
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
@@ -51,7 +63,19 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
     eigen_tol : float, optional, default=0.0
         Stopping criterion for eigendecomposition of the Laplacian matrix
         when using arpack eigen_solver.
-
+        
+    path_method : string, method for computing graph shortest path. One of :
+        'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path 
+        for more information. 
+    
+    distance_matrix : sparse Ndarray (n_obs, n_obs), optional. Pairwise distance matrix
+        sparse zeros considered 'infinite'. 
+    
+    graph_distance_matrix : Ndarray (n_obs, n_obs), optional. Pairwise graph distance 
+        matrix. Output of graph_shortest_path.
+    
+    centered_matrix : Ndarray (n_obs, n_obs), optional. Centered version of 
+        graph_distance_matrix
 
     Returns
     -------
@@ -98,34 +122,61 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
 
 class Isomap():
     """
-        Parameters
-        -----------
-        n_components : integer, default: 2
-            The dimension of the projected subspace.
-
-        eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-            The eigenvalue decomposition strategy to use. AMG requires pyamg
-            to be installed. It can be faster on very large, sparse problems,
-            but may also lead to instabilities.
-
-        random_state : int seed, RandomState instance, or None, default : None
-            A pseudo random number generator used for the initialization of the
-            lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-
-        Attributes
-        ----------
-
-        `embedding_` : array, shape = (n_samples, n_components)
-            Spectral embedding of the training matrix.
-
-        References
-        ----------
+    Parameters
+    -----------
+    n_components : integer, default: 2
+        The dimension of the projected subspace.
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        auto : algorithm will attempt to choose the best method for input data
+        dense  : use standard dense matrix operations for the eigenvalue
+                    decomposition.  For this method, M must be an array
+                    or matrix type.  This method should be avoided for
+                    large problems.
+        arpack : use arnoldi iteration in shift-invert mode.
+                    For this method, M may be a dense matrix, sparse matrix,
+                    or general linear operator.
+                    Warning: ARPACK can be unstable for some problems.  It is
+                    best to try several random seeds in order to check results.
+        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            a preconditioned eigensolver for large symmetric positive definite 
+            (SPD) generalized eigenproblems.
+        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.
+    random_state : int seed, RandomState instance, or None, default : None
+        A pseudo random number generator used for the initialization of the
+        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.            
+    eigen_tol : float, optional. Tolerance for 'arpack' solver.         
+    path_method : string, optionl. method for computing graph shortest path. 
+        One of :
+        'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path 
+        for more information.         
+    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
+        distances beyond neighborhood_radius are considered infinite.         
+    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+        used in Guassian kernel for affinity matrix         
+    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.   
+        method for computing pairwise radius neighbors graph.         
+    input_type : string, one of: 'data', 'distance', 'affinity'. 
+        The values of input data X.       
+    path_to_flann : string. full file path location of FLANN if not installed to root or
+        FLANN_ROOT set to path location. Used for importing pyflann from a 
+        different location.        
+    Geometry : a Geometry object from Mmani.geometry.geometry
+    
+    Attributes
+    ----------
+    
+    `embedding_` : array, shape = (n_samples, n_components)
+        Spectral embedding of the training matrix.
+    
+    References
+    ----------
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
-                 eigen_tol = 1e-6, path_method = 'auto',
+                 eigen_tol = 1e-12, path_method = 'auto',
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
-                 path_to_pyflann = None, Geometry = None):
+                 path_to_flann = None, Geometry = None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -139,22 +190,22 @@ class Isomap():
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
         self.input_type = input_type
-        self.path_to_pyflann = path_to_pyflann
+        self.path_to_flann = path_to_flann
         
         # intermediary steps for storage
         self.distance_matrix = None
         self.graph_distance_matrix = None
         self.centered_matrix = None
-        
+    
     def fit_geometry(self, X):
         self.Geometry = geom.Geometry(X, 
                                       neighborhood_radius = self.neighborhood_radius,
                                       affinity_radius = self.affinity_radius,
                                       distance_method = self.distance_method,
                                       input_type = self.input_type,
-                                      path_to_pyflann = self.path_to_pyflann)
+                                      path_to_flann = self.path_to_flann)
     
-    def fit(self, X, y=None, eigen_solver = None):
+    def fit(self, X, eigen_solver = None, input_type = 'data'):
         """Fit the model from data in X.
 
         Parameters
@@ -162,17 +213,22 @@ class Isomap():
         X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
-
-            If is_affinity is True
-            X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples
-
+        
+        input_type : string, one of: 'data', 'distance', 'affinity'. 
+            The values of input data X. (default = 'data')
+            
+        eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
+            The eigenvalue decomposition strategy to use. AMG requires pyamg
+            to be installed. It can be faster on very large, sparse problems,
+            but may also lead to instabilities.
+        
         Returns
         -------
         self : object
             Returns the instance itself.
         """
+        if input_type is not None:
+            self.input_type = input_type
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
         # might want to change the eigen solver
@@ -209,12 +265,12 @@ class Isomap():
         X: array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
-
+        
             If affinity is "precomputed"
             X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed adjacency graph computed from
             samples.
-
+        
         Returns
         -------
         X_new: array-like, shape (n_samples, n_components)

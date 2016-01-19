@@ -19,16 +19,16 @@ from Mmani.utils.validation import check_random_state
 def _graph_connected_component(graph, node_id):
     """Find the largest graph connected components the contains one
     given node
-
+    
     Parameters
     ----------
     graph : array-like, shape: (n_samples, n_samples)
         adjacency matrix of the graph, non-zero weight means an edge
         between the nodes
-
+    
     node_id : int
         The index of the query node of the graph
-
+    
     Returns
     -------
     connected_components : array-like, shape: (n_samples,)
@@ -79,15 +79,15 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     smallest eigen values) has an interpretation in terms of minimal
     number of cuts necessary to split the graph into comparably sized
     components.
-
+    
     This embedding can also 'work' even if the ``adjacency`` variable is
     not strictly the adjacency matrix of a graph but more generally
     an affinity or similarity matrix between samples (for instance the
     heat kernel of a euclidean distance matrix or a k-NN matrix).
-
+    
     However care must taken to always make the affinity matrix symmetric
     so that the eigen vector decomposition works as expected.
-
+    
     Parameters
     ----------        
     Geometry : a Geometry object from Mmani.embedding.geometry
@@ -95,37 +95,52 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     n_components : integer, optional
         The dimension of the projection subspace.
 
-    eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-        The eigenvalue decomposition strategy to use. AMG requires pyamg
-        to be installed. It can be faster on very large, sparse problems,
-        but may also lead to instabilities.
-
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        auto : algorithm will attempt to choose the best method for input data
+        dense  : use standard dense matrix operations for the eigenvalue
+                    decomposition.  For this method, M must be an array
+                    or matrix type.  This method should be avoided for
+                    large problems.
+        arpack : use arnoldi iteration in shift-invert mode.
+                    For this method, M may be a dense matrix, sparse matrix,
+                    or general linear operator.
+                    Warning: ARPACK can be unstable for some problems.  It is
+                    best to try several random seeds in order to check results.
+        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            a preconditioned eigensolver for large symmetric positive definite 
+            (SPD) generalized eigenproblems.
+        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.
+    
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
         By default, arpack is used.
-
+    
     eigen_tol : float, optional, default=0.0
         Stopping criterion for eigendecomposition of the Laplacian matrix
         when using arpack eigen_solver.
-
+    
     drop_first : bool, optional, default=True
         Whether to drop the first eigenvector. For spectral embedding, this
         should be True as the first eigenvector should be constant vector for
         connected graph, but for spectral clustering, this should be kept as
         False to retain the first eigenvector.
-
+        
+    diffusion_map : boolean, optional. Whether to return the diffusion map 
+        version by re-scaling the embedding by the eigenvalues. 
+        
     Returns
     -------
     embedding : array, shape=(n_samples, n_components)
         The reduced samples.
-
+    
     Notes
     -----
     Spectral embedding is most useful when the graph has one connected
     component. If there graph has many components, the first few eigenvectors
     will simply uncover the connected components of the graph.
-
+    
     References
     ----------
     * http://en.wikipedia.org/wiki/LOBPCG
@@ -204,56 +219,83 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
 
 class SpectralEmbedding():
     """
-        Spectral embedding for non-linear dimensionality reduction.
-
-        Forms an affinity matrix given by the specified function and
-        applies spectral decomposition to the corresponding graph laplacian.
-        The resulting transformation is given by the value of the
-        eigenvectors for each data point.
+    Spectral embedding for non-linear dimensionality reduction.
+    
+    Forms an affinity matrix given by the specified function and
+    applies spectral decomposition to the corresponding graph laplacian.
+    The resulting transformation is given by the value of the
+    eigenvectors for each data point.
+    
+    Parameters
+    -----------
+    n_components : integer, optional
+        The dimension of the projection subspace.
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        auto : algorithm will attempt to choose the best method for input data
+        dense  : use standard dense matrix operations for the eigenvalue
+                    decomposition.  For this method, M must be an array
+                    or matrix type.  This method should be avoided for
+                    large problems.
+        arpack : use arnoldi iteration in shift-invert mode.
+                    For this method, M may be a dense matrix, sparse matrix,
+                    or general linear operator.
+                    Warning: ARPACK can be unstable for some problems.  It is
+                    best to try several random seeds in order to check results.
+        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            a preconditioned eigensolver for large symmetric positive definite 
+            (SPD) generalized eigenproblems.
+        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.
+    random_state : int seed, RandomState instance, or None (default)
+        A pseudo random number generator used for the initialization of the
+        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
+        By default, arpack is used.
+    eigen_tol : float, optional, default=0.0
+        Stopping criterion for eigendecomposition of the Laplacian matrix
+        when using arpack eigen_solver.
+    drop_first : bool, optional, default=True
+        Whether to drop the first eigenvector. For spectral embedding, this
+        should be True as the first eigenvector should be constant vector for
+        connected graph, but for spectral clustering, this should be kept as
+        False to retain the first eigenvector.            
+    diffusion_map : boolean, optional. Whether to return the diffusion map 
+        version by re-scaling the embedding by the eigenvalues. 
+    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
+        distances beyond neighborhood_radius are considered infinite.         
+    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+        used in Guassian kernel for affinity matrix        
+    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.   
+        method for computing pairwise radius neighbors graph.         
+    input_type : string, one of: 'data', 'distance', 'affinity'. 
+        The values of input data X.       
+    path_to_flann : string. full file path location of FLANN if not installed to 
+        root or to set FLANN_ROOT set to path location. Used for importing pyflann 
+        from a different location.       
+    Geometry : a Geometry object from Mmani.geometry.geometry
         
-        Parameters
-        -----------
-        n_components : integer, default: 2
-            The dimension of the projected subspace.
+    Attributes
+    ----------
+    `embedding_` : array, shape = (n_samples, n_components)
+        Spectral embedding of the training matrix.
+    `affinity_matrix_` : array, shape = (n_samples, n_samples)
+        Affinity_matrix constructed from samples or precomputed.
+    References
+    ----------
+    
+    - A Tutorial on Spectral Clustering, 2007
+      Ulrike von Luxburg
+      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
 
-        eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-            The eigenvalue decomposition strategy to use. AMG requires pyamg
-            to be installed. It can be faster on very large, sparse problems,
-            but may also lead to instabilities.
+    - On Spectral Clustering: Analysis and an algorithm, 2011
+      Andrew Y. Ng, Michael I. Jordan, Yair Weiss
+      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
 
-        random_state : int seed, RandomState instance, or None, default : None
-            A pseudo random number generator used for the initialization of the
-            lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-
-        affinity_radius : float, optional, default : 1/n_features
-            Kernel coefficient for rbf kernel.
-
-        Attributes
-        ----------
-
-        `embedding_` : array, shape = (n_samples, n_components)
-            Spectral embedding of the training matrix.
-
-        `affinity_matrix_` : array, shape = (n_samples, n_samples)
-            Affinity_matrix constructed from samples or precomputed.
-
-        References
-        ----------
-
-        - A Tutorial on Spectral Clustering, 2007
-          Ulrike von Luxburg
-          http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
-
-        - On Spectral Clustering: Analysis and an algorithm, 2011
-          Andrew Y. Ng, Michael I. Jordan, Yair Weiss
-          http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
-
-        - Normalized cuts and image segmentation, 2000
-          Jianbo Shi, Jitendra Malik
-          http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
+    - Normalized cuts and image segmentation, 2000
+      Jianbo Shi, Jitendra Malik
+      http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
-                 eigen_tol = 0.0, drop_first = True, diffusion_maps = False,
+                 eigen_tol = 1e-12, drop_first = True, diffusion_maps = False,
                  neighborhood_radius = None, affinity_radius = None, 
                  distance_method = 'auto', input_type = 'data',
                  laplacian_type = 'geometric', path_to_flann = None,
@@ -292,10 +334,10 @@ class SpectralEmbedding():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
 
-            If is_affinity is True
+            If self.input_type is 'distance_matrix', or 'affinity':
             X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
 
         Returns
         -------
@@ -326,10 +368,10 @@ class SpectralEmbedding():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
 
-            If affinity is "precomputed"
+            If self.input_type is 'distance_matrix', or 'affinity':
             X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples.
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
 
         Returns
         -------
