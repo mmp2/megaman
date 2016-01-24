@@ -16,6 +16,8 @@ cdef extern from "cyflann_index.h":
         CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim) except +
         CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim, 
                      dtype_t target_precision)
+        CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim,
+                     dtype_t target_precision, string filename)
         void buildIndex()
         void knnSearch(const vector[dtype_t]& queries,
             vector[vector[dtypei_t]]& indices,

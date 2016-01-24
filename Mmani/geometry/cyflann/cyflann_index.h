@@ -17,6 +17,9 @@ public:
     CyflannIndex(const std::vector<float>& dataset, int num_dims,
             float target_precision);
 
+    CyflannIndex(const std::vector<float>& dataset, int num_dims,
+            float target_precision, std::string filename);
+
     ~CyflannIndex();
     
     void buildIndex();
