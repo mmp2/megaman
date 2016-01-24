@@ -10,7 +10,7 @@ CyflannIndex::CyflannIndex(const std::vector<float>& dataset, int num_dims) {
     dataset_ = new float[dataset.size()];
     std::copy(dataset.begin(), dataset.end(), dataset_);
     Matrix<float> data(dataset_, num_pts, num_dims);
-    // TODO(zhongyue): add support for different distance metric.
+    // TODO: add support for different distance metric.
     index_ = new Index< L2<float> >(data, KMeansIndexParams());
 }
 
@@ -20,9 +20,19 @@ CyflannIndex::CyflannIndex(const std::vector<float>& dataset, int num_dims,
     dataset_ = new float[dataset.size()];
     std::copy(dataset.begin(), dataset.end(), dataset_);
     Matrix<float> data(dataset_, num_pts, num_dims);
-    // TODO(zhongyue): add support for different distance metric.
+    // TODO: add support for different distance metric.
     index_ = new Index< L2<float> >(data, AutotunedIndexParams(
             target_precision, 0.01, 0.1,0.1));
+}
+
+CyflannIndex::CyflannIndex(const std::vector<float>& dataset, int num_dims,
+        float target_precision, std::string filename) {
+    int num_pts = dataset.size() / num_dims;
+    dataset_ = new float[dataset.size()];
+    std::copy(dataset.begin(), dataset.end(), dataset_);
+    Matrix<float> data(dataset_, num_pts, num_dims);
+    // TODO: add support for different distance metric.
+    index_ = new Index< L2<float> >(data, SavedIndexParams(filename));
 }
 
 CyflannIndex::~CyflannIndex() {
