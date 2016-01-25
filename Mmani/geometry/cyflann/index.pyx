@@ -9,30 +9,42 @@ from index cimport *
 
 cdef class Index:
     """
-    wrapper for flann c++ index class
+    Wrapper for flann c++ index class
     """
     cdef CyflannIndex* _thisptr      # hold a C++ instance which we're wrapping
     
     def __cinit__(self, np.ndarray[double, ndim=2] dataset, 
-                  target_precision=None):
-        if target_precision is None:
+                  target_precision=None, saved_index=None):
+        """
+        Constucts a index class. The default index is kmeans index. If target 
+        precision is specified, the index will be autotuned. If saved index is
+        specified, the index will be loaded from the saved file.
+        """
+        if target_precision is not None:
             self._thisptr = new CyflannIndex(dataset.flatten(),
-                    dataset.shape[1])
-        else:
-            self._thisptr = new CyflannIndex(dataset.flatten(), 
                     dataset.shape[1], target_precision)
+        elif saved_index is not None:
+            # setting the target precision is purely a way to get arround
+            # function overloading. I cannot get it to work without it.
+            self._thisptr = new CyflannIndex(dataset.flatten(),
+                    dataset.shape[1], -1, saved_index)
+        else:
+            self._thisptr = new CyflannIndex(dataset.flatten(),
+                    dataset.shape[1])            
     
     def __dealloc__(self):
         del self._thisptr
     
     def buildIndex(self):
+        """
+        Builds a index of the data for future queries.
+        """
         self._thisptr.buildIndex()
     
     def knn_neighbors_graph(self, np.ndarray[double, ndim=2] X, int knn):
         if knn < 1:
             raise ValueError('neighbors_radius must be >=0.')
-        raise NotImplementedError("knnSearch is not yet implemented.")
-        return None
+        raise NotImplementedError("knn neighbors grash is not yet implemented.")
     
     def radius_neighbors_graph(self, np.ndarray[double, ndim=2] X,
             float radius):
@@ -95,13 +107,19 @@ cdef class Index:
         return graph
     
     def save(self, string filename):
+        """
+        Saves the index to a file.
+        """
         self._thisptr.save(filename)
     
     def veclen(self):
         """
-        length of a single datapoint
+        Length of a single data point
         """
         return self._thisptr.veclen()
     
     def size(self):
+        """
+        Returns the number of data points in the current dataset.
+        """
         return self._thisptr.size()
