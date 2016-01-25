@@ -50,6 +50,7 @@ def symmetrize_sparse(A):
     if A.getformat() is not "csr":
         A = A.tocsr()
     A = (A + A.transpose(copy = True))/2
+    return A
     
 def affinity_matrix(distances, neighbors_radius, symmetrize = True):
     if neighbors_radius <= 0.:
@@ -60,7 +61,7 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
         A.data = A.data/(-neighbors_radius**2)
         np.exp( A.data, A.data )
         if symmetrize:
-            symmetrize_sparse( A )  # converts to CSR; deletes 0's
+            A = symmetrize_sparse( A )  # converts to CSR; deletes 0's
         else:
             pass
         with warnings.catch_warnings():
@@ -416,11 +417,12 @@ class Geometry:
             raise ValueError('input_type must be one of: data, distance, affinity.')
             
         if distance_method == 'cython':
-            try:
-                from Mmani.geometry.cyflann.index import Index
-                self.cyindex = Index(X)
-            except ImportError:
-                raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
+            if input_type == 'data':
+                try:
+                    from Mmani.geometry.cyflann.index import Index
+                    self.cyindex = Index(X)
+                except ImportError:
+                    raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
         else:
             self.cyindex = None
         
@@ -463,7 +465,7 @@ class Geometry:
         
         if self.distance_matrix is None:
             # if there's no existing distance matrix we make one
-            if neighborhood_radius is not None and neighborhood_radius != self.neighborhood_radius:
+            if ((neighborhood_radius is not None) and (neighborhood_radius != self.neighborhood_radius)):
                 # a different radius was passed than self.neighborhood_radius
                 self.neighborhood_radius = neighborhood_radius
             self.distance_matrix = distance_matrix(self.X, method = self.distance_method,
@@ -472,7 +474,7 @@ class Geometry:
                                                     cyindex = self.cyindex)
         else:
             # if there is an existing matrix we have to see if we need to overwrite
-            if neighborhood_radius is not None and neighborhood_radius != self.neighborhood_radius:
+            if ((neighborhood_radius is not None) and (neighborhood_radius != self.neighborhood_radius)):
                 # if there's a new radius we need to re-calculate
                 if self.input_type == 'distance':
                     # but if we were passed distance this is impossible
