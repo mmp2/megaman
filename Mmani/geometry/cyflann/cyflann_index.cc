@@ -60,10 +60,11 @@ int CyflannIndex::radiusSearch(const std::vector<float>& queries,
         std::vector< std::vector<float> >& dists,
         float radius, int num_dims) {
     int num_pts = queries.size() / num_dims;
-    float array[queries.size()];
+    float* array = new float[queries.size()];
     std::copy(queries.begin(), queries.end(), array);
     Matrix<float> dataset(array, num_pts, num_dims);
     int res = index_->radiusSearch(dataset, indices, dists, radius, SearchParams());
+    delete[] array;
     return res;
 }
 

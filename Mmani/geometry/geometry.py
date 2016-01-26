@@ -16,8 +16,8 @@ GUARANTEED to be symmetric. We also use sparse representations, and
 distance_matrix has 0.0 on the diagonal, as it should. Implicitly, the
 missing entries are infinity not 0 for this matrix. But (1) and (2)
 mean that if one tries to symmetrize distance_matrix, the scipy.sparse
-code eliminates the 0.0 entries from distance_matrix. [I did not find
-an efficient way around this problem.]
+code eliminates the 0.0 entries from distance_matrix. In the Affinity
+matrix we explicitly set the diagonal to 1.0 for sparse matrices. 
 
 Hence, I adopted the following convention: 
    * distance_matrix will NOT BE GUARANTEED symmetric
@@ -50,6 +50,7 @@ def symmetrize_sparse(A):
     if A.getformat() is not "csr":
         A = A.tocsr()
     A = (A + A.transpose(copy = True))/2
+    return A
     
 def affinity_matrix(distances, neighbors_radius, symmetrize = True):
     if neighbors_radius <= 0.:
@@ -60,7 +61,7 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
         A.data = A.data/(-neighbors_radius**2)
         np.exp( A.data, A.data )
         if symmetrize:
-            symmetrize_sparse( A )  # converts to CSR; deletes 0's
+            A = symmetrize_sparse( A )  # converts to CSR; deletes 0's
         else:
             pass
         with warnings.catch_warnings():
@@ -333,18 +334,34 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
         return lap
     
 class Geometry:
+    """ 
+    The Geometry class stores the data, distance, affinity and laplacian
+    matrices used by the various embedding methods and is the primary
+    object passed to embedding functions.
+    
+    The Geometry class contains functions to build the aforementioned 
+    matrices and allows for re-computation whenever necessary.
+            
+    Parameters
+    ----------
+    X : array_like or sparse array. 2 dimensional. Value depends on input_type.
+        size: (N_obs, N_dim) if 'data', (N_obs, N_obs) otherwise.     
+    input_type : string, one of: 'data', 'distance', 'affinity'. The values of X.    
+    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
+        distances beyond neighborhood_radius are considered infinite.         
+    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+        used in Guassian kernel for affinity matrix         
+    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.
+        method for computing pairwise radius neighbors graph.    
+    laplacian_type : string, one of: 'symmetricnormalized', 'geometric', 'renormalized', 
+                                     'unnormalized', 'randomwalk'
+        type of laplacian to be computed. See graph_laplacian for more information.    
+    path_to_flann : string. full file path location of FLANN if not installed to root or
+        FLANN_ROOT set to path location. Used for importing pyflann from a different location.    
+    """
     def __init__(self, X, neighborhood_radius = None, affinity_radius = None,
                  distance_method = 'auto', input_type = 'data', 
                  laplacian_type = None, path_to_flann = None):
-        """ parameters:
-            X 
-            neighborhood_radius 
-            affinity_radius
-            laplacian_type
-            path_to_pyflann
-            distance_method: 'auto', 'pyflann', 'cyflann', 'brute', 'cython'
-            input_type: 'data', 'distance', 'affinity'
-        """
         self.distance_method = distance_method
         self.input_type = input_type
         self.path_to_flann = path_to_flann
@@ -400,11 +417,12 @@ class Geometry:
             raise ValueError('input_type must be one of: data, distance, affinity.')
             
         if distance_method == 'cython':
-            try:
-                from Mmani.geometry.cyflann.index import Index
-                self.cyindex = Index(X)
-            except ImportError:
-                raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
+            if input_type == 'data':
+                try:
+                    from Mmani.geometry.cyflann.index import Index
+                    self.cyindex = Index(X)
+                except ImportError:
+                    raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
         else:
             self.cyindex = None
         
@@ -425,6 +443,21 @@ class Geometry:
             self.flparams = None
         
     def get_distance_matrix(self, neighborhood_radius = None, copy = True):
+        """                 
+        Parameters
+        ----------
+        neighborhood_radius : scalar, passed to distance_matrix. Value such that all
+            distances beyond neighborhood_radius are considered infinite. 
+            if this value is not passed the value of self.neighborhood_radius is used
+        
+        copy : boolean, whether to return a copied version of the distance matrix
+        
+        Returns
+        -------
+        self.distance_matrix : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values
+            (e.g. diagonal) should be considered Infinite. 
+        
+        """
         if self.input_type == 'affinity':
             raise ValueError("input_method was passed as affinity. "
                             "Distance matrix cannot be computed.")
@@ -432,7 +465,7 @@ class Geometry:
         
         if self.distance_matrix is None:
             # if there's no existing distance matrix we make one
-            if neighborhood_radius is not None and neighborhood_radius != self.neighborhood_radius:
+            if ((neighborhood_radius is not None) and (neighborhood_radius != self.neighborhood_radius)):
                 # a different radius was passed than self.neighborhood_radius
                 self.neighborhood_radius = neighborhood_radius
             self.distance_matrix = distance_matrix(self.X, method = self.distance_method,
@@ -441,7 +474,7 @@ class Geometry:
                                                     cyindex = self.cyindex)
         else:
             # if there is an existing matrix we have to see if we need to overwrite
-            if neighborhood_radius is not None and neighborhood_radius != self.neighborhood_radius:
+            if ((neighborhood_radius is not None) and (neighborhood_radius != self.neighborhood_radius)):
                 # if there's a new radius we need to re-calculate
                 if self.input_type == 'distance':
                     # but if we were passed distance this is impossible
@@ -463,6 +496,26 @@ class Geometry:
     
     def get_affinity_matrix(self, affinity_radius = None, copy = True, 
                             symmetrize = True):
+        """                 
+        Parameters
+        ----------
+        affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+            used in Guassian kernel for affinity matrix 
+            If this value is not passed then the self.affinity_radius value is used.
+
+        copy : boolean, whether to return a copied version of the affinity matrix
+
+        symmetrize : boolean, whether to explicitly symmetrize the affinity matrix.
+            if distance_method = 'cython', 'cyflann', or 'pyflann' it is recommended
+            to set this to True. 
+        
+        Returns
+        -------
+        self.affinity_matrix : sparse Ndarray (N_obs, N_obs) contains the pairwise
+            affinity values using the Guassian kernel and bandwidth equal to the
+            affinity_radius
+        
+        """
         if self.affinity_matrix is None:
             # if there's no existing affinity matrix we make one
             if self.distance_matrix is None:
@@ -499,9 +552,41 @@ class Geometry:
         else:
             return self.affinity_matrix
                 
-    def get_laplacian_matrix(self, laplacian_type=None, symmetrize=True,
-                            scaling_epps=0., renormalization_exponent=1,
+    def get_laplacian_matrix(self, laplacian_type=None, symmetrize=False,
+                            scaling_epps=None, renormalization_exponent=1,
                             copy=True, return_lapsym=False):
+        """                 
+        Parameters
+        ----------
+        laplacian_type : string, the type of graph laplacian to compute.
+            see 'normed' in graph_laplacian for more information
+        
+        symmetrize : boolean, whether to pre-symmetrize the affinity matrix before 
+            computing the laplacian_matrix
+        
+        scaling_epps : scalar, the bandwidth/radius parameter used in the affinity matrix
+            see graph_laplacian for more information
+        
+        renormalization_exponent : scalar, renormalization exponent for computing Laplacian
+            see graph_laplacian for more information
+        
+        copy : boolean, whether to return copied version of the self.laplacian_matrix
+        
+        return_lapsym : boolean, if True returns additionally the symmetrized version of
+            the requested laplacian and the re-normalization weights. 
+                
+        Returns
+        -------
+        self.laplacian_matrix : sparse Ndarray (N_obs, N_obs). The requested laplacian.   
+        
+        self.laplacian_symmetric : sparse Ndarray (N_obs, N_obs). The symmetric laplacian.
+        
+        self.w : Ndarray (N_obs). The renormalization weights used to make 
+            laplacian_matrix from laplacian_symmetric
+        """
+        # if scaling_epps is None:
+            # scaling_epps = self.affinity_radius     
+                
         # First check if there's an existing Laplacian: 
         if self.laplacian_matrix is not None:
             if (laplacian_type == self.laplacian_type) or (laplacian_type is None):
@@ -580,22 +665,23 @@ class Geometry:
     def assign_parameters(self, neighborhood_radius=None, affinity_radius=None,
                           distance_method=None, laplacian_type=None, 
                           path_to_flann=None):
-        ''' Note: self.neighborhood_radius, self.affinity_radius, 
-            and self.laplacian_type refer to the CURRENT
-            version of these matrices. 
+        """
+        Note: self.neighborhood_radius, self.affinity_radius, 
+        and self.laplacian_type refer to the CURRENT
+        version of these matrices. 
             
-            If you want to re-calculate with a new parameter DO NOT
-            update these with assign_parameters, instead use
-            get_distance_matrix(), get_affinity_matrix(), or get_laplacian_matrix()
-            and pass the desired new parameter. This will automatically update
-            the self.parameter version. 
+        If you want to re-calculate with a new parameter DO NOT
+        update these with assign_parameters, instead use
+        get_distance_matrix(), get_affinity_matrix(), or get_laplacian_matrix()
+        and pass the desired new parameter. This will automatically update
+        the self.parameter version. 
             
-            If you change these values with assign_parameters Geometry will assume
-            that the existing matrix follows that parameter and so, for example,
-            calling get_distance_matrix() with a passed radius will *not* 
-            recalculate if the passed radius is equal to self.neighborhood_radius 
-            and there already exists a distance matrix.
-        '''
+        If you change these values with assign_parameters Geometry will assume
+        that the existing matrix follows that parameter and so, for example,
+        calling get_distance_matrix() with a passed radius will *not* 
+        recalculate if the passed radius is equal to self.neighborhood_radius 
+        and there already exists a distance matrix.
+        """
         if neighborhood_radius is not None:
             try: 
                 np.float(neighborhood_radius)
