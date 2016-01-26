@@ -172,7 +172,7 @@ def compute_bench_sklearn(n_samples, n_features, rad0, dim, quiet = False):
             A.data = A.data/(-(rad*1.5)**2)
             np.exp(A.data,A.data)
             sklearn_a_results.append(time() - tstart)
-            embed = se(A, n_components = 2)
+            embed = se(A, n_components = 2, eigen_solver = 'amg')
             sklearn_e_results.append(time() - tstart)
             gc.collect()
     return sklearn_d_results, sklearn_a_results, sklearn_e_results
@@ -191,8 +191,8 @@ if __name__ == '__main__':
     import scipy.io
     
     is_save = True
-    vary = 'D'
-    print ("D method")
+    vary = 'n'
+    print ("N method - bigger longer and uncut")
     
     if vary == 'n':
         if sys.argv.__len__() > 1:
@@ -202,19 +202,22 @@ if __name__ == '__main__':
         n_features = 10
         # n index parameters:
         start = 500
-        stop_1 = 12000
+        stop_1 = 10000
         start_2 = np.int(stop_1*(1.2))
-        stop_2 = 30000
+        stop_2 = 100000
         start_3 = np.int(stop_2*(1.2))
-        stop_3 = 200000
+        stop_3 = 1000000
         list_n_samples_dense = np.linspace(start, stop_1, 4).astype(np.int)
-        list_n_samples_sklearn = np.concatenate((list_n_samples_dense, np.linspace(start_2, stop_2, 3).astype(np.int)),axis=0)
-        list_n_samples_sparse = np.concatenate((list_n_samples_sklearn, np.linspace(start_3, stop_3, 3).astype(np.int)),axis=0)
-        sparse_d_results, sparse_a_results, sparse_l_results, sparse_e_results = compute_bench_sparse(list_n_samples_sparse,
-                                                [n_features], rad0, dim, quiet=False)
+        list_n_samples_sklearn = np.concatenate((list_n_samples_dense, np.linspace(start_2, stop_2, 4).astype(np.int)),axis=0)
+        list_n_samples_sparse = np.concatenate((list_n_samples_sklearn, np.linspace(start_3, stop_3, 5).astype(np.int)),axis=0)
+        
+        list_n_samples_sklearn = list_n_samples_sparse
+        
         dense_d_results, dense_a_results, dense_l_results, dense_e_results = compute_bench_dense(list_n_samples_dense,
                                                 [n_features], rad0, dim, quiet=False)
         sklearn_d_results, sklearn_a_results, sklearn_e_results = compute_bench_sklearn(list_n_samples_sklearn,
+                                                [n_features], rad0, dim, quiet=False)
+        sparse_d_results, sparse_a_results, sparse_l_results, sparse_e_results = compute_bench_sparse(list_n_samples_sparse,
                                                 [n_features], rad0, dim, quiet=False)
         
         save_dict = { 'ns_sparse_d_results':sparse_d_results, 'ns_sparse_a_results':sparse_a_results,

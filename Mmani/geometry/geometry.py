@@ -456,7 +456,6 @@ class Geometry:
         -------
         self.distance_matrix : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values
             (e.g. diagonal) should be considered Infinite. 
-        
         """
         if self.input_type == 'affinity':
             raise ValueError("input_method was passed as affinity. "
@@ -514,7 +513,6 @@ class Geometry:
         self.affinity_matrix : sparse Ndarray (N_obs, N_obs) contains the pairwise
             affinity values using the Guassian kernel and bandwidth equal to the
             affinity_radius
-        
         """
         if self.affinity_matrix is None:
             # if there's no existing affinity matrix we make one

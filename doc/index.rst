@@ -13,7 +13,10 @@ This is currently an empty skeleton for the docs... more soon!
    :maxdepth: 2
 
    example
-
+   geometry/index
+   embedding/index
+   utils/index
+   
 
 Indices and tables
 ==================
