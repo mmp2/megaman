@@ -67,7 +67,8 @@ def test_spectral_embedding_two_components(seed=36):
     true_label[0:n_sample] = 1
 
     se_precomp = SpectralEmbedding(n_components=1, input_type = 'affinity',
-                                   random_state=np.random.RandomState(seed))
+                                   random_state=np.random.RandomState(seed),
+                                   eigen_solver = 'arpack')
     embedded_coordinate = se_precomp.fit_transform(affinity)
     # Some numpy versions are touchy with types
     embedded_coordinate = \

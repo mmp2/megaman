@@ -22,6 +22,10 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
         Computes the barycenter weighted graph for points in X
         Parameters
         ----------
+        distance_matrix: sparse Ndarray, (N_obs, N_obs) pairwise distance matrix.
+        
+        X : Ndarray (N_obs, N_dim) observed data matrix. 
+        
         reg : float, optional
             Amount of regularization when solving the least-squares
             problem. Only relevant if mode='barycenter'. If None, use the
@@ -62,17 +66,22 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         reg : float
             regularization constant, multiplies the trace of the local covariance
             matrix of the distances.
-        eigen_solver : string, {'auto', 'arpack', 'dense'}
+        eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
             auto : algorithm will attempt to choose the best method for input data
+            dense  : use standard dense matrix operations for the eigenvalue
+                        decomposition.  For this method, M must be an array
+                        or matrix type.  This method should be avoided for
+                        large problems.
             arpack : use arnoldi iteration in shift-invert mode.
                         For this method, M may be a dense matrix, sparse matrix,
                         or general linear operator.
                         Warning: ARPACK can be unstable for some problems.  It is
                         best to try several random seeds in order to check results.
-            dense  : use standard dense matrix operations for the eigenvalue
-                        decomposition.  For this method, M must be an array
-                        or matrix type.  This method should be avoided for
-                        large problems.
+            lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+                a preconditioned eigensolver for large symmetric positive definite 
+                (SPD) generalized eigenproblems.
+            amg : AMG requires pyamg to be installed. It can be faster on very large, 
+                sparse problems, but may also lead to instabilities.
         tol : float, optional
             Tolerance for 'arpack' method
             Not used if eigen_solver=='dense'.
@@ -81,6 +90,9 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         random_state: numpy.RandomState or int, optional
             The generator or seed used to determine the starting vector for arpack
             iterations.  Defaults to numpy.random.
+            
+        Geometry : a Geometry object from Mmani.geometry.geometry
+        
         Returns
         -------
         Y : array-like, shape [n_samples, n_components]
@@ -113,19 +125,61 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
 
 class LocallyLinearEmbedding():
     """
-        Locally Linear Embedding
-        Read more in the :ref:`User Guide <locally_linear_embedding>`.
-        Parameters
-
-        References
-        ----------
-        .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
-            by locally linear embedding.  Science 290:2323 (2000).`
+    Locally Linear Embedding
+    
+    Parameters
+    ----------
+    n_components : integer
+        number of coordinates for the manifold.     
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        auto : algorithm will attempt to choose the best method for input data
+        dense  : use standard dense matrix operations for the eigenvalue
+                    decomposition.  For this method, M must be an array
+                    or matrix type.  This method should be avoided for
+                    large problems.
+        arpack : use arnoldi iteration in shift-invert mode.
+                    For this method, M may be a dense matrix, sparse matrix,
+                    or general linear operator.
+                    Warning: ARPACK can be unstable for some problems.  It is
+                    best to try several random seeds in order to check results.
+        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            a preconditioned eigensolver for large symmetric positive definite 
+            (SPD) generalized eigenproblems.
+        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.
+    tol : float, optional
+        Tolerance for 'arpack' method
+        Not used if eigen_solver=='dense'.    
+    max_iter : integer
+        maximum number of iterations for the arpack solver.   
+    random_state: numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.
+    reg : float
+        regularization constant, multiplies the trace of the local covariance
+        matrix of the distances.        
+    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
+        distances beyond neighborhood_radius are considered infinite.         
+    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+        used in Guassian kernel for affinity matrix        
+    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.   
+        method for computing pairwise radius neighbors graph.         
+    input_type : string, one of: 'data', 'distance', 'affinity'. 
+        The values of input data X.       
+    path_to_flann : string. full file path location of FLANN if not installed to 
+        root or to set FLANN_ROOT set to path location. Used for importing pyflann 
+        from a different location.       
+    Geometry : a Geometry object from Mmani.geometry.geometry
+    
+    References
+    ----------
+    .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
+        by locally linear embedding.  Science 290:2323 (2000).`
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
                  tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None, 
                  affinity_radius = None,  distance_method = 'auto', 
-                 input_type = 'data', path_to_pyflann = None, Geometry = None):
+                 input_type = 'data', path_to_flann = None, Geometry = None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -140,16 +194,16 @@ class LocallyLinearEmbedding():
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
         self.input_type = input_type
-        self.path_to_pyflann = path_to_pyflann
+        self.path_to_flann = path_to_flann
         
     def fit_geometry(self, X):
         self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
                                       affinity_radius = self.affinity_radius,
                                       distance_method = self.distance_method,
                                       input_type = self.input_type,
-                                      path_to_pyflann = self.path_to_pyflann)
+                                      path_to_flann = self.path_to_flann)
     
-    def fit(self, X, y=None):
+    def fit(self, X):
         """Fit the model from data in X.
 
         Parameters
@@ -157,12 +211,12 @@ class LocallyLinearEmbedding():
         X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
-
-            If is_affinity is True
+            
+            If self.input_type is 'distance_matrix', or 'affinity':
             X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples
-
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
+        
         Returns
         -------
         self : object
@@ -177,7 +231,7 @@ class LocallyLinearEmbedding():
                                                     max_iter = self.max_iter)
         return self
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X):
         """Fit the model from data in X and transform X.
 
         Parameters
@@ -185,12 +239,12 @@ class LocallyLinearEmbedding():
         X: array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
-
-            If affinity is "precomputed"
+        
+            If self.input_type is 'distance_matrix', or 'affinity':
             X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples.
-
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
+        
         Returns
         -------
         X_new: array-like, shape (n_samples, n_components)
