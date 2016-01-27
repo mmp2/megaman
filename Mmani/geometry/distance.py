@@ -16,6 +16,31 @@ def _row_col_from_condensed_index(N,compr_ind):
     return (i,j)  
 
 def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex = None):
+    """
+    Computes pairwise distance matrix. Interface function.
+    
+    Parameters
+    ----------
+    X : data matrix, array_like, shape = (n_samples, n_dimensions)
+    method : one of 'auto', 'brute', 'pyflann', 'cyflann', or 'cython'.
+        'pyflann' requires python library pyflann
+        'cython' requires FLANN and cython 
+        'cyflann' requires a UNIX system 
+    flindex : a pyflann pre-computed flindex 
+    radius : neighborhood radius, scalar
+        the neighbors lying approximately within radius of a node will
+        be returned. Or, in other words, all distances will be less or equal
+        to radius. There will be entries in the matrix for zero distances.
+        Attention when converting to dense: The rest of the distances
+        should not be considered 0, but "large".
+    cyindex : A cython computed FLANN index. 
+    
+    Returns
+    -------
+    graph : the distance matrix, array_like, shape (X.shape[0]. X.shape[0])
+           sparse csr_format. Zeros on the diagonal are true zeros. 
+           Zeros not on the diagonal should be considered infinite     
+    """
     if radius is None:
         radius = 1/X.shape[1]
     if method == 'auto':
@@ -26,27 +51,32 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
             raise ValueError('must pass a flindex when using pyflann')
             return None
         else:
-            distance_matrix = fl_radius_neighbors_graph(X, radius, flindex)
+            graph = fl_radius_neighbors_graph(X, radius, flindex)
     elif method == 'cyflann':
-        distance_matrix = fl_cpp_radius_neighbors_graph(X, radius)
+        graph = fl_cpp_radius_neighbors_graph(X, radius)
     elif method == 'cython':
         if cyindex is None:
             cyindex = Index(X)
         cyindex.buildIndex()
-        distance_matrix = cyindex.radius_neighbors_graph(X, radius)
+        graph = cyindex.radius_neighbors_graph(X, radius)
     elif method == 'brute':
-        distance_matrix = radius_neighbors_graph(X, radius)
+        graph = radius_neighbors_graph(X, radius)
     else: 
         raise ValueError('method must be one of: (auto, brute, pyflann, cyflann)')
         return None
-    return distance_matrix
+    return graph
         
 def radius_neighbors_graph(X, radius):
     """
+    Computes pairwise distance matrix using dense method. 
+    
+    Parameters
+    ----------
     X: data matrix, array_like, shape = (n_samples, n_dimensions)
     radius: neighborhood radius, scalar
     
-    Returns:
+    Returns
+    -------
     graph: the distance matrix, array_like, shape (X.shape[0]. X.shape[0])
            sparse csr_format. Zeros on the diagonal are true zeros. 
            Zeros not on the diagonal should be considered infinite 
@@ -66,7 +96,8 @@ def radius_neighbors_graph(X, radius):
 def fl_cpp_radius_neighbors_graph(X, radius):
     """
     Constructs a sparse distance matrix called graph in coo
-    format. 
+    format using pre-compiled C++ function.
+    
     Parameters
     ----------
     X: data matrix, array_like, shape = (n_samples, n_dimensions )
@@ -74,7 +105,6 @@ def fl_cpp_radius_neighbors_graph(X, radius):
         the neighbors lying approximately within radius of a node will
         be returned. Or, in other words, all distances will be less or equal
         to radius. There will be entries in the matrix for zero distances.
-        
         Attention when converting to dense: The rest of the distances
         should not be considered 0, but "large".
     
@@ -126,8 +156,8 @@ def fl_cpp_radius_neighbors_graph(X, radius):
     
 def fl_radius_neighbors_graph(X, radius, flindex):
     """
-    Constructs a sparse distance matrix called graph in coo
-    format. 
+    Constructs a sparse distance matrix called graph in coo format using pyflann.
+    
     Parameters
     ----------
     X: data matrix, array_like, shape = (n_samples, n_dimensions )
@@ -137,8 +167,7 @@ def fl_radius_neighbors_graph(X, radius, flindex):
         to radius. There will be entries in the matrix for zero distances.
         
         Attention when converting to dense: The rest of the distances
-        should not be considered 0, but "large".
-   
+        should not be considered 0, but "large".   
     flindex: FLANN index of the data X
 
     Returns

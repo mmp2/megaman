@@ -9,7 +9,7 @@ API Documentation
 
 .. automodule:: Mmani.embedding.spectral_embedding
    :members:
-   
+
 .. automodule:: Mmani.embedding.isomap
    :members:
 

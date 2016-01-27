@@ -41,7 +41,7 @@ def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 's
     Returns
     -------
     h_dual_metric : array, shape=(n_samples, n_dim, n_dim)
-    Optionally:
+    Optionally :
     g_riemann_metric : array, shape=(n_samples, n_dim, n_dim )
     Hvv : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )
     Hsvals : singular values of H, shape = ( n_samples, n_dim )
@@ -75,11 +75,15 @@ def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 's
 
 def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
     """ 
+    Parameters 
+    ----------
+    H : the inverse R. Metric
     if mode_inv == 'svd':
        also returns Hvv, Hsvals, Gsvals the (transposed) eigenvectors of
        H and the singular values of H and G
-   if mdimG < H.shape[2]:
+    if mdimG < H.shape[2]:
        G.shape = [ n_samples, mdimG, mdimG ] with n_samples = H.shape[0]
+    
     Notes
     ------
     currently Hvv, Hsvals are n_dim = H.shape[2], and Gsvals, G are mdimG
@@ -111,43 +115,42 @@ def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
         riemann_metric = np.linalg.inv(h_dual_metric)
         return riemann_metric, None, None, None
 
-"""
-RiemannMetric computes and stores the Riemannian metric and its dual
-associated with an embedding Y. The Riemannian metric is currently denoted
-by G, its dual by H, and the Laplacian by L. G at each point is the 
-matrix inverse of H. 
-
-For performance, the following choices have been made:
-* the class makes no defensive copies of L, Y
-* no defensive copies of the array attributes H, G, Hvv, ....
-* G is computed on request only 
-In the future, this class will be extended to compute H only once,
-for mdimY dimensions, but to store multiple G's, with different dimensions.
-
-In the near future plans is also a "lazy" implementation, which will
-compute G (and maybe even H) only at the requested points. 
- """
-
 class RiemannMetric:
     """ 
+    RiemannMetric computes and stores the Riemannian metric and its dual
+    associated with an embedding Y. The Riemannian metric is currently denoted
+    by G, its dual by H, and the Laplacian by L. G at each point is the 
+    matrix inverse of H. 
+
+    For performance, the following choices have been made:
+    * the class makes no defensive copies of L, Y
+    * no defensive copies of the array attributes H, G, Hvv, ....
+    * G is computed on request only 
+    In the future, this class will be extended to compute H only once,
+    for mdimY dimensions, but to store multiple G's, with different dimensions.
+
+    In the near future plans is also a "lazy" implementation, which will
+    compute G (and maybe even H) only at the requested points. 
+    
     Parameters
     -----------
+    Y : embedding coordinates, shape = (n, mdimY)
+    laplacian : estimated laplacian from data  shape = (n, n)
+    n_dim : the manifold domension
+    mod_inv : if mode_inv = svd, also returns Hvv, Hsvals, 
+        Gsvals the (transposed) eigenvectors of
+        H and the singular values of H and G
 
-    Attributes
+    Returns
     ----------
-    Y = embedding coordinates, shape = (n, mdimY)
-    n = sample size
-    L = Laplacian, shape = (n, n)
-    mdimG = dimension of G, H
-    mdimY = dimension of Y
-    mode_inv = "svd", "inv" how to compute the inverses of H
-
-    H = dual Riemann metric, shape = (n, mdimY, mdimY)
-    G = Riemann metric, shape = (n, mdimG, mdimG)
-    Hvv = (transposed) singular vectors of H, shape = (n, mdimY, mdimY)
-    Hsvals = singular values of H, shape = (n, mdimY)
-    Gsvals = singular values of G, shape = (n, mdimG)
-    detG = determinants of G, shape = (n,1)
+    mdimG : dimension of G, H
+    mdimY : dimension of Y
+    H : dual Riemann metric, shape = (n, mdimY, mdimY)
+    G : Riemann metric, shape = (n, mdimG, mdimG)
+    Hvv : (transposed) singular vectors of H, shape = (n, mdimY, mdimY)
+    Hsvals : singular values of H, shape = (n, mdimY)
+    Gsvals : singular values of G, shape = (n, mdimG)
+    detG : determinants of G, shape = (n,1)
 
     Notes
     -----
@@ -189,7 +192,9 @@ class RiemannMetric:
         self.detG = None
 
     def get_dual_rmetric( self, invert_h = False, mode_inv = 'svd' ):
-        """ This is not satisfactory, because if mdimG<mdimY the shape of H
+        """ 
+        Compute the dual Riemannian Metric
+        This is not satisfactory, because if mdimG<mdimY the shape of H
         will not be the same as the shape of G. TODO(maybe): return a (copied) 
         smaller H with only the rows and columns in G.
         """
@@ -201,6 +206,9 @@ class RiemannMetric:
             return self.H
 
     def get_rmetric( self, mode_inv = 'svd', return_svd = False ):
+        """
+        Compute the Reimannian Metric
+        """
         if self.H is None:
             self.H, self.G, self.Hvv, self.Hsval = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = mode_inv)
         if self.G is None:

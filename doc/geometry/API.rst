@@ -9,7 +9,7 @@ API Documentation
 
 .. automodule:: Mmani.geometry.geometry
    :members:
-   
+
 .. automodule:: Mmani.geometry.distance
    :members:
 

@@ -20,16 +20,16 @@ from Mmani.utils.eigendecomp import null_space
 def barycenter_graph(distance_matrix, X, reg=1e-3):
     """
         Computes the barycenter weighted graph for points in X
+        
         Parameters
         ----------
-        distance_matrix: sparse Ndarray, (N_obs, N_obs) pairwise distance matrix.
-        
-        X : Ndarray (N_obs, N_dim) observed data matrix. 
-        
+        distance_matrix: sparse Ndarray, (N_obs, N_obs) pairwise distance matrix.        
+        X : Ndarray (N_obs, N_dim) observed data matrix.         
         reg : float, optional
             Amount of regularization when solving the least-squares
             problem. Only relevant if mode='barycenter'. If None, use the
             default.
+        
         Returns
         -------
         W : sparse matrix in CSR format, shape = [n_samples, n_samples]
@@ -58,7 +58,7 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
                             eigen_solver='auto', tol=1e-6,  random_state=None):
     """
         Perform a Locally Linear Embedding analysis on the data.
-        Read more in the :ref:`User Guide <locally_linear_embedding>`.
+        
         Parameters
         ----------
         n_components : integer
@@ -67,30 +67,31 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
             regularization constant, multiplies the trace of the local covariance
             matrix of the distances.
         eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-            auto : algorithm will attempt to choose the best method for input data
-            dense  : use standard dense matrix operations for the eigenvalue
-                        decomposition.  For this method, M must be an array
-                        or matrix type.  This method should be avoided for
-                        large problems.
-            arpack : use arnoldi iteration in shift-invert mode.
-                        For this method, M may be a dense matrix, sparse matrix,
-                        or general linear operator.
-                        Warning: ARPACK can be unstable for some problems.  It is
-                        best to try several random seeds in order to check results.
-            lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-                a preconditioned eigensolver for large symmetric positive definite 
+            'auto' : 
+                algorithm will attempt to choose the best method for input data
+            'dense' : 
+                use standard dense matrix operations for the eigenvalue decomposition. 
+                For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            'arpack' : 
+                use arnoldi iteration in shift-invert mode. For this method, 
+                M may be a dense matrix, sparse matrix, or general linear operator. 
+                Warning: ARPACK can be unstable for some problems.  It is best to 
+                try several random seeds in order to check results.
+            'lobpcg' : 
+                Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+                A preconditioned eigensolver for large symmetric positive definite  
                 (SPD) generalized eigenproblems.
-            amg : AMG requires pyamg to be installed. It can be faster on very large, 
+            'amg' : 
+                AMG requires pyamg to be installed. It can be faster on very large, 
                 sparse problems, but may also lead to instabilities.
         tol : float, optional
             Tolerance for 'arpack' method
             Not used if eigen_solver=='dense'.
         max_iter : integer
             maximum number of iterations for the arpack solver.
-        random_state: numpy.RandomState or int, optional
+        random_state : numpy.RandomState or int, optional
             The generator or seed used to determine the starting vector for arpack
-            iterations.  Defaults to numpy.random.
-            
+            iterations.  Defaults to numpy.random.            
         Geometry : a Geometry object from Mmani.geometry.geometry
         
         Returns
@@ -100,6 +101,7 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         squared_error : float
             Reconstruction error for the embedding vectors. Equivalent to
             ``norm(Y - W Y, 'fro')**2``, where W are the reconstruction weights.
+        
         References
         ----------
         .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
@@ -132,27 +134,29 @@ class LocallyLinearEmbedding():
     n_components : integer
         number of coordinates for the manifold.     
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
     tol : float, optional
         Tolerance for 'arpack' method
         Not used if eigen_solver=='dense'.    
     max_iter : integer
         maximum number of iterations for the arpack solver.   
-    random_state: numpy.RandomState or int, optional
+    random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
     reg : float
@@ -212,8 +216,9 @@ class LocallyLinearEmbedding():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
             
-            If self.input_type is 'distance_matrix', or 'affinity':
-            X : array-like, shape (n_samples, n_samples),
+        If self.input_type is 'distance', or 'affinity':
+            
+        X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph 
             computed from samples.
         
@@ -240,8 +245,9 @@ class LocallyLinearEmbedding():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
         
-            If self.input_type is 'distance_matrix', or 'affinity':
-            X : array-like, shape (n_samples, n_samples),
+        If self.input_type is 'distance', or 'affinity':
+            
+        X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph 
             computed from samples.
         

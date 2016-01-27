@@ -191,8 +191,8 @@ if __name__ == '__main__':
     import scipy.io
     
     is_save = True
-    vary = 'n'
-    print ("N method - bigger longer and uncut")
+    vary = 'D'
+    print ("D method -- yet even more D")
     
     if vary == 'n':
         if sys.argv.__len__() > 1:
@@ -258,12 +258,14 @@ if __name__ == '__main__':
     else:    
         rad0 = 2.5
         dim = 2
-        n_samples = 3000    
-        list_n_features_dense = np.linspace(50, 2000, 4).astype(np.int)
-        list_n_features_sklearn = np.concatenate((list_n_features_dense, np.linspace(2100, 3000, 2).astype(np.int)),axis=0)
-        list_n_features_sparse = np.concatenate((list_n_features_sklearn, np.linspace(4000, 10000, 2).astype(np.int)),axis=0)
+        n_samples = 100000
+        list_n_features_dense = np.linspace(50, 1000, 4).astype(np.int)
+        list_n_features_sklearn = np.concatenate((list_n_features_dense, np.linspace(1500, 3000, 3).astype(np.int)),axis=0)
+        list_n_features_sparse = np.concatenate((list_n_features_sklearn, np.linspace(4000, 100000, 6).astype(np.int)),axis=0)
+        list_n_features_sklearn = list_n_features_sparse
+        dense_d_results = []; dense_a_results = []; dense_e_results = []; dense_l_results = [];
         sparse_d_results, sparse_a_results, sparse_l_results, sparse_e_results = compute_bench_sparse([n_samples], list_n_features_sparse, rad0, dim, quiet=False)
-        dense_d_results, dense_a_results, dense_l_results, dense_e_results = compute_bench_dense([n_samples], list_n_features_dense, rad0, dim, quiet=False)
+        # dense_d_results, dense_a_results, dense_l_results, dense_e_results = compute_bench_dense([n_samples], list_n_features_dense, rad0, dim, quiet=False)
         sklearn_d_results, sklearn_a_results, sklearn_e_results = compute_bench_sklearn([n_samples], list_n_features_sklearn, rad0, dim, quiet=False)
         save_dict = {'nf_sparse_d_results':sparse_d_results, 'nf_sparse_a_results':sparse_a_results, 
                     'nf_sparse_l_results':sparse_l_results, 'nf_sparse_e_results':sparse_e_results,

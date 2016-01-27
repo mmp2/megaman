@@ -9,4 +9,3 @@ API Documentation
 
 .. automodule:: Mmani.utils.eigendecomp
    :members:
-   

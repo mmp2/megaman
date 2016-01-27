@@ -25,6 +25,7 @@ Hence, I adopted the following convention:
    * laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry
    * these conventions are the same for dense matrices, for consistency
 """
+
 # Authors: Marina Meila <mmp@stat.washington.edu>
 #         James McQueen <jmcq@u.washington.edu>
 # License: BSD 3 clause
@@ -45,7 +46,7 @@ def symmetrize_sparse(A):
     Symmetrizes a sparse matrix in place (coo and csr formats only)
 
     NOTES: 
-      1) if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them. 
+    1. if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them. 
     """
     if A.getformat() is not "csr":
         A = A.tocsr()
@@ -85,36 +86,33 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
 def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False, 
                     scaling_epps = 0., renormalization_exponent = 1, 
                     return_diag = False, return_lapsym = False):
-    """ Return the Laplacian matrix of an undirected graph.
+    """
+    Return the Laplacian matrix of an undirected graph.
+    
+    Computes a consistent estimate of the Laplace-Beltrami operator L
+    from the similarity matrix A . See "Diffusion Maps" (Coifman and
+    Lafon, 2006) and "Graph Laplacians and their Convergence on Random
+    Neighborhood Graphs" (Hein, Audibert, Luxburg, 2007) for more
+    details. 
+    
+    A is the similarity matrix from the sampled data on the manifold M.
+    Typically A is obtained from the data X by applying the heat kernel 
+    A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
+    need to obtained the properly scaled version of L. Following the usual
+    convention, the laplacian (Laplace-Beltrami operator) is defined as 
+    div(grad(f)) (that is the laplacian is taken to be negative
+    semi-definite).
+    
+    Note that the Laplacians defined here are the negative of what is 
+    commonly used in the machine learning literature. This convention is used
+    so that the Laplacians converge to the standard definition of the
+    differential operator.
 
-   Computes a consistent estimate of the Laplace-Beltrami operator L
-   from the similarity matrix A . See "Diffusion Maps" (Coifman and
-   Lafon, 2006) and "Graph Laplacians and their Convergence on Random
-   Neighborhood Graphs" (Hein, Audibert, Luxburg, 2007) for more
-   details. 
-
-   ????It also returns the Kth firts eigenvectors PHI of the L in
-   increasing order of eigenvalues LAM.
-
-   A is the similarity matrix from the sampled data on the manifold M.
-   Typically A is obtained from the data X by applying the heat kernel 
-   A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
-   need to obtained the properly scaled version of L. Following the usual
-   convention, the laplacian (Laplace-Beltrami operator) is defined as 
-   div(grad(f)) (that is the laplacian is taken to be negative
-   semi-definite).
-
-   Note that the Laplacians defined here are the negative of what is 
-   commonly used in the machine learning literature. This convention is used
-   so that the Laplacians converge to the standard definition of the
-   differential operator.
+    notation: A = csgraph, D=diag(A1) the diagonal matrix of degrees
+    L = lap = returned object, EPPS = scaling_epps**2
 
     Parameters
     ----------
-    notation: A = csgraph, D=diag(A1) the diagonal matrix of degrees
-              L = lap = returned object
-              EPPS = scaling_epps**2
-           
     csgraph : array_like or sparse matrix, 2 dimensions
         compressed-sparse graph, with shape (N, N). 
     normed : string, optional
@@ -157,17 +155,17 @@ def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False,
     -----
     There are a few differences from the sklearn.spectral_embedding laplacian
     function. 
-    1) normed='unnormalized' and 'symmetricnormalized' correspond 
-    respectively to normed=False and True in the latter. (Note also that normed
-    was changed from bool to string.
-    2) the signs of this laplacians are changed w.r.t the original
-    3) the diagonal of lap is no longer set to 0; also there is no checking if 
-    the matrix has zeros on the diagonal. If the degree of a node is 0, this
-    is handled graciuously (by not dividing by 0).
-    4) if csgraph is not symmetric the out-degree is used in the
-    computation and no warning is raised. 
-    However, it is not recommended to use this function for directed graphs.
-    Use directed_laplacian() (NYImplemented) instead
+    
+    1. normed='unnormalized' and 'symmetricnormalized' correspond respectively 
+       to normed=False and True in the latter. (Note also that normed was changed 
+       from bool to string.
+    2. the signs of this laplacians are changed w.r.t the original
+    3. the diagonal of lap is no longer set to 0; also there is no checking if 
+       the matrix has zeros on the diagonal. If the degree of a node is 0, this
+       is handled graciuously (by not dividing by 0).
+    4. if csgraph is not symmetric the out-degree is used in the
+       computation and no warning is raised. However, it is not recommended to 
+       use this function for directed graphs. 
     """
     if csgraph.ndim != 2 or csgraph.shape[0] != csgraph.shape[1]:
         raise ValueError('csgraph must be a square matrix or array')
@@ -354,11 +352,13 @@ class Geometry:
     distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.
         method for computing pairwise radius neighbors graph.    
     laplacian_type : string, one of: 'symmetricnormalized', 'geometric', 'renormalized', 
-                                     'unnormalized', 'randomwalk'
+        'unnormalized', 'randomwalk'
         type of laplacian to be computed. See graph_laplacian for more information.    
     path_to_flann : string. full file path location of FLANN if not installed to root or
         FLANN_ROOT set to path location. Used for importing pyflann from a different location.    
+    
     """
+    
     def __init__(self, X, neighborhood_radius = None, affinity_radius = None,
                  distance_method = 'auto', input_type = 'data', 
                  laplacian_type = None, path_to_flann = None):
@@ -557,28 +557,21 @@ class Geometry:
         Parameters
         ----------
         laplacian_type : string, the type of graph laplacian to compute.
-            see 'normed' in graph_laplacian for more information
-        
+            see 'normed' in graph_laplacian for more information        
         symmetrize : boolean, whether to pre-symmetrize the affinity matrix before 
-            computing the laplacian_matrix
-        
+            computing the laplacian_matrix        
         scaling_epps : scalar, the bandwidth/radius parameter used in the affinity matrix
-            see graph_laplacian for more information
-        
+            see graph_laplacian for more information        
         renormalization_exponent : scalar, renormalization exponent for computing Laplacian
-            see graph_laplacian for more information
-        
-        copy : boolean, whether to return copied version of the self.laplacian_matrix
-        
+            see graph_laplacian for more information        
+        copy : boolean, whether to return copied version of the self.laplacian_matrix        
         return_lapsym : boolean, if True returns additionally the symmetrized version of
-            the requested laplacian and the re-normalization weights. 
-                
+            the requested laplacian and the re-normalization weights.                 
+        
         Returns
         -------
-        self.laplacian_matrix : sparse Ndarray (N_obs, N_obs). The requested laplacian.   
-        
-        self.laplacian_symmetric : sparse Ndarray (N_obs, N_obs). The symmetric laplacian.
-        
+        self.laplacian_matrix : sparse Ndarray (N_obs, N_obs). The requested laplacian.           
+        self.laplacian_symmetric : sparse Ndarray (N_obs, N_obs). The symmetric laplacian.        
         self.w : Ndarray (N_obs). The renormalization weights used to make 
             laplacian_matrix from laplacian_symmetric
         """

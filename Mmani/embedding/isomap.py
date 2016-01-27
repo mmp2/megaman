@@ -37,43 +37,38 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
 
     n_components : integer, optional
         The dimension of the projection subspace.
-
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
-
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
         By default, arpack is used.
-
     eigen_tol : float, optional, default=0.0
         Stopping criterion for eigendecomposition of the Laplacian matrix
-        when using arpack eigen_solver.
-        
+        when using arpack eigen_solver.        
     path_method : string, method for computing graph shortest path. One of :
         'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path 
-        for more information. 
-    
+        for more information.     
     distance_matrix : sparse Ndarray (n_obs, n_obs), optional. Pairwise distance matrix
-        sparse zeros considered 'infinite'. 
-    
+        sparse zeros considered 'infinite'.     
     graph_distance_matrix : Ndarray (n_obs, n_obs), optional. Pairwise graph distance 
-        matrix. Output of graph_shortest_path.
-    
+        matrix. Output of graph_shortest_path.    
     centered_matrix : Ndarray (n_obs, n_obs), optional. Centered version of 
         graph_distance_matrix
 
@@ -127,20 +122,22 @@ class Isomap():
     n_components : integer, default: 2
         The dimension of the projected subspace.
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
     random_state : int seed, RandomState instance, or None, default : None
         A pseudo random number generator used for the initialization of the
@@ -163,10 +160,9 @@ class Isomap():
         different location.        
     Geometry : a Geometry object from Mmani.geometry.geometry
     
-    Attributes
-    ----------
-    
-    `embedding_` : array, shape = (n_samples, n_components)
+    Returns
+    ----------    
+    embedding_ : array, shape = (n_samples, n_components)
         Spectral embedding of the training matrix.
     
     References
@@ -213,6 +209,12 @@ class Isomap():
         X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
+
+        If self.input_type is 'distance', or 'affinity':
+            
+        X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
         
         input_type : string, one of: 'data', 'distance', 'affinity'. 
             The values of input data X. (default = 'data')
@@ -266,10 +268,11 @@ class Isomap():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
         
-            If affinity is "precomputed"
-            X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed adjacency graph computed from
-            samples.
+        If self.input_type is 'distance', or 'affinity':
+            
+        X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed distance or adjacency graph 
+            computed from samples.
         
         Returns
         -------

@@ -17,7 +17,8 @@ from scipy.sparse.csgraph import connected_components
 from Mmani.utils.validation import check_random_state
 
 def _graph_connected_component(graph, node_id):
-    """Find the largest graph connected components the contains one
+    """
+    Find the largest graph connected components the contains one
     given node
     
     Parameters
@@ -48,7 +49,8 @@ def _graph_connected_component(graph, node_id):
     return connected_components
 
 def _graph_is_connected(graph):
-    """ Return whether the graph is connected (True) or Not (False)
+    """
+    Return whether the graph is connected (True) or Not (False)
 
     Parameters
     ----------
@@ -72,7 +74,8 @@ def _graph_is_connected(graph):
 def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
                        random_state=None, eigen_tol=0.0, drop_first=True,
                        diffusion_maps = False):
-    """Project the sample on the first eigen vectors of the graph Laplacian.
+    """
+    Project the sample on the first eigen vectors of the graph Laplacian.
     
     The adjacency matrix is used to compute a normalized graph Laplacian
     whose spectrum (especially the eigen vectors associated to the
@@ -91,45 +94,42 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     Parameters
     ----------        
     Geometry : a Geometry object from Mmani.embedding.geometry
-
+    
     n_components : integer, optional
         The dimension of the projection subspace.
-
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
-            sparse problems, but may also lead to instabilities.
-    
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
+            sparse problems, but may also lead to instabilities.    
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-        By default, arpack is used.
-    
+        By default, arpack is used.    
     eigen_tol : float, optional, default=0.0
         Stopping criterion for eigendecomposition of the Laplacian matrix
-        when using arpack eigen_solver.
-    
+        when using arpack eigen_solver.    
     drop_first : bool, optional, default=True
         Whether to drop the first eigenvector. For spectral embedding, this
         should be True as the first eigenvector should be constant vector for
         connected graph, but for spectral clustering, this should be kept as
-        False to retain the first eigenvector.
-        
+        False to retain the first eigenvector.    
     diffusion_map : boolean, optional. Whether to return the diffusion map 
         version by re-scaling the embedding by the eigenvalues. 
-        
+    
     Returns
     -------
     embedding : array, shape=(n_samples, n_components)
@@ -144,14 +144,14 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     References
     ----------
     * http://en.wikipedia.org/wiki/LOBPCG
-
+    
     * Toward the Optimal Preconditioned Eigensolver: Locally Optimal
       Block Preconditioned Conjugate Gradient Method
       Andrew V. Knyazev
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
     random_state = check_random_state(random_state)    
-
+    
     if not isinstance(Geometry, geom.Geometry):
         raise RuntimeError("Geometry object not Mmani.embedding.geometry Geometry class")
     affinity_matrix = Geometry.get_affinity_matrix()
@@ -220,7 +220,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
 class SpectralEmbedding():
     """
     Spectral embedding for non-linear dimensionality reduction.
-    
+        
     Forms an affinity matrix given by the specified function and
     applies spectral decomposition to the corresponding graph laplacian.
     The resulting transformation is given by the value of the
@@ -231,20 +231,22 @@ class SpectralEmbedding():
     n_components : integer, optional
         The dimension of the projection subspace.
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
@@ -262,7 +264,7 @@ class SpectralEmbedding():
         version by re-scaling the embedding by the eigenvalues. 
     neighborhood_radius : scalar, passed to distance_matrix. Value such that all
         distances beyond neighborhood_radius are considered infinite.         
-    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
+    affinity_radius : scalar, passed to affinity matrix, bandwidth parameter
         used in Guassian kernel for affinity matrix        
     distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.   
         method for computing pairwise radius neighbors graph.         
@@ -273,15 +275,8 @@ class SpectralEmbedding():
         from a different location.       
     Geometry : a Geometry object from Mmani.geometry.geometry
         
-    Attributes
-    ----------
-    `embedding_` : array, shape = (n_samples, n_components)
-        Spectral embedding of the training matrix.
-    `affinity_matrix_` : array, shape = (n_samples, n_samples)
-        Affinity_matrix constructed from samples or precomputed.
     References
     ----------
-    
     - A Tutorial on Spectral Clustering, 2007
       Ulrike von Luxburg
       http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
@@ -326,7 +321,8 @@ class SpectralEmbedding():
                                       path_to_flann = self.path_to_flann)
     
     def fit(self, X, y=None):
-        """Fit the model from data in X.
+        """
+        Fit the model from data in X.
 
         Parameters
         ----------
@@ -334,8 +330,8 @@ class SpectralEmbedding():
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
 
-            If self.input_type is 'distance_matrix', or 'affinity':
-            X : array-like, shape (n_samples, n_samples),
+        If self.input_type is distance, or affinity:
+        X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph 
             computed from samples.
 
@@ -360,22 +356,25 @@ class SpectralEmbedding():
         return self
 
     def fit_transform(self, X, y=None):
-        """Fit the model from data in X and transform X.
+        """
+        Fit the model from data in X and transform X.
 
         Parameters
         ----------
-        X: array-like, shape (n_samples, n_features)
+        X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
-
-            If self.input_type is 'distance_matrix', or 'affinity':
-            X : array-like, shape (n_samples, n_samples),
+            
+        If self.input_type is distance, or affinity :
+        
+        X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph 
             computed from samples.
-
+        
         Returns
         -------
-        X_new: array-like, shape (n_samples, n_components)
+        X_new : array-like, shape (n_samples, n_components)
+        
         """
         self.fit(X)
         return self.embedding_

@@ -12,7 +12,6 @@ This is currently an empty skeleton for the docs... more soon!
 .. toctree::
    :maxdepth: 2
 
-   example
    geometry/index
    embedding/index
    utils/index

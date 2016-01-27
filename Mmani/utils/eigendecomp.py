@@ -18,40 +18,43 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
                        random_state=None, eigen_tol=0.0, 
                        drop_first=True, largest = True):
     """
-    G : 2d numpy/scipy array. Potentially sparse.
-        The matrix to find the eigendecomposition of 
+    Function to compute the eigendecomposition of a square matrix.
+    
+    Parameters
+    ----------
+    G : 2d numpy/scipy array. Potentially sparse. The matrix to find the eigendecomposition of 
     n_components : integer, optional
         The number of eigenvectors to return 
-
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
-
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
         By default, arpack is used.
-
     eigen_tol : float, optional, default=0.0
-        Stopping criterion for eigendecomposition when using arpack eigen_solver
+        Stopping criterion for eigendecomposition when using arpack eigen_solver  
     
     Returns
     -------
     lambdas, diffusion_map : eigenvalues, eigenvectors 
     """
+    
     n_nodes = G.shape[0]
     if eigen_solver is None:
         eigen_solver = 'auto'
@@ -158,9 +161,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
 
 def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
                random_state=None):
-    # Here we need to replace the call with a eigendecomp call 
     """
     Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues
+    
     Parameters
     ----------
     M : {array, matrix, sparse matrix, LinearOperator}
@@ -170,20 +173,22 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
     k_skip : integer, optional
         Number of low eigenvalues to skip.
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-        auto : algorithm will attempt to choose the best method for input data
-        dense  : use standard dense matrix operations for the eigenvalue
-                    decomposition.  For this method, M must be an array
-                    or matrix type.  This method should be avoided for
-                    large problems.
-        arpack : use arnoldi iteration in shift-invert mode.
-                    For this method, M may be a dense matrix, sparse matrix,
-                    or general linear operator.
-                    Warning: ARPACK can be unstable for some problems.  It is
-                    best to try several random seeds in order to check results.
-        lobpcg : Locally Optimal Block Preconditioned Conjugate Gradient Method.
-            a preconditioned eigensolver for large symmetric positive definite 
+        'auto' : 
+            algorithm will attempt to choose the best method for input data
+        'dense' : 
+            use standard dense matrix operations for the eigenvalue decomposition. 
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' : 
+            use arnoldi iteration in shift-invert mode. For this method, 
+            M may be a dense matrix, sparse matrix, or general linear operator. 
+            Warning: ARPACK can be unstable for some problems.  It is best to 
+            try several random seeds in order to check results.
+        'lobpcg' : 
+            Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+            A preconditioned eigensolver for large symmetric positive definite  
             (SPD) generalized eigenproblems.
-        amg : AMG requires pyamg to be installed. It can be faster on very large, 
+        'amg' : 
+            AMG requires pyamg to be installed. It can be faster on very large, 
             sparse problems, but may also lead to instabilities.
     tol : float, optional
         Tolerance for 'arpack' method.
@@ -193,7 +198,13 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
     random_state: numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
+    
+    Returns
+    -------
+    null_space : estimated k vectors of the null space
+    error : estimated error (sum of eigenvalues) 
     """
+    
     if eigen_solver == 'auto':
         if M.shape[0] > 200 and k + k_skip < 10:
             eigen_solver = 'arpack'
