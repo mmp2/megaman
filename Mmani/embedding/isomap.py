@@ -167,6 +167,9 @@ class Isomap():
     
     References
     ----------
+    * Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. 
+      A global geometric framework for nonlinear dimensionality reduction. 
+      Science 290 (5500)
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
                  eigen_tol = 1e-12, path_method = 'auto',

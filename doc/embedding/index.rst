@@ -12,4 +12,8 @@ Embedding
 .. toctree::
    :maxdepth: 2
 
+   isomap.rst
+   locally_linear.rst
+   ltsa.rst
+   spectral_embedding.rst
    API
