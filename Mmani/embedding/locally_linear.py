@@ -104,8 +104,8 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         
         References
         ----------
-        .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
-            by locally linear embedding.  Science 290:2323 (2000).`
+        * Roweis, S. & Saul, L. Nonlinear dimensionality reduction
+          by locally linear embedding.  Science 290:2323 (2000).
     """
     if eigen_solver not in ('auto', 'arpack', 'dense', 'amg', 'lobpcg'):
         raise ValueError("unrecognized eigen_solver '%s'" % eigen_solver)
@@ -177,8 +177,8 @@ class LocallyLinearEmbedding():
     
     References
     ----------
-    .. [1] `Roweis, S. & Saul, L. Nonlinear dimensionality reduction
-        by locally linear embedding.  Science 290:2323 (2000).`
+    * Roweis, S. & Saul, L. Nonlinear dimensionality reduction
+      by locally linear embedding.  Science 290:2323 (2000).
     """
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
                  tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None, 

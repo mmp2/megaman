@@ -64,9 +64,9 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
         
         References
         ----------
-        .. [1] `Zhang, Z. & Zha, H. Principal manifolds and nonlinear
-            dimensionality reduction via tangent space alignment.
-            Journal of Shanghai Univ.  8:406 (2004)`
+        * Zhang, Z. & Zha, H. Principal manifolds and nonlinear
+          dimensionality reduction via tangent space alignment.
+          Journal of Shanghai Univ.  8:406 (2004)
     """
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")        
@@ -167,9 +167,9 @@ class LTSA():
     
     References
     ----------
-    .. [1] `Zhang, Z. & Zha, H. Principal manifolds and nonlinear
-        dimensionality reduction via tangent space alignment.
-        Journal of Shanghai Univ.  8:406 (2004)`
+    * Zhang, Z. & Zha, H. Principal manifolds and nonlinear
+      dimensionality reduction via tangent space alignment.
+      Journal of Shanghai Univ.  8:406 (2004)
     """        
     def __init__(self, n_components=2, eigen_solver=None, random_state=None,
                  tol = 1e-6, max_iter=100, neighborhood_radius = None, 

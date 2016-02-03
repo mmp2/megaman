@@ -11,4 +11,5 @@ Laplacian construction (e.g. :class:`~Mmani.geometry.Geometry`).
 .. toctree::
    :maxdepth: 2
 
+   geometry.rst
    API
