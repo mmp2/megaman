@@ -14,12 +14,16 @@ ctypedef np.int32_t dtypei_t
 cdef extern from "cyflann_index.h":
     cdef cppclass CyflannIndex:
         CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim) except +
+        CyflannIndex(const vector[dtype_t]& dataset, dtypei_t num_dims, 
+                string index_type, dtypei_t num_trees, dtypei_t branching, 
+                dtypei_t iterations, dtype_t cb_index)        
         CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim, 
-                     dtype_t target_precision)
+                dtype_t target_precision, dtype_t build_weight, 
+                dtype_t memory_weight, dtype_t sample_fraction)
         CyflannIndex(const vector[dtype_t]& dataset, dtypei_t ndim,
-                     dtype_t target_precision, string filename)
+                string filename)
         void buildIndex()
-        void knnSearch(const vector[dtype_t]& queries,
+        int knnSearch(const vector[dtype_t]& queries,
             vector[vector[dtypei_t]]& indices,
             vector[vector[dtype_t]]& dists,
             dtypei_t knn, dtypei_t num_dims)

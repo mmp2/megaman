@@ -15,16 +15,21 @@ public:
     CyflannIndex(const std::vector<float>& dataset, int num_dims);
 
     CyflannIndex(const std::vector<float>& dataset, int num_dims,
-            float target_precision);
+        std::string index_type, int num_trees, int branching, int iterations,
+        float cb_index);
 
     CyflannIndex(const std::vector<float>& dataset, int num_dims,
-            float target_precision, std::string filename);
+            float target_precision, float build_weight, float memory_weight,
+            float sample_fraction);
+
+    CyflannIndex(const std::vector<float>& dataset, int num_dims,
+            std::string filename);
 
     ~CyflannIndex();
     
     void buildIndex();
 
-    void knnSearch(const std::vector<float>& queries,
+    int knnSearch(const std::vector<float>& queries,
             std::vector< std::vector<int> >& indices,
             std::vector< std::vector<float> >& dists,
             int knn, int num_dims);
