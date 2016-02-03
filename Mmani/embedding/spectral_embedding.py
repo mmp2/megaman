@@ -158,7 +158,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     if not _graph_is_connected(affinity_matrix):
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
     
-    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True)
+    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True, copy = False)
     n_nodes = laplacian.shape[0]
     lapl_type = Geometry.laplacian_type
     

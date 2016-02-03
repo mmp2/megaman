@@ -201,7 +201,7 @@ class Isomap():
                                       input_type = self.input_type,
                                       path_to_flann = self.path_to_flann)
     
-    def fit(self, X, eigen_solver = None, input_type = 'data'):
+    def fit(self, X, eigen_solver = None, input_type = 'data', n_components=None):
         """Fit the model from data in X.
 
         Parameters
@@ -236,6 +236,9 @@ class Isomap():
         # might want to change the eigen solver
         if ((eigen_solver is not None) and (eigen_sovler != self.eigen_solver)):
             self.eigen_solver = eigen_solver
+        # we also might want to change the # of components:
+        if ((n_components is not None) and (n_components != self.n_components)):
+            self.n_components = n_components
         
         # don't re-compute these if it's already been done.
         # This might be the case if an eigendecompostion fails and a different sovler is selected

@@ -600,7 +600,7 @@ class Geometry:
             
         # next check if we have an affinity matrix:
         if self.affinity_matrix is None:
-            self.affinity_matrix = self.get_affinity_matrix()
+            self.affinity_matrix = self.get_affinity_matrix(copy=False)
             
         # results depend on symmetric or not:
         if return_lapsym:
