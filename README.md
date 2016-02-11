@@ -12,12 +12,13 @@ with hundreds of dimensions in 10 minutes.
 Mmani is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters. 
 
+Documentation can be found at http://mmp2.github.io/Mmani/
+
 ## Examples
 
-To Do: turn the example.py into an ipython notebook
+See documentation and example.py for usage.
 
 ## Installation
-To Do: Work in conda & pip for installing Mmani
 
 This package can be run as pure python with the following required
 dependencies:
@@ -31,6 +32,20 @@ For optimal performance we also require:
 - [pyamg](http://pyamg.org/)
 - [FLANN](http://www.cs.ubc.ca/research/flann/)
 
+Install required dependencies:
+    $ pip install numpy, scyipy
+    
+For optimal usange install the following:
+    $ pyamg, cython
+    
+Follow directions for installing FLANN.
+
+Set environment variable for FLANN:
+    $ export FLANN_ROOT=<FLANN_ROOT>
+    
+cd into Mmani/geometry/cyflann and run:
+    $ python setup.py build_ext --inplace
+
 ## Unit Tests
 Mmani uses ``nose`` for unit tests. With nosetests installed, type
 
@@ -39,8 +54,6 @@ Mmani uses ``nose`` for unit tests. With nosetests installed, type
 to run the unit tests.
 
 The tests are run on Python versions 2.7
-
-To Do: test more python versions
 
 ## Authors
 - [James McQueen](http://www.stat.washington.edu/people/jmcq/)
