@@ -33,17 +33,21 @@ For optimal performance we also require:
 - [FLANN](http://www.cs.ubc.ca/research/flann/)
 
 Install required dependencies:
+
     $ pip install numpy, scyipy
     
 For optimal usange install the following:
+
     $ pyamg, cython
     
 Follow directions for installing FLANN.
 
 Set environment variable for FLANN:
+
     $ export FLANN_ROOT=<FLANN_ROOT>
     
 cd into Mmani/geometry/cyflann and run:
+
     $ python setup.py build_ext --inplace
 
 ## Unit Tests
