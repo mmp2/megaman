@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import sys
 import numpy as np
+import time
 
-sys.path.append('/homes/jmcq/Mmani')
+sys.path.append('/home/jmcq/GitHub/Mmani')
 from Mmani.geometry.geometry import Geometry
 from Mmani.embedding.spectral_embedding import spectral_embedding
 from scipy.io import mmwrite, mmread
@@ -10,7 +11,7 @@ from word2vec import *
 
 # Download the data at: https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?usp=sharing
 # Change this to the location of the word2vec data set:
-fname = '/homes/jmcq/GoogleNews-vectors-negative300.bin.gz'
+# fname = '/homes/jmcq/GoogleNews-vectors-negative300.bin.gz'
 
 # This takes a few minutes:
 '''
@@ -57,17 +58,30 @@ for i in range(3000000):
 # Save it out
 mmwrite( 'wor2vec_distance_radius_20.mtx', dists )
 '''
+print("using sub-sample method...")
+seed = 123
+sub_n = 1500000 
 
-
+print("Using subset of data:  % d random data points" % sub_n)
 # To read back:
 print('loading distance data...')
 dists = mmread('wor2vec_distance_radius_20.mtx') # note this loads as COO and takes a few minutes
 dists = dists.tocsr() # convert to CSR
 radius = 20
+(n, n) = dists.shape
 
-sub_n = 50000 # for testing
+print("generating subsample...")
+rng = np.random.RandomState(seed)
+sub_sample = rng.choice(range(n), sub_n, replace = False)
+print("sorting subsample...")
+sub_sample.sort()
+
+print("saving subsample")
+np.save('word2vec_subsample.npy', sub_sample)
+
 print('subsetting data...')
-dists = dists[:sub_n, :sub_n]
+dists = dists[sub_sample,:]; dists = dists[:, sub_sample]
+
 print('instantiating Geometry...')
 Geom = Geometry(dists, neighborhood_radius = radius, affinity_radius = radius, 
                 distance_method = 'cython', input_type = 'distance', 
@@ -76,10 +90,14 @@ print('computing Laplacian...')
 Lapl = Geom.get_laplacian_matrix(scaling_epps = radius, copy = False, return_lapsym = True)
 
 print('computing embedding...')
+t0 = time.time()
 embed = spectral_embedding(Geom, n_components = 4, eigen_solver = 'amg')
-
+t1 = time.time() - t0
 print('saving embedding...')
 mmwrite( 'wor2vec_embedding_radius_20_d_6_subset.mtx', embed )
+
+with open('embedding_time.txt', 'w') as time_count:
+    time_count.write('embedding took ' + str(t1) + ' seconds to compute.')
 
 import matplotlib
 matplotlib.use('Agg')
