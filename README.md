@@ -38,7 +38,7 @@ Install required dependencies:
     
 For optimal usange install the following:
 
-    $ pyamg, cython
+    $ pip install pyamg, cython
     
 Follow directions for installing FLANN.
 
