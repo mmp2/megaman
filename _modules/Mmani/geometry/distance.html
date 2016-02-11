@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Mmani.geometry.distance &mdash; Mmani 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Mmani.geometry.distance</h1><div class="highlight"><pre>
+<span class="c1"># Authors: Marina Meila &lt;mmp@stat.washington.edu&gt;</span>
+<span class="c1">#         James McQueen &lt;jmcq@u.washington.edu&gt;</span>
+<span class="c1"># License: BSD 3 clause</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span> <span class="c1">## removes integer division</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">pdist</span>
+<span class="kn">from</span> <span class="nn">Mmani.geometry.cyflann.index</span> <span class="kn">import</span> <span class="n">Index</span>
+<span class="kn">import</span> <span class="nn">subprocess</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">warnings</span>
+
+<span class="k">def</span> <span class="nf">_row_col_from_condensed_index</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">compr_ind</span><span class="p">):</span>
+    <span class="c1"># convert from pdist compressed index format to (I, J) (upper triangular) pairs.</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">N</span> 
+    <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="o">-</span><span class="n">b</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">8</span><span class="o">*</span><span class="n">compr_ind</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">compr_ind</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span>  
+
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.distance.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">flindex</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">cyindex</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes pairwise distance matrix. Interface function.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X : data matrix, array_like, shape = (n_samples, n_dimensions)</span>
+<span class="sd">    method : one of &#39;auto&#39;, &#39;brute&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;, or &#39;cython&#39;.</span>
+<span class="sd">        &#39;pyflann&#39; requires python library pyflann</span>
+<span class="sd">        &#39;cython&#39; requires FLANN and cython </span>
+<span class="sd">        &#39;cyflann&#39; requires a UNIX system </span>
+<span class="sd">    flindex : a pyflann pre-computed flindex </span>
+<span class="sd">    radius : neighborhood radius, scalar</span>
+<span class="sd">        the neighbors lying approximately within radius of a node will</span>
+<span class="sd">        be returned. Or, in other words, all distances will be less or equal</span>
+<span class="sd">        to radius. There will be entries in the matrix for zero distances.</span>
+<span class="sd">        Attention when converting to dense: The rest of the distances</span>
+<span class="sd">        should not be considered 0, but &quot;large&quot;.</span>
+<span class="sd">    cyindex : A cython computed FLANN index. </span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph : the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</span>
+<span class="sd">           sparse csr_format. Zeros on the diagonal are true zeros. </span>
+<span class="sd">           Zeros not on the diagonal should be considered infinite     </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+        <span class="c1"># change this based on benchmarking results</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;brute&#39;</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;pyflann&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">flindex</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;must pass a flindex when using pyflann&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">graph</span> <span class="o">=</span> <span class="n">fl_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">flindex</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;cyflann&#39;</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">fl_cpp_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;cython&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cyindex</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">cyindex</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">cyindex</span><span class="o">.</span><span class="n">buildIndex</span><span class="p">()</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">cyindex</span><span class="o">.</span><span class="n">radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;brute&#39;</span><span class="p">:</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;method must be one of: (auto, brute, pyflann, cyflann)&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="n">graph</span></div>
+        
+<div class="viewcode-block" id="radius_neighbors_graph"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.distance.radius_neighbors_graph">[docs]</a><span class="k">def</span> <span class="nf">radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes pairwise distance matrix using dense method. </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: data matrix, array_like, shape = (n_samples, n_dimensions)</span>
+<span class="sd">    radius: neighborhood radius, scalar</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph: the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</span>
+<span class="sd">           sparse csr_format. Zeros on the diagonal are true zeros. </span>
+<span class="sd">           Zeros not on the diagonal should be considered infinite </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">all_dists</span> <span class="o">=</span> <span class="n">pdist</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">compr_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">all_dists</span> <span class="o">&lt;=</span> <span class="n">radius</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">)</span> <span class="o">=</span> <span class="n">_row_col_from_condensed_index</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">compr_ind</span><span class="p">)</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">all_dists</span><span class="p">[</span><span class="n">compr_ind</span><span class="p">],</span> <span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">)),</span> <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">graph</span> <span class="o">+</span> <span class="n">graph</span><span class="o">.</span><span class="n">T</span> <span class="c1">#  symmetrize distance matrix (converts to csr)</span>
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+        <span class="c1"># sparse will complain this is faster with lil_matrix:</span>
+        <span class="n">graph</span><span class="o">.</span><span class="n">setdiag</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="c1"># diagonal values are true zeros, otherwise they&#39;re infinite</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="fl_cpp_radius_neighbors_graph"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.distance.fl_cpp_radius_neighbors_graph">[docs]</a><span class="k">def</span> <span class="nf">fl_cpp_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructs a sparse distance matrix called graph in coo</span>
+<span class="sd">    format using pre-compiled C++ function.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: data matrix, array_like, shape = (n_samples, n_dimensions )</span>
+<span class="sd">    radius: neighborhood radius, scalar</span>
+<span class="sd">        the neighbors lying approximately within radius of a node will</span>
+<span class="sd">        be returned. Or, in other words, all distances will be less or equal</span>
+<span class="sd">        to radius. There will be entries in the matrix for zero distances.</span>
+<span class="sd">        Attention when converting to dense: The rest of the distances</span>
+<span class="sd">        should not be considered 0, but &quot;large&quot;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</span>
+<span class="sd">           sparse csr format</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    With approximate neiborhood search, the matrix is not necessarily symmetric. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">radius</span> <span class="o">*=</span> <span class="n">radius</span> <span class="c1"># FLANN computes squared distance. </span>
+    <span class="c1"># To run the C++ executable we must save the data to a binary file</span>
+    <span class="n">nsam</span><span class="p">,</span> <span class="n">ndim</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;/test_data_file.dat&quot;</span>
+    <span class="n">X</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">geom_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span> <span class="c1"># this is where geometry.py is located</span>
+    <span class="n">split_path</span> <span class="o">=</span> <span class="n">geom_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+    <span class="n">split_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;compute_flann_neighbors_cpp&quot;</span>
+    <span class="n">cpp_file_path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">split_path</span><span class="p">)</span>
+    <span class="n">unix_call</span> <span class="o">=</span> <span class="s2">&quot;{file_path} {N} {D} {radius} {fname}&quot;</span>
+    <span class="n">dist_call</span> <span class="o">=</span> <span class="n">unix_call</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_path</span> <span class="o">=</span> <span class="n">cpp_file_path</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">nsam</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="n">ndim</span><span class="p">,</span> 
+                                    <span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">ret_code</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="n">dist_call</span><span class="p">],</span> <span class="n">shell</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ret_code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;shell call: &quot;</span> <span class="o">+</span> <span class="n">dist_call</span> <span class="o">+</span> <span class="s2">&quot; failed with code: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ret_code</span><span class="p">))</span>
+    
+    <span class="c1"># the resulting files from the C++ function are:</span>
+    <span class="c1"># neighbors.dat: contains nsam rows with space separated index of nbr</span>
+    <span class="c1"># distances.dat: contains nsam rows with space separated distance of nbr</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;neighbors.dat&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+        <span class="n">allnbrs</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;distances.dat&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+        <span class="n">alldists</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="n">allnbrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">nbrs</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">nbrs</span> <span class="ow">in</span> <span class="n">allnbrs</span><span class="p">]</span>
+    <span class="n">alldists</span> <span class="o">=</span> <span class="p">[</span><span class="n">dists</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">dists</span> <span class="ow">in</span> <span class="n">alldists</span><span class="p">]</span>
+    
+    <span class="c1"># for sparse storage</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">nbr</span><span class="p">)</span> <span class="k">for</span> <span class="n">nbri</span> <span class="ow">in</span> <span class="n">allnbrs</span> <span class="k">for</span> <span class="n">nbr</span> <span class="ow">in</span> <span class="n">nbri</span><span class="p">])</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span> <span class="k">for</span> <span class="n">disti</span> <span class="ow">in</span> <span class="n">alldists</span> <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">disti</span><span class="p">])</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">nbri</span><span class="p">)</span> <span class="k">for</span> <span class="n">nbri</span> <span class="ow">in</span> <span class="n">allnbrs</span><span class="p">]</span>
+    <span class="n">indpts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">lengths</span><span class="p">))</span>
+    <span class="n">indpts</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">indpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">indpts</span><span class="p">)</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">indpts</span><span class="p">),</span> <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">nsam</span><span class="p">,</span> <span class="n">nsam</span><span class="p">))</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="c1"># FLANN returns squared distance</span>
+    <span class="k">return</span> <span class="n">graph</span></div>
+    
+<div class="viewcode-block" id="fl_radius_neighbors_graph"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.distance.fl_radius_neighbors_graph">[docs]</a><span class="k">def</span> <span class="nf">fl_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">flindex</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructs a sparse distance matrix called graph in coo format using pyflann.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    X: data matrix, array_like, shape = (n_samples, n_dimensions )</span>
+<span class="sd">    radius: neighborhood radius, scalar</span>
+<span class="sd">        the neighbors lying approximately within radius of a node will</span>
+<span class="sd">        be returned. Or, in other words, all distances will be less or equal</span>
+<span class="sd">        to radius. There will be entries in the matrix for zero distances.</span>
+<span class="sd">        </span>
+<span class="sd">        Attention when converting to dense: The rest of the distances</span>
+<span class="sd">        should not be considered 0, but &quot;large&quot;.   </span>
+<span class="sd">    flindex: FLANN index of the data X</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</span>
+<span class="sd">           sparse coo or csr format</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    With approximate neighborhood search, the matrix is not</span>
+<span class="sd">    necessarily symmetric. </span>
+
+<span class="sd">    mode = &#39;adjacency&#39; not implemented</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;neighbors_radius must be &gt;=0.&#39;</span><span class="p">)</span>
+    <span class="n">nsam</span><span class="p">,</span> <span class="n">ndim</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">requirements</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">])</span> <span class="c1"># required for FLANN</span>
+    <span class="n">radius</span> <span class="o">*=</span> <span class="n">radius</span>
+    <span class="n">graph_jindices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">graph_iindices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">graph_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">nsam</span><span class="p">):</span>
+        <span class="n">jj</span><span class="p">,</span> <span class="n">dd</span> <span class="o">=</span> <span class="n">flindex</span><span class="o">.</span><span class="n">nn_radius</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">radius</span><span class="p">)</span>
+        <span class="n">graph_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dd</span><span class="p">)</span>
+        <span class="n">graph_jindices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jj</span><span class="p">)</span>
+        <span class="n">graph_iindices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">jj</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
+
+    <span class="n">graph_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="n">graph_data</span> <span class="p">)</span>
+    <span class="n">graph_iindices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="n">graph_iindices</span> <span class="p">)</span>
+    <span class="n">graph_jindices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="n">graph_jindices</span> <span class="p">)</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">graph_data</span><span class="p">,</span> <span class="p">(</span><span class="n">graph_iindices</span><span class="p">,</span> <span class="n">graph_jindices</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nsam</span><span class="p">,</span> <span class="n">nsam</span><span class="p">))</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="c1"># FLANN returns squared distance</span>
+    <span class="k">return</span> <span class="n">graph</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

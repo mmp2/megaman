@@ -38,8 +38,138 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <span class="target" id="utils-api"></span><div class="section" id="api-documentation">
-<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="utils-api"></span><div class="section" id="module-Mmani.utils.eigendecomp">
+<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-Mmani.utils.eigendecomp" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="Mmani.utils.eigendecomp.eigen_decomposition">
+<code class="descclassname">Mmani.utils.eigendecomp.</code><code class="descname">eigen_decomposition</code><span class="sig-paren">(</span><em>G</em>, <em>n_components=8</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>eigen_tol=0.0</em>, <em>drop_first=True</em>, <em>largest=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/utils/eigendecomp.html#eigen_decomposition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.utils.eigendecomp.eigen_decomposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to compute the eigendecomposition of a square matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>G</strong> : 2d numpy/scipy array. Potentially sparse. The matrix to find the eigendecomposition of</p>
+<p><strong>n_components</strong> : integer, optional</p>
+<blockquote>
+<div><p>The number of eigenvectors to return</p>
+</div></blockquote>
+<p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>&#8216;auto&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
+</dd>
+<dt>&#8216;dense&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition. 
+For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+</dd>
+<dt>&#8216;arpack&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method, 
+M may be a dense matrix, sparse matrix, or general linear operator. 
+Warning: ARPACK can be unstable for some problems.  It is best to 
+try several random seeds in order to check results.</p>
+</dd>
+<dt>&#8216;lobpcg&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+A preconditioned eigensolver for large symmetric positive definite  
+(SPD) generalized eigenproblems.</p>
+</dd>
+<dt>&#8216;amg&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">AMG requires pyamg to be installed. It can be faster on very large, 
+sparse problems, but may also lead to instabilities.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>random_state</strong> : int seed, RandomState instance, or None (default)</p>
+<blockquote>
+<div><p>A pseudo random number generator used for the initialization of the
+lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.
+By default, arpack is used.</p>
+</div></blockquote>
+<p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
+<blockquote>
+<div><p>Stopping criterion for eigendecomposition when using arpack eigen_solver</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>lambdas, diffusion_map</strong> : eigenvalues, eigenvectors</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.utils.eigendecomp.null_space">
+<code class="descclassname">Mmani.utils.eigendecomp.</code><code class="descname">null_space</code><span class="sig-paren">(</span><em>M</em>, <em>k</em>, <em>k_skip=1</em>, <em>eigen_solver='arpack'</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/utils/eigendecomp.html#null_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.utils.eigendecomp.null_space" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>M</strong> : {array, matrix, sparse matrix, LinearOperator}</p>
+<blockquote>
+<div><p>Input covariance matrix: should be symmetric positive semi-definite</p>
+</div></blockquote>
+<p><strong>k</strong> : integer</p>
+<blockquote>
+<div><p>Number of eigenvalues/vectors to return</p>
+</div></blockquote>
+<p><strong>k_skip</strong> : integer, optional</p>
+<blockquote>
+<div><p>Number of low eigenvalues to skip.</p>
+</div></blockquote>
+<p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>&#8216;auto&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
+</dd>
+<dt>&#8216;dense&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition. 
+For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+</dd>
+<dt>&#8216;arpack&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method, 
+M may be a dense matrix, sparse matrix, or general linear operator. 
+Warning: ARPACK can be unstable for some problems.  It is best to 
+try several random seeds in order to check results.</p>
+</dd>
+<dt>&#8216;lobpcg&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">Locally Optimal Block Preconditioned Conjugate Gradient Method. 
+A preconditioned eigensolver for large symmetric positive definite  
+(SPD) generalized eigenproblems.</p>
+</dd>
+<dt>&#8216;amg&#8217; <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd><p class="first last">AMG requires pyamg to be installed. It can be faster on very large, 
+sparse problems, but may also lead to instabilities.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>tol</strong> : float, optional</p>
+<blockquote>
+<div><p>Tolerance for &#8216;arpack&#8217; method.
+Not used if eigen_solver==&#8217;dense&#8217;.</p>
+</div></blockquote>
+<p><strong>max_iter</strong> : maximum number of iterations for &#8216;arpack&#8217; method</p>
+<blockquote>
+<div><p>not used if eigen_solver==&#8217;dense&#8217;</p>
+</div></blockquote>
+<p><strong>random_state: numpy.RandomState or int, optional</strong></p>
+<blockquote>
+<div><p>The generator or seed used to determine the starting vector for arpack
+iterations.  Defaults to numpy.random.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>null_space</strong> : estimated k vectors of the null space</p>
+<p class="last"><strong>error</strong> : estimated error (sum of eigenvalues)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 

@@ -39,8 +39,590 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <span class="target" id="geometry-api"></span><div class="section" id="api-documentation">
-<h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="geometry-api"></span><div class="section" id="module-Mmani.geometry.geometry">
+<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-Mmani.geometry.geometry" title="Permalink to this headline">¶</a></h1>
+<p>Scalable Manifold learning utilities and algorithms.</p>
+<p>Graphs are represented with their weighted adjacency matrices, preferably using
+sparse matrices.</p>
+<div class="section" id="a-note-on-symmetrization-and-internal-sparse-representations">
+<h2>A note on symmetrization and internal sparse representations<a class="headerlink" href="#a-note-on-symmetrization-and-internal-sparse-representations" title="Permalink to this headline">¶</a></h2>
+<p>For performance, this code uses the FLANN library to compute
+approximate neighborhoods efficiently. The down side of approximation
+is that (1) the distance matrix (or adjacency matrix) produced is NOT
+GUARANTEED to be symmetric. We also use sparse representations, and
+(2) fl_radius_neighbors_graph returns a sparse matrix called distance_matrix.</p>
+<p>distance_matrix has 0.0 on the diagonal, as it should. Implicitly, the
+missing entries are infinity not 0 for this matrix. But (1) and (2)
+mean that if one tries to symmetrize distance_matrix, the scipy.sparse
+code eliminates the 0.0 entries from distance_matrix. In the Affinity
+matrix we explicitly set the diagonal to 1.0 for sparse matrices.</p>
+<dl class="docutils">
+<dt>Hence, I adopted the following convention: </dt>
+<dd><ul class="first last simple">
+<li>distance_matrix will NOT BE GUARANTEED symmetric</li>
+<li>affinity_matrix will perform a symmetrization by default</li>
+<li>laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry</li>
+<li>these conventions are the same for dense matrices, for consistency</li>
+</ul>
+</dd>
+</dl>
+<dl class="class">
+<dt id="Mmani.geometry.geometry.Geometry">
+<em class="property">class </em><code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">Geometry</code><span class="sig-paren">(</span><em>X</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Geometry class stores the data, distance, affinity and laplacian
+matrices used by the various embedding methods and is the primary
+object passed to embedding functions.</p>
+<p>The Geometry class contains functions to build the aforementioned 
+matrices and allows for re-computation whenever necessary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array_like or sparse array. 2 dimensional. Value depends on input_type.</p>
+<blockquote>
+<div><p>size: (N_obs, N_dim) if &#8216;data&#8217;, (N_obs, N_obs) otherwise.</p>
+</div></blockquote>
+<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;. The values of X.</p>
+<p><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
+<blockquote>
+<div><p>distances beyond neighborhood_radius are considered infinite.</p>
+</div></blockquote>
+<p><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
+<blockquote>
+<div><p>used in Guassian kernel for affinity matrix</p>
+</div></blockquote>
+<p><strong>distance_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;cython&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
+<blockquote>
+<div><p>method for computing pairwise radius neighbors graph.</p>
+</div></blockquote>
+<p><strong>laplacian_type</strong> : string, one of: &#8216;symmetricnormalized&#8217;, &#8216;geometric&#8217;, &#8216;renormalized&#8217;,</p>
+<blockquote>
+<div><p>&#8216;unnormalized&#8217;, &#8216;randomwalk&#8217;
+type of laplacian to be computed. See graph_laplacian for more information.</p>
+</div></blockquote>
+<p><strong>path_to_flann</strong> : string. full file path location of FLANN if not installed to root or</p>
+<blockquote class="last">
+<div><p>FLANN_ROOT set to path location. Used for importing pyflann from a different location.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="Mmani.geometry.geometry.Geometry.assign_parameters">
+<code class="descname">assign_parameters</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method=None</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.assign_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.assign_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note: self.neighborhood_radius, self.affinity_radius, 
+and self.laplacian_type refer to the CURRENT
+version of these matrices.</p>
+<p>If you want to re-calculate with a new parameter DO NOT
+update these with assign_parameters, instead use
+get_distance_matrix(), get_affinity_matrix(), or get_laplacian_matrix()
+and pass the desired new parameter. This will automatically update
+the self.parameter version.</p>
+<p>If you change these values with assign_parameters Geometry will assume
+that the existing matrix follows that parameter and so, for example,
+calling get_distance_matrix() with a passed radius will <em>not</em> 
+recalculate if the passed radius is equal to self.neighborhood_radius 
+and there already exists a distance matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mmani.geometry.geometry.Geometry.get_affinity_matrix">
+<code class="descname">get_affinity_matrix</code><span class="sig-paren">(</span><em>affinity_radius=None</em>, <em>copy=True</em>, <em>symmetrize=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_affinity_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_affinity_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
+<blockquote>
+<div><p>used in Guassian kernel for affinity matrix 
+If this value is not passed then the self.affinity_radius value is used.</p>
+</div></blockquote>
+<p><strong>copy</strong> : boolean, whether to return a copied version of the affinity matrix</p>
+<p><strong>symmetrize</strong> : boolean, whether to explicitly symmetrize the affinity matrix.</p>
+<blockquote>
+<div><p>if distance_method = &#8216;cython&#8217;, &#8216;cyflann&#8217;, or &#8216;pyflann&#8217; it is recommended
+to set this to True.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.affinity_matrix</strong> : sparse Ndarray (N_obs, N_obs) contains the pairwise</p>
+<blockquote class="last">
+<div><p>affinity values using the Guassian kernel and bandwidth equal to the
+affinity_radius</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mmani.geometry.geometry.Geometry.get_distance_matrix">
+<code class="descname">get_distance_matrix</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>copy=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
+<blockquote>
+<div><p>distances beyond neighborhood_radius are considered infinite. 
+if this value is not passed the value of self.neighborhood_radius is used</p>
+</div></blockquote>
+<p><strong>copy</strong> : boolean, whether to return a copied version of the distance matrix</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.distance_matrix</strong> : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values</p>
+<blockquote class="last">
+<div><p>(e.g. diagonal) should be considered Infinite.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mmani.geometry.geometry.Geometry.get_laplacian_matrix">
+<code class="descname">get_laplacian_matrix</code><span class="sig-paren">(</span><em>laplacian_type=None</em>, <em>symmetrize=False</em>, <em>scaling_epps=None</em>, <em>renormalization_exponent=1</em>, <em>copy=True</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_laplacian_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_laplacian_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>laplacian_type</strong> : string, the type of graph laplacian to compute.</p>
+<blockquote>
+<div><p>see &#8216;normed&#8217; in graph_laplacian for more information</p>
+</div></blockquote>
+<p><strong>symmetrize</strong> : boolean, whether to pre-symmetrize the affinity matrix before</p>
+<blockquote>
+<div><p>computing the laplacian_matrix</p>
+</div></blockquote>
+<p><strong>scaling_epps</strong> : scalar, the bandwidth/radius parameter used in the affinity matrix</p>
+<blockquote>
+<div><p>see graph_laplacian for more information</p>
+</div></blockquote>
+<p><strong>renormalization_exponent</strong> : scalar, renormalization exponent for computing Laplacian</p>
+<blockquote>
+<div><p>see graph_laplacian for more information</p>
+</div></blockquote>
+<p><strong>copy</strong> : boolean, whether to return copied version of the self.laplacian_matrix</p>
+<p><strong>return_lapsym</strong> : boolean, if True returns additionally the symmetrized version of</p>
+<blockquote>
+<div><p>the requested laplacian and the re-normalization weights.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.laplacian_matrix</strong> : sparse Ndarray (N_obs, N_obs). The requested laplacian.</p>
+<p><strong>self.laplacian_symmetric</strong> : sparse Ndarray (N_obs, N_obs). The symmetric laplacian.</p>
+<p><strong>self.w</strong> : Ndarray (N_obs). The renormalization weights used to make</p>
+<blockquote class="last">
+<div><p>laplacian_matrix from laplacian_symmetric</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.geometry.graph_laplacian">
+<code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">graph_laplacian</code><span class="sig-paren">(</span><em>csgraph</em>, <em>normed='geometric'</em>, <em>symmetrize=False</em>, <em>scaling_epps=0.0</em>, <em>renormalization_exponent=1</em>, <em>return_diag=False</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#graph_laplacian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.graph_laplacian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Laplacian matrix of an undirected graph.</p>
+<p>Computes a consistent estimate of the Laplace-Beltrami operator L
+from the similarity matrix A . See &#8220;Diffusion Maps&#8221; (Coifman and
+Lafon, 2006) and &#8220;Graph Laplacians and their Convergence on Random
+Neighborhood Graphs&#8221; (Hein, Audibert, Luxburg, 2007) for more
+details.</p>
+<p>A is the similarity matrix from the sampled data on the manifold M.
+Typically A is obtained from the data X by applying the heat kernel 
+A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
+need to obtained the properly scaled version of L. Following the usual
+convention, the laplacian (Laplace-Beltrami operator) is defined as 
+div(grad(f)) (that is the laplacian is taken to be negative
+semi-definite).</p>
+<p>Note that the Laplacians defined here are the negative of what is 
+commonly used in the machine learning literature. This convention is used
+so that the Laplacians converge to the standard definition of the
+differential operator.</p>
+<p>notation: A = csgraph, D=diag(A1) the diagonal matrix of degrees
+L = lap = returned object, EPPS = scaling_epps**2</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>csgraph</strong> : array_like or sparse matrix, 2 dimensions</p>
+<blockquote>
+<div><p>compressed-sparse graph, with shape (N, N).</p>
+</div></blockquote>
+<p><strong>normed</strong> : string, optional</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>if &#8216;renormalized&#8217;:</dt>
+<dd><p class="first last">compute renormalized Laplacian of Coifman &amp; Lafon
+L = D**-alpha A D**-alpha
+T = diag(L1)
+L = T**-1 L - eye()</p>
+</dd>
+<dt>if &#8216;symmetricnormalized&#8217;:</dt>
+<dd><dl class="first last docutils">
+<dt>compute normalized Laplacian</dt>
+<dd><p class="first last">L = D**-0.5 A D**-0.5 - eye()</p>
+</dd>
+</dl>
+</dd>
+<dt>if &#8216;unnormalized&#8217;: compute unnormalized Laplacian.</dt>
+<dd><p class="first last">L = A-D</p>
+</dd>
+<dt>if &#8216;randomwalks&#8217;: compute stochastic transition matrix</dt>
+<dd><p class="first last">L = D**-1 A</p>
+</dd>
+</dl>
+</div></blockquote>
+<p><strong>symmetrize: bool, optional</strong></p>
+<blockquote>
+<div><p>if True symmetrize adjacency matrix (internally) before computing lap</p>
+</div></blockquote>
+<p><strong>scaling_epps: float, optional</strong></p>
+<blockquote>
+<div><p>if &gt;0., it should be the same neighbors_radius that was used as kernel
+width for computing the affinity. The Laplacian gets the scaled by
+4/np.sqrt(scaling_epps) in order to ensure consistency in the limit
+of large N</p>
+</div></blockquote>
+<p><strong>return_diag</strong> : bool, optional (kept for compatibility)</p>
+<blockquote>
+<div><p>If True, then return diagonal as well as laplacian.</p>
+</div></blockquote>
+<p><strong>return_lapsym</strong> : bool, optional</p>
+<blockquote>
+<div><p>If normed in { &#8216;geometric&#8217;, &#8216;renormalized&#8217; } then a symmetric matrix
+lapsym, and a row normalization vector w are also returned. Having
+these allows us to compute the laplacian spectral decomposition 
+as a symmetric matrix, which has much better numerical properties.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>lap</strong> : ndarray</p>
+<blockquote>
+<div><p>The N x N laplacian matrix of graph.</p>
+</div></blockquote>
+<p><strong>diag</strong> : ndarray (obsolete, for compatibiility)</p>
+<blockquote class="last">
+<div><p>The length-N diagonal of the laplacian matrix.
+diag is returned only if return_diag is True.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>There are a few differences from the sklearn.spectral_embedding laplacian
+function.</p>
+<ol class="arabic simple">
+<li>normed=&#8217;unnormalized&#8217; and &#8216;symmetricnormalized&#8217; correspond respectively 
+to normed=False and True in the latter. (Note also that normed was changed 
+from bool to string.</li>
+<li>the signs of this laplacians are changed w.r.t the original</li>
+<li>the diagonal of lap is no longer set to 0; also there is no checking if 
+the matrix has zeros on the diagonal. If the degree of a node is 0, this
+is handled graciuously (by not dividing by 0).</li>
+<li>if csgraph is not symmetric the out-degree is used in the
+computation and no warning is raised. However, it is not recommended to 
+use this function for directed graphs.</li>
+</ol>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.geometry.symmetrize_sparse">
+<code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">symmetrize_sparse</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#symmetrize_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.symmetrize_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Symmetrizes a sparse matrix in place (coo and csr formats only)</p>
+<p>NOTES: 
+1. if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them.</p>
+</dd></dl>
+
+</div>
+<span class="target" id="module-Mmani.geometry.distance"></span><dl class="function">
+<dt id="Mmani.geometry.distance.distance_matrix">
+<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>X</em>, <em>method='auto'</em>, <em>flindex=None</em>, <em>radius=None</em>, <em>cyindex=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes pairwise distance matrix. Interface function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : data matrix, array_like, shape = (n_samples, n_dimensions)</p>
+<p><strong>method</strong> : one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;, or &#8216;cython&#8217;.</p>
+<blockquote>
+<div><p>&#8216;pyflann&#8217; requires python library pyflann
+&#8216;cython&#8217; requires FLANN and cython 
+&#8216;cyflann&#8217; requires a UNIX system</p>
+</div></blockquote>
+<p><strong>flindex</strong> : a pyflann pre-computed flindex</p>
+<p><strong>radius</strong> : neighborhood radius, scalar</p>
+<blockquote>
+<div><p>the neighbors lying approximately within radius of a node will
+be returned. Or, in other words, all distances will be less or equal
+to radius. There will be entries in the matrix for zero distances.
+Attention when converting to dense: The rest of the distances
+should not be considered 0, but &#8220;large&#8221;.</p>
+</div></blockquote>
+<p><strong>cyindex</strong> : A cython computed FLANN index.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>graph</strong> : the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</p>
+<blockquote class="last">
+<div><p>sparse csr_format. Zeros on the diagonal are true zeros. 
+Zeros not on the diagonal should be considered infinite</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.distance.fl_cpp_radius_neighbors_graph">
+<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">fl_cpp_radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#fl_cpp_radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.fl_cpp_radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a sparse distance matrix called graph in coo
+format using pre-compiled C++ function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: data matrix, array_like, shape = (n_samples, n_dimensions )</strong></p>
+<p><strong>radius: neighborhood radius, scalar</strong></p>
+<blockquote>
+<div><p>the neighbors lying approximately within radius of a node will
+be returned. Or, in other words, all distances will be less or equal
+to radius. There will be entries in the matrix for zero distances.
+Attention when converting to dense: The rest of the distances
+should not be considered 0, but &#8220;large&#8221;.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</p>
+<blockquote class="last">
+<div><p>sparse csr format</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>With approximate neiborhood search, the matrix is not necessarily symmetric.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.distance.fl_radius_neighbors_graph">
+<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">fl_radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em>, <em>flindex</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#fl_radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.fl_radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs a sparse distance matrix called graph in coo format using pyflann.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: data matrix, array_like, shape = (n_samples, n_dimensions )</strong></p>
+<p><strong>radius: neighborhood radius, scalar</strong></p>
+<blockquote>
+<div><p>the neighbors lying approximately within radius of a node will
+be returned. Or, in other words, all distances will be less or equal
+to radius. There will be entries in the matrix for zero distances.</p>
+<p>Attention when converting to dense: The rest of the distances
+should not be considered 0, but &#8220;large&#8221;.</p>
+</div></blockquote>
+<p><strong>flindex: FLANN index of the data X</strong></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</p>
+<blockquote class="last">
+<div><p>sparse coo or csr format</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>With approximate neighborhood search, the matrix is not
+necessarily symmetric.</p>
+<p>mode = &#8216;adjacency&#8217; not implemented</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.distance.radius_neighbors_graph">
+<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes pairwise distance matrix using dense method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: data matrix, array_like, shape = (n_samples, n_dimensions)</strong></p>
+<p><strong>radius: neighborhood radius, scalar</strong></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">graph: the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</p>
+<blockquote class="last">
+<div><p>sparse csr_format. Zeros on the diagonal are true zeros. 
+Zeros not on the diagonal should be considered infinite</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<span class="target" id="module-Mmani.geometry.rmetric"></span><p>Riemannian Metric learning utilities and algorithms.</p>
+<p>To use the &#8220;geometric&#8221; Laplacian from geometry.py for statistically
+consistent results.</p>
+<dl class="class">
+<dt id="Mmani.geometry.rmetric.RiemannMetric">
+<em class="property">class </em><code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">RiemannMetric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian</em>, <em>n_dim=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>RiemannMetric computes and stores the Riemannian metric and its dual
+associated with an embedding Y. The Riemannian metric is currently denoted
+by G, its dual by H, and the Laplacian by L. G at each point is the 
+matrix inverse of H.</p>
+<p>For performance, the following choices have been made:
+* the class makes no defensive copies of L, Y
+* no defensive copies of the array attributes H, G, Hvv, ....
+* G is computed on request only 
+In the future, this class will be extended to compute H only once,
+for mdimY dimensions, but to store multiple G&#8217;s, with different dimensions.</p>
+<p>In the near future plans is also a &#8220;lazy&#8221; implementation, which will
+compute G (and maybe even H) only at the requested points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y</strong> : embedding coordinates, shape = (n, mdimY)</p>
+<p><strong>laplacian</strong> : estimated laplacian from data  shape = (n, n)</p>
+<p><strong>n_dim</strong> : the manifold domension</p>
+<p><strong>mod_inv</strong> : if mode_inv = svd, also returns Hvv, Hsvals,</p>
+<blockquote>
+<div><p>Gsvals the (transposed) eigenvectors of
+H and the singular values of H and G</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>mdimG</strong> : dimension of G, H</p>
+<p><strong>mdimY</strong> : dimension of Y</p>
+<p><strong>H</strong> : dual Riemann metric, shape = (n, mdimY, mdimY)</p>
+<p><strong>G</strong> : Riemann metric, shape = (n, mdimG, mdimG)</p>
+<p><strong>Hvv</strong> : (transposed) singular vectors of H, shape = (n, mdimY, mdimY)</p>
+<p><strong>Hsvals</strong> : singular values of H, shape = (n, mdimY)</p>
+<p><strong>Gsvals</strong> : singular values of G, shape = (n, mdimG)</p>
+<p class="last"><strong>detG</strong> : determinants of G, shape = (n,1)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>H is always computed at full dimension self.mdimY 
+G is computed at mdimG (some contradictions persist here)</p>
+<p class="rubric">References</p>
+<p>&#8220;Non-linear dimensionality reduction: Riemannian metric estimation and
+the problem of geometric discovery&#8221;, 
+Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
+<dl class="method">
+<dt id="Mmani.geometry.rmetric.RiemannMetric.get_dual_rmetric">
+<code class="descname">get_dual_rmetric</code><span class="sig-paren">(</span><em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric.get_dual_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric.get_dual_rmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the dual Riemannian Metric
+This is not satisfactory, because if mdimG&lt;mdimY the shape of H
+will not be the same as the shape of G. TODO(maybe): return a (copied) 
+smaller H with only the rows and columns in G.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mmani.geometry.rmetric.RiemannMetric.get_rmetric">
+<code class="descname">get_rmetric</code><span class="sig-paren">(</span><em>mode_inv='svd'</em>, <em>return_svd=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric.get_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric.get_rmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Reimannian Metric</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.rmetric.compute_G_from_H">
+<code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">compute_G_from_H</code><span class="sig-paren">(</span><em>H</em>, <em>mdimG=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#compute_G_from_H"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.compute_G_from_H" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>H</strong> : the inverse R. Metric</p>
+<p><strong>if mode_inv == &#8216;svd&#8217;:</strong></p>
+<blockquote>
+<div><p>also returns Hvv, Hsvals, Gsvals the (transposed) eigenvectors of
+H and the singular values of H and G</p>
+</div></blockquote>
+<p><strong>if mdimG &lt; H.shape[2]:</strong></p>
+<blockquote class="last">
+<div><p>G.shape = [ n_samples, mdimG, mdimG ] with n_samples = H.shape[0]</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>currently Hvv, Hsvals are n_dim = H.shape[2], and Gsvals, G are mdimG
+(This contradicts the documentation of riemann_metric which states
+that riemann_metric and h_dual_metric have the same dimensions)</p>
+<p>See the notes in RiemannMetric</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mmani.geometry.rmetric.riemann_metric">
+<code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">riemann_metric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian=None</em>, <em>n_dim=None</em>, <em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#riemann_metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.riemann_metric" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: array-like, shape = (n_samples, mdimY )</strong></p>
+<blockquote>
+<div><p>The embedding coordinates of the points</p>
+</div></blockquote>
+<p><strong>laplacian: array-like, shape = (n_samples, n_samples)</strong></p>
+<blockquote>
+<div><p>The Laplacian of the data. It is recommended to use the &#8220;geometric&#8221;
+Laplacian (default) option from geometry.graph_laplacian()</p>
+</div></blockquote>
+<p><strong>n_dim</strong> : integer, optional</p>
+<blockquote>
+<div><p>Use only the first n_dim &lt;= mdimY dimensions.All dimensions
+n_dim:mdimY are ignored.</p>
+</div></blockquote>
+<p><strong>invert_h: boolean, optional</strong></p>
+<blockquote>
+<div><p>if False, only the &#8220;dual Riemannian metric&#8221; is computed
+if True, the dual metric matrices are inverted to obtain the 
+Riemannian metric G.</p>
+</div></blockquote>
+<p><strong>mode_inv: string, optional</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>How to compute the inverses of h_dual_metric, if invert_h </dt>
+<dd><p class="first last">&#8220;inv&#8221;, use numpy.inv() 
+&#8220;svd&#8221; (default), use numpy.linalg.svd(), then invert the eigenvalues
+(possibly a more numerically stable method with H is symmetric and 
+ill conditioned)</p>
+</dd>
+</dl>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>h_dual_metric</strong> : array, shape=(n_samples, n_dim, n_dim)</p>
+<p>Optionally :</p>
+<p><strong>g_riemann_metric</strong> : array, shape=(n_samples, n_dim, n_dim )</p>
+<p><strong>Hvv</strong> : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )</p>
+<p><strong>Hsvals</strong> : singular values of H, shape = ( n_samples, n_dim )</p>
+<p class="last"><strong>Gsvals</strong> : singular values of G, shape = ( n_samples, n_dim )</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p class="rubric">References</p>
+<p>&#8220;Non-linear dimensionality reduction: Riemannian metric estimation and
+the problem of geometric discovery&#8221;, 
+Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
+</dd></dl>
+
 </div>
 
 
@@ -48,7 +630,15 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API Documentation</a><ul>
+<li><a class="reference internal" href="#a-note-on-symmetrization-and-internal-sparse-representations">A note on symmetrization and internal sparse representations</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>

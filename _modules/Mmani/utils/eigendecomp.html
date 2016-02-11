@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Mmani.utils.eigendecomp &mdash; Mmani 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Mmani.utils.eigendecomp</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">eigh</span><span class="p">,</span> <span class="n">eig</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse.linalg</span> <span class="kn">import</span> <span class="n">lobpcg</span><span class="p">,</span> <span class="n">eigs</span><span class="p">,</span> <span class="n">eigsh</span>
+<span class="kn">from</span> <span class="nn">Mmani.utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">Mmani.utils.validation</span> <span class="kn">import</span> <span class="n">check_array</span>
+<span class="n">eigen_solvers</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="s1">&#39;arpack&#39;</span><span class="p">,</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">,</span> <span class="s1">&#39;amg&#39;</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">_is_symmetric</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">M</span><span class="p">):</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">M</span> <span class="o">-</span> <span class="n">M</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span> 
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">M</span> <span class="o">-</span> <span class="n">M</span><span class="o">.</span><span class="n">T</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">tol</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">conditions</span><span class="p">))</span>    
+
+<div class="viewcode-block" id="eigen_decomposition"><a class="viewcode-back" href="../../../utils/API.html#Mmani.utils.eigendecomp.eigen_decomposition">[docs]</a><span class="k">def</span> <span class="nf">eigen_decomposition</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                       <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> 
+                       <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">largest</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to compute the eigendecomposition of a square matrix.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    G : 2d numpy/scipy array. Potentially sparse. The matrix to find the eigendecomposition of </span>
+<span class="sd">    n_components : integer, optional</span>
+<span class="sd">        The number of eigenvectors to return </span>
+<span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">        &#39;auto&#39; : </span>
+<span class="sd">            algorithm will attempt to choose the best method for input data</span>
+<span class="sd">        &#39;dense&#39; : </span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition. </span>
+<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">        &#39;arpack&#39; : </span>
+<span class="sd">            use arnoldi iteration in shift-invert mode. For this method, </span>
+<span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator. </span>
+<span class="sd">            Warning: ARPACK can be unstable for some problems.  It is best to </span>
+<span class="sd">            try several random seeds in order to check results.</span>
+<span class="sd">        &#39;lobpcg&#39; : </span>
+<span class="sd">            Locally Optimal Block Preconditioned Conjugate Gradient Method. </span>
+<span class="sd">            A preconditioned eigensolver for large symmetric positive definite  </span>
+<span class="sd">            (SPD) generalized eigenproblems.</span>
+<span class="sd">        &#39;amg&#39; : </span>
+<span class="sd">            AMG requires pyamg to be installed. It can be faster on very large, </span>
+<span class="sd">            sparse problems, but may also lead to instabilities.</span>
+<span class="sd">    random_state : int seed, RandomState instance, or None (default)</span>
+<span class="sd">        A pseudo random number generator used for the initialization of the</span>
+<span class="sd">        lobpcg eigen vectors decomposition when eigen_solver == &#39;amg&#39;.</span>
+<span class="sd">        By default, arpack is used.</span>
+<span class="sd">    eigen_tol : float, optional, default=0.0</span>
+<span class="sd">        Stopping criterion for eigendecomposition when using arpack eigen_solver  </span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    lambdas, diffusion_map : eigenvalues, eigenvectors </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">eigen_solver</span> <span class="ow">in</span> <span class="n">eigen_solvers</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown value for eigen_solver: &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span>
+                         <span class="s2">&quot;Should be: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                         <span class="o">%</span> <span class="n">eigen_solver</span><span class="p">,</span> <span class="n">eigen_solvers</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;arpack&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+    
+    <span class="c1"># Check eigen_solver method</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">pyamg</span> <span class="kn">import</span> <span class="n">smoothed_aggregation_solver</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s2">&quot;amg&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The eigen_solver was set to &#39;amg&#39;, but pyamg is &quot;</span>
+                             <span class="s2">&quot;not available.&quot;</span><span class="p">)</span>
+    <span class="c1"># Check input values</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">largest</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;largest should be True if you want largest eigenvalues otherwise False&quot;</span><span class="p">)</span>
+    <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">drop_first</span><span class="p">:</span>
+        <span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span>     
+    <span class="c1"># Check for symmetry</span>
+    <span class="n">is_symmetric</span> <span class="o">=</span> <span class="n">_is_symmetric</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+    <span class="c1"># Convert G to best type for eigendecomposition </span>
+    <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">G</span><span class="o">.</span><span class="n">getformat</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;csr&#39;</span><span class="p">:</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="p">((</span><span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">&lt;</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;lobpcg has problems with small number of nodes. Using dense eigh&quot;</span><span class="p">)</span>
+        <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+        
+    <span class="c1"># Try Eigen Methods:</span>
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;arpack&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_symmetric</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
+                <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;LM&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;SM&#39;</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigsh</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span><span class="n">tol</span><span class="o">=</span><span class="n">eigen_tol</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
+                <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;LR&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;SR&#39;</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigs</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span><span class="n">tol</span><span class="o">=</span><span class="n">eigen_tol</span><span class="p">)</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>         
+        <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">diffusion_map</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;amg&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_symmetric</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;lobpcg requires symmetric matrices.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;AMG works better for sparse matrices&quot;</span><span class="p">)</span>
+        <span class="c1"># Use AMG to get a preconditioner and speed up the eigenvalue problem.</span>
+        <span class="n">ml</span> <span class="o">=</span> <span class="n">smoothed_aggregation_solver</span><span class="p">(</span><span class="n">check_array</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;csr&#39;</span><span class="p">]))</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">aspreconditioner</span><span class="p">()</span>
+        <span class="n">n_find</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_components</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="n">n_find</span><span class="p">)</span>
+        <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">diagonal</span><span class="p">())</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">)</span>   
+        <span class="n">sort_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">]</span>
+            <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="n">sort_order</span><span class="p">]</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[:</span><span class="n">n_components</span><span class="p">]</span>
+        <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_components</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s2">&quot;lobpcg&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_symmetric</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;lobpcg requires symmetric matrices.&quot;</span><span class="p">)</span>
+        <span class="n">n_find</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_components</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="n">n_find</span><span class="p">)</span>
+        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">)</span>
+        <span class="n">sort_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">]</span>
+            <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="n">sort_order</span><span class="p">]</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[:</span><span class="n">n_components</span><span class="p">]</span>
+        <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_components</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;dense&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_symmetric</span><span class="p">:</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eig</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">largest</span><span class="p">:</span><span class="c1"># eigh always returns eigenvalues in ascending order</span>
+            <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># reverse order the e-values</span>
+            <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># reverse order the vectors</span>
+        <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[:</span><span class="n">n_components</span><span class="p">]</span>
+        <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_components</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="null_space"><a class="viewcode-back" href="../../../utils/API.html#Mmani.utils.eigendecomp.null_space">[docs]</a><span class="k">def</span> <span class="nf">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;arpack&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1E-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+               <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    M : {array, matrix, sparse matrix, LinearOperator}</span>
+<span class="sd">        Input covariance matrix: should be symmetric positive semi-definite</span>
+<span class="sd">    k : integer</span>
+<span class="sd">        Number of eigenvalues/vectors to return</span>
+<span class="sd">    k_skip : integer, optional</span>
+<span class="sd">        Number of low eigenvalues to skip.</span>
+<span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">        &#39;auto&#39; : </span>
+<span class="sd">            algorithm will attempt to choose the best method for input data</span>
+<span class="sd">        &#39;dense&#39; : </span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition. </span>
+<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">        &#39;arpack&#39; : </span>
+<span class="sd">            use arnoldi iteration in shift-invert mode. For this method, </span>
+<span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator. </span>
+<span class="sd">            Warning: ARPACK can be unstable for some problems.  It is best to </span>
+<span class="sd">            try several random seeds in order to check results.</span>
+<span class="sd">        &#39;lobpcg&#39; : </span>
+<span class="sd">            Locally Optimal Block Preconditioned Conjugate Gradient Method. </span>
+<span class="sd">            A preconditioned eigensolver for large symmetric positive definite  </span>
+<span class="sd">            (SPD) generalized eigenproblems.</span>
+<span class="sd">        &#39;amg&#39; : </span>
+<span class="sd">            AMG requires pyamg to be installed. It can be faster on very large, </span>
+<span class="sd">            sparse problems, but may also lead to instabilities.</span>
+<span class="sd">    tol : float, optional</span>
+<span class="sd">        Tolerance for &#39;arpack&#39; method.</span>
+<span class="sd">        Not used if eigen_solver==&#39;dense&#39;.</span>
+<span class="sd">    max_iter : maximum number of iterations for &#39;arpack&#39; method</span>
+<span class="sd">        not used if eigen_solver==&#39;dense&#39;</span>
+<span class="sd">    random_state: numpy.RandomState or int, optional</span>
+<span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
+<span class="sd">        iterations.  Defaults to numpy.random.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    null_space : estimated k vectors of the null space</span>
+<span class="sd">    error : estimated error (sum of eigenvalues) </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">200</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;arpack&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;arpack&#39;</span><span class="p">:</span>
+        <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigsh</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                                <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span>
+                                                <span class="n">v0</span><span class="o">=</span><span class="n">v0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">msg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Error in determining null-space with ARPACK. &quot;</span>
+                             <span class="s2">&quot;Error message: &#39;</span><span class="si">%s</span><span class="s2">&#39;. &quot;</span>
+                             <span class="s2">&quot;Note that method=&#39;arpack&#39; can fail when the &quot;</span>
+                             <span class="s2">&quot;weight matrix is singular or otherwise &quot;</span>
+                             <span class="s2">&quot;ill-behaved.  method=&#39;dense&#39; is recommended. &quot;</span>
+                             <span class="s2">&quot;See online documentation for more information.&quot;</span>
+                             <span class="o">%</span> <span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">k_skip</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">[</span><span class="n">k_skip</span><span class="p">:])</span>
+    <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;dense&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s1">&#39;toarray&#39;</span><span class="p">):</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eigvals</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="o">+</span><span class="n">k_skip</span><span class="p">),</span><span class="n">overwrite_a</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
+        <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
+        <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">[</span><span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># eigen_values, eigen_vectors = eigh(</span>
+            <span class="c1"># M, eigvals=(k_skip, k + k_skip - 1), overwrite_a=True)</span>
+        <span class="c1"># index = np.argsort(np.abs(eigen_values))</span>
+        <span class="c1"># return eigen_vectors[:, index], np.sum(eigen_values)</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;amg&#39;</span> <span class="ow">or</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">):</span>
+        <span class="c1"># M should be positive semi-definite. Add 1 to make it pos. def. </span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">M</span>
+            <span class="n">n_components</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span>
+                                                              <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span><span class="p">,</span>
+                                                              <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+                                                              <span class="n">largest</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span> <span class="o">-</span><span class="mi">1</span> 
+            <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
+            <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">[</span><span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">except</span> <span class="n">LinAlgError</span><span class="p">:</span> <span class="c1"># try again with bigger increase</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;LOBPCG failed the first time. Increasing Pos Def adjustment.&quot;</span><span class="p">)</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">sparse</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">M</span>
+            <span class="n">n_components</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span>
+                                                              <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span><span class="p">,</span>
+                                                              <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> 
+                                                              <span class="n">largest</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+            <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span> <span class="o">-</span> <span class="mi">2</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
+            <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+            <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">[</span><span class="n">k_skip</span><span class="p">:</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized eigen_solver &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">eigen_solver</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

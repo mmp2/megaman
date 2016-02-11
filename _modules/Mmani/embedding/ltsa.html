@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Mmani.embedding.ltsa &mdash; Mmani 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Mmani.embedding.ltsa</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Local Tangent Space Alignment&quot;&quot;&quot;</span>
+
+<span class="c1"># Author: James McQueen -- &lt;jmcq@u.washington.edu&gt;</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1"># After the sci-kit learn version by:</span>
+<span class="c1">#         Fabian Pedregosa -- &lt;fabian.pedregosa@inria.fr&gt;</span>
+<span class="c1">#         Jake Vanderplas  -- &lt;vanderplas@astro.washington.edu&gt;</span>
+<span class="c1"># License: BSD 3 clause (C) INRIA 2011</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="kn">as</span> <span class="nn">sparse</span>
+<span class="kn">import</span> <span class="nn">Mmani.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">eigh</span><span class="p">,</span> <span class="n">svd</span><span class="p">,</span> <span class="n">qr</span><span class="p">,</span> <span class="n">solve</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">eye</span><span class="p">,</span> <span class="n">csr_matrix</span>
+<span class="kn">from</span> <span class="nn">Mmani.utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span><span class="p">,</span> <span class="n">check_array</span>
+<span class="kn">from</span> <span class="nn">Mmani.utils.eigendecomp</span> <span class="kn">import</span> <span class="n">null_space</span>
+
+
+<div class="viewcode-block" id="ltsa"><a class="viewcode-back" href="../../../embedding/API.html#Mmani.embedding.ltsa.ltsa">[docs]</a><span class="k">def</span> <span class="nf">ltsa</span><span class="p">(</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+         <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform a Locally Linear Embedding analysis on the data.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_components : integer</span>
+<span class="sd">            number of coordinates for the manifold.</span>
+<span class="sd">        eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">            &#39;auto&#39; : </span>
+<span class="sd">                algorithm will attempt to choose the best method for input data</span>
+<span class="sd">            &#39;dense&#39; : </span>
+<span class="sd">                use standard dense matrix operations for the eigenvalue decomposition. </span>
+<span class="sd">                For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">            &#39;arpack&#39; : </span>
+<span class="sd">                use arnoldi iteration in shift-invert mode. For this method, </span>
+<span class="sd">                M may be a dense matrix, sparse matrix, or general linear operator. </span>
+<span class="sd">                Warning: ARPACK can be unstable for some problems.  It is best to </span>
+<span class="sd">                try several random seeds in order to check results.</span>
+<span class="sd">            &#39;lobpcg&#39; : </span>
+<span class="sd">                Locally Optimal Block Preconditioned Conjugate Gradient Method. </span>
+<span class="sd">                A preconditioned eigensolver for large symmetric positive definite  </span>
+<span class="sd">                (SPD) generalized eigenproblems.</span>
+<span class="sd">            &#39;amg&#39; : </span>
+<span class="sd">                AMG requires pyamg to be installed. It can be faster on very large, </span>
+<span class="sd">                sparse problems, but may also lead to instabilities.</span>
+<span class="sd">        tol : float, optional</span>
+<span class="sd">            Tolerance for &#39;arpack&#39; method</span>
+<span class="sd">            Not used if eigen_solver==&#39;dense&#39;.</span>
+<span class="sd">        max_iter : integer</span>
+<span class="sd">            maximum number of iterations for the arpack solver.</span>
+<span class="sd">        random_state : numpy.RandomState or int, optional</span>
+<span class="sd">            The generator or seed used to determine the starting vector for arpack</span>
+<span class="sd">            iterations.  Defaults to numpy.random.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        embedding : array-like, shape [n_samples, n_components]</span>
+<span class="sd">            Embedding vectors.</span>
+<span class="sd">        squared_error : float</span>
+<span class="sd">            Reconstruction error for the embedding vectors. Equivalent to</span>
+<span class="sd">            ``norm(Y - W Y, &#39;fro&#39;)**2``, where W are the reconstruction weights.</span>
+<span class="sd">        </span>
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        * Zhang, Z. &amp; Zha, H. Principal manifolds and nonlinear</span>
+<span class="sd">          dimensionality reduction via tangent space alignment.</span>
+<span class="sd">          Journal of Shanghai Univ.  8:406 (2004)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must pass data matrix X to Geometry&quot;</span><span class="p">)</span>        
+    <span class="n">X</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">X</span>
+    <span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">d_in</span><span class="p">)</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    
+    <span class="k">if</span> <span class="n">eigen_solver</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;arpack&#39;</span><span class="p">,</span> <span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="s1">&#39;amg&#39;</span><span class="p">,</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unrecognised eigen_solver &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">eigen_solver</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">n_components</span> <span class="o">&gt;</span> <span class="n">d_in</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;output dimension must be less than or equal &quot;</span>
+                         <span class="s2">&quot;to input dimension&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># get the distance matrix and neighbors list </span>
+    <span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">()</span>
+    <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+        
+    <span class="n">M_sparse</span> <span class="o">=</span> <span class="p">(</span><span class="n">eigen_solver</span> <span class="o">!=</span> <span class="s1">&#39;dense&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">M_sparse</span><span class="p">:</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+        <span class="n">neighbors_i</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="n">rows</span> <span class="o">==</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">n_neighbors_i</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">neighbors_i</span><span class="p">)</span>
+        <span class="n">use_svd</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_neighbors_i</span> <span class="o">&gt;</span> <span class="n">d_in</span><span class="p">)</span>
+        <span class="n">Xi</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">neighbors_i</span><span class="p">]</span>
+        <span class="n">Xi</span> <span class="o">-=</span> <span class="n">Xi</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>    
+        
+        <span class="c1"># compute n_components largest eigenvalues of Xi * Xi^T</span>
+        <span class="k">if</span> <span class="n">use_svd</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">svd</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="n">full_matrices</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Ci</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Xi</span><span class="p">,</span> <span class="n">Xi</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">Ci</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">Gi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_neighbors_i</span><span class="p">,</span> <span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">Gi</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_components</span><span class="p">]</span>
+        <span class="n">Gi</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n_neighbors_i</span><span class="p">)</span>
+        <span class="n">GiGiT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Gi</span><span class="p">,</span> <span class="n">Gi</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        
+        <span class="n">nbrs_x</span><span class="p">,</span> <span class="n">nbrs_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">neighbors_i</span><span class="p">,</span> <span class="n">neighbors_i</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="c1"># sparse will complain this is better with lil_matrix but it doesn&#39;t work</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+            <span class="n">M</span><span class="p">[</span><span class="n">nbrs_x</span><span class="p">,</span> <span class="n">nbrs_y</span><span class="p">]</span> <span class="o">-=</span> <span class="n">GiGiT</span>
+            <span class="n">M</span><span class="p">[</span><span class="n">neighbors_i</span><span class="p">,</span> <span class="n">neighbors_i</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="n">eigen_solver</span><span class="p">,</span>
+                      <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LTSA"><a class="viewcode-back" href="../../../embedding/API.html#Mmani.embedding.ltsa.LTSA">[docs]</a><span class="k">class</span> <span class="nc">LTSA</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Local Tangent Space Alignment</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_components : integer</span>
+<span class="sd">        number of coordinates for the manifold.</span>
+<span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">        &#39;auto&#39; : </span>
+<span class="sd">            algorithm will attempt to choose the best method for input data</span>
+<span class="sd">        &#39;dense&#39; : </span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition. </span>
+<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">        &#39;arpack&#39; : </span>
+<span class="sd">            use arnoldi iteration in shift-invert mode. For this method, </span>
+<span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator. </span>
+<span class="sd">            Warning: ARPACK can be unstable for some problems.  It is best to </span>
+<span class="sd">            try several random seeds in order to check results.</span>
+<span class="sd">        &#39;lobpcg&#39; : </span>
+<span class="sd">            Locally Optimal Block Preconditioned Conjugate Gradient Method. </span>
+<span class="sd">            A preconditioned eigensolver for large symmetric positive definite  </span>
+<span class="sd">            (SPD) generalized eigenproblems.</span>
+<span class="sd">        &#39;amg&#39; : </span>
+<span class="sd">            AMG requires pyamg to be installed. It can be faster on very large, </span>
+<span class="sd">            sparse problems, but may also lead to instabilities.</span>
+<span class="sd">    tol : float, optional</span>
+<span class="sd">        Tolerance for &#39;arpack&#39; method</span>
+<span class="sd">        Not used if eigen_solver==&#39;dense&#39;.</span>
+<span class="sd">    max_iter : integer</span>
+<span class="sd">        maximum number of iterations for the arpack solver.</span>
+<span class="sd">    random_state : numpy.RandomState or int, optional</span>
+<span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
+<span class="sd">        iterations.  Defaults to numpy.random.</span>
+<span class="sd">    neighborhood_radius : scalar, passed to distance_matrix. Value such that all</span>
+<span class="sd">        distances beyond neighborhood_radius are considered infinite.         </span>
+<span class="sd">    affinity_radius : scalar, passed to affinity_matrix. &#39;bandwidth&#39; parameter</span>
+<span class="sd">        used in Guassian kernel for affinity matrix        </span>
+<span class="sd">    distance_method : string, one of &#39;auto&#39;, &#39;brute&#39;, &#39;cython&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;.   </span>
+<span class="sd">        method for computing pairwise radius neighbors graph.         </span>
+<span class="sd">    input_type : string, one of: &#39;data&#39;, &#39;distance&#39;, &#39;affinity&#39;. </span>
+<span class="sd">        The values of input data X.       </span>
+<span class="sd">    path_to_flann : string. full file path location of FLANN if not installed to </span>
+<span class="sd">        root or to set FLANN_ROOT set to path location. Used for importing pyflann </span>
+<span class="sd">        from a different location.       </span>
+<span class="sd">    Geometry : a Geometry object from Mmani.geometry.geometry</span>
+<span class="sd">    </span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * Zhang, Z. &amp; Zha, H. Principal manifolds and nonlinear</span>
+<span class="sd">      dimensionality reduction via tangent space alignment.</span>
+<span class="sd">      Journal of Shanghai Univ.  8:406 (2004)</span>
+<span class="sd">    &quot;&quot;&quot;</span>        
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                 <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>  <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> 
+                 <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">Geometry</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># embedding parameters:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        
+        <span class="c1"># Geometry parameters:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="n">Geometry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="o">=</span> <span class="n">distance_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="o">=</span> <span class="n">path_to_flann</span>
+        
+    <span class="k">def</span> <span class="nf">fit_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">,</span>
+                                      <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">,</span>
+                                      <span class="n">distance_method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span><span class="p">,</span>
+                                      <span class="n">input_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span><span class="p">,</span>
+                                      <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="LTSA.fit"><a class="viewcode-back" href="../../../embedding/API.html#Mmani.embedding.ltsa.LTSA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like, shape (n_samples, n_features)</span>
+<span class="sd">            Training vector, where n_samples in the number of samples</span>
+<span class="sd">            and n_features is the number of features.</span>
+<span class="sd">        </span>
+<span class="sd">        If self.input_type is &#39;distance&#39;, or &#39;affinity&#39;:</span>
+<span class="sd">            </span>
+<span class="sd">        X : array-like, shape (n_samples, n_samples),</span>
+<span class="sd">            Interpret X as precomputed distance or adjacency graph </span>
+<span class="sd">            computed from samples.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : object</span>
+<span class="sd">            Returns the instance itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span><span class="p">)</span> <span class="o">=</span> <span class="n">ltsa</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span><span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
+                                                <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
+                                                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">max_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span> </div>
+
+<div class="viewcode-block" id="LTSA.fit_transform"><a class="viewcode-back" href="../../../embedding/API.html#Mmani.embedding.ltsa.LTSA.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit the model from data in X and transform X.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: array-like, shape (n_samples, n_features)</span>
+<span class="sd">            Training vector, where n_samples in the number of samples</span>
+<span class="sd">            and n_features is the number of features.</span>
+<span class="sd">        </span>
+<span class="sd">        If self.input_type is &#39;distance&#39;, or &#39;affinity&#39;:</span>
+<span class="sd">            </span>
+<span class="sd">        X : array-like, shape (n_samples, n_samples),</span>
+<span class="sd">            Interpret X as precomputed distance or adjacency graph </span>
+<span class="sd">            computed from samples.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        X_new: array-like, shape (n_samples, n_components)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

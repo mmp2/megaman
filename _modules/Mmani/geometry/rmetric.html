@@ -1,0 +1,319 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Mmani.geometry.rmetric &mdash; Mmani 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for Mmani.geometry.rmetric</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;Riemannian Metric learning utilities and algorithms. </span>
+
+<span class="sd">   To use the &quot;geometric&quot; Laplacian from geometry.py for statistically</span>
+<span class="sd">   consistent results. </span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># Author: Marina Meila &lt;mmp@stat.washington.edu&gt;</span>
+<span class="c1">#         after the Matlab function rmetric.m by Dominique Perrault-Joncas</span>
+<span class="c1"># License: BSD 3 clause</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">eigh</span><span class="p">,</span> <span class="n">svd</span><span class="p">,</span> <span class="n">inv</span>
+
+<div class="viewcode-block" id="riemann_metric"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.rmetric.riemann_metric">[docs]</a><span class="k">def</span> <span class="nf">riemann_metric</span><span class="p">(</span> <span class="n">Y</span><span class="p">,</span> <span class="n">laplacian</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">invert_h</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters </span>
+<span class="sd">    ----------</span>
+<span class="sd">    Y: array-like, shape = (n_samples, mdimY )</span>
+<span class="sd">        The embedding coordinates of the points</span>
+<span class="sd">    laplacian: array-like, shape = (n_samples, n_samples)</span>
+<span class="sd">        The Laplacian of the data. It is recommended to use the &quot;geometric&quot;</span>
+<span class="sd">        Laplacian (default) option from geometry.graph_laplacian()</span>
+<span class="sd">    n_dim : integer, optional</span>
+<span class="sd">        Use only the first n_dim &lt;= mdimY dimensions.All dimensions</span>
+<span class="sd">        n_dim:mdimY are ignored.</span>
+<span class="sd">    invert_h: boolean, optional</span>
+<span class="sd">        if False, only the &quot;dual Riemannian metric&quot; is computed</span>
+<span class="sd">        if True, the dual metric matrices are inverted to obtain the </span>
+<span class="sd">        Riemannian metric G.</span>
+<span class="sd">    mode_inv: string, optional</span>
+<span class="sd">       How to compute the inverses of h_dual_metric, if invert_h </span>
+<span class="sd">        &quot;inv&quot;, use numpy.inv() </span>
+<span class="sd">        &quot;svd&quot; (default), use numpy.linalg.svd(), then invert the eigenvalues</span>
+<span class="sd">        (possibly a more numerically stable method with H is symmetric and </span>
+<span class="sd">        ill conditioned)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    h_dual_metric : array, shape=(n_samples, n_dim, n_dim)</span>
+<span class="sd">    Optionally :</span>
+<span class="sd">    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim )</span>
+<span class="sd">    Hvv : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )</span>
+<span class="sd">    Hsvals : singular values of H, shape = ( n_samples, n_dim )</span>
+<span class="sd">    Gsvals : singular values of G, shape = ( n_samples, n_dim )</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &quot;Non-linear dimensionality reduction: Riemannian metric estimation and</span>
+<span class="sd">    the problem of geometric discovery&quot;, </span>
+<span class="sd">    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="n">laplacian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">h_dual_metric</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">n_dim</span><span class="p">,</span> <span class="n">n_dim</span> <span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_dim</span> <span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">n_dim</span> <span class="p">):</span>
+            <span class="n">yij</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">Y</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">h_dual_metric</span><span class="p">[</span> <span class="p">:,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">laplacian</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">yij</span><span class="p">)</span><span class="o">-</span><span class="n">Y</span><span class="p">[:,</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">laplacian</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span><span class="o">-</span><span class="n">Y</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">laplacian</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,</span><span class="n">j</span><span class="p">]))</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_dim</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_dim</span><span class="p">):</span>
+            <span class="n">h_dual_metric</span><span class="p">[</span> <span class="p">:,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_dual_metric</span><span class="p">[:,</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="c1"># compute rmetric if requested</span>
+    <span class="k">if</span><span class="p">(</span> <span class="n">invert_h</span> <span class="p">):</span>
+        <span class="n">riemann_metric</span><span class="p">,</span> <span class="n">Hvv</span><span class="p">,</span> <span class="n">Hsvals</span><span class="p">,</span> <span class="n">Gsvals</span> <span class="o">=</span> <span class="n">compute_G_from_H</span><span class="p">(</span> <span class="n">h_dual_metric</span> <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">riemann_metric</span> <span class="o">=</span> <span class="n">Hvv</span> <span class="o">=</span> <span class="n">Hsvals</span> <span class="o">=</span> <span class="n">Gsvals</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="n">h_dual_metric</span><span class="p">,</span> <span class="n">riemann_metric</span><span class="p">,</span> <span class="n">Hvv</span><span class="p">,</span> <span class="n">Hsvals</span><span class="p">,</span> <span class="n">Gsvals</span></div>
+
+<div class="viewcode-block" id="compute_G_from_H"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.rmetric.compute_G_from_H">[docs]</a><span class="k">def</span> <span class="nf">compute_G_from_H</span><span class="p">(</span> <span class="n">H</span><span class="p">,</span> <span class="n">mdimG</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s2">&quot;svd&quot;</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Parameters </span>
+<span class="sd">    ----------</span>
+<span class="sd">    H : the inverse R. Metric</span>
+<span class="sd">    if mode_inv == &#39;svd&#39;:</span>
+<span class="sd">       also returns Hvv, Hsvals, Gsvals the (transposed) eigenvectors of</span>
+<span class="sd">       H and the singular values of H and G</span>
+<span class="sd">    if mdimG &lt; H.shape[2]:</span>
+<span class="sd">       G.shape = [ n_samples, mdimG, mdimG ] with n_samples = H.shape[0]</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    ------</span>
+<span class="sd">    currently Hvv, Hsvals are n_dim = H.shape[2], and Gsvals, G are mdimG</span>
+<span class="sd">    (This contradicts the documentation of riemann_metric which states</span>
+<span class="sd">    that riemann_metric and h_dual_metric have the same dimensions)</span>
+
+<span class="sd">    See the notes in RiemannMetric</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_dim</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mode_inv</span> <span class="ow">is</span> <span class="s1">&#39;svd&#39;</span><span class="p">:</span>
+        <span class="n">Huu</span><span class="p">,</span> <span class="n">Hsvals</span><span class="p">,</span> <span class="n">Hvv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span> <span class="n">H</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">mdimG</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">Gsvals</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">Hsvals</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">n_dim</span><span class="p">,</span> <span class="n">n_dim</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+                <span class="n">G</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Huu</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:],</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Gsvals</span><span class="p">[</span><span class="n">i</span><span class="p">,:]),</span> <span class="n">Hvv</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]))</span>
+        <span class="k">elif</span> <span class="n">mdimG</span> <span class="o">&lt;</span> <span class="n">n_dim</span><span class="p">:</span>
+            <span class="n">Gsvals</span><span class="p">[:,:</span><span class="n">mdimG</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">Hsvals</span><span class="p">[:,:</span><span class="n">mdimG</span><span class="p">]</span>
+            <span class="n">Gsvals</span><span class="p">[:,</span><span class="n">mdimG</span><span class="p">:]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="c1"># this can be redone with np.einsum() but it&#39;s barbaric</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">mdimG</span><span class="p">,</span> <span class="n">mdimG</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_samples</span><span class="p">):</span>
+                <span class="n">G</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:</span><span class="n">mdimG</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Huu</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="n">mdimG</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">Gsvals</span><span class="p">[</span><span class="n">i</span><span class="p">,:</span><span class="n">mdimG</span><span class="p">]),</span> <span class="n">Hvv</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:</span><span class="n">mdimG</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;mdimG must be &lt;= H.shape[1]&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">G</span><span class="p">,</span> <span class="n">Hvv</span><span class="p">,</span> <span class="n">Hsvals</span><span class="p">,</span> <span class="n">Gsvals</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">riemann_metric</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">h_dual_metric</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">riemann_metric</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="RiemannMetric"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.rmetric.RiemannMetric">[docs]</a><span class="k">class</span> <span class="nc">RiemannMetric</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    RiemannMetric computes and stores the Riemannian metric and its dual</span>
+<span class="sd">    associated with an embedding Y. The Riemannian metric is currently denoted</span>
+<span class="sd">    by G, its dual by H, and the Laplacian by L. G at each point is the </span>
+<span class="sd">    matrix inverse of H. </span>
+
+<span class="sd">    For performance, the following choices have been made:</span>
+<span class="sd">    * the class makes no defensive copies of L, Y</span>
+<span class="sd">    * no defensive copies of the array attributes H, G, Hvv, ....</span>
+<span class="sd">    * G is computed on request only </span>
+<span class="sd">    In the future, this class will be extended to compute H only once,</span>
+<span class="sd">    for mdimY dimensions, but to store multiple G&#39;s, with different dimensions.</span>
+
+<span class="sd">    In the near future plans is also a &quot;lazy&quot; implementation, which will</span>
+<span class="sd">    compute G (and maybe even H) only at the requested points. </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    Y : embedding coordinates, shape = (n, mdimY)</span>
+<span class="sd">    laplacian : estimated laplacian from data  shape = (n, n)</span>
+<span class="sd">    n_dim : the manifold domension</span>
+<span class="sd">    mod_inv : if mode_inv = svd, also returns Hvv, Hsvals, </span>
+<span class="sd">        Gsvals the (transposed) eigenvectors of</span>
+<span class="sd">        H and the singular values of H and G</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdimG : dimension of G, H</span>
+<span class="sd">    mdimY : dimension of Y</span>
+<span class="sd">    H : dual Riemann metric, shape = (n, mdimY, mdimY)</span>
+<span class="sd">    G : Riemann metric, shape = (n, mdimG, mdimG)</span>
+<span class="sd">    Hvv : (transposed) singular vectors of H, shape = (n, mdimY, mdimY)</span>
+<span class="sd">    Hsvals : singular values of H, shape = (n, mdimY)</span>
+<span class="sd">    Gsvals : singular values of G, shape = (n, mdimG)</span>
+<span class="sd">    detG : determinants of G, shape = (n,1)</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    H is always computed at full dimension self.mdimY </span>
+<span class="sd">    G is computed at mdimG (some contradictions persist here)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    &quot;Non-linear dimensionality reduction: Riemannian metric estimation and</span>
+<span class="sd">    the problem of geometric discovery&quot;, </span>
+<span class="sd">    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">laplacian</span><span class="p">,</span> <span class="n">n_dim</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span> <span class="p">):</span>
+
+        <span class="c1"># input data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimY</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">laplacian</span>
+
+        <span class="c1"># input params</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimY</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">n_dim</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimY</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;n_dim must be &lt;= Y.shape[1]&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span> <span class="o">=</span> <span class="n">n_dim</span>    <span class="c1"># dimension of the riemann_metric computed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode_inv</span> <span class="o">=</span> <span class="n">mode_inv</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_inv</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">((</span><span class="s1">&#39;svd&#39;</span><span class="p">,</span> <span class="s1">&#39;inv&#39;</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">((</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is not a valid value. Expected &quot;</span>
+                              <span class="s2">&quot;&#39;svd&#39;, &#39;inv&#39;&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_inv</span><span class="p">)</span>
+
+        <span class="c1"># results and outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Hsvals</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Gsvals</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detG</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="RiemannMetric.get_dual_rmetric"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.rmetric.RiemannMetric.get_dual_rmetric">[docs]</a>    <span class="k">def</span> <span class="nf">get_dual_rmetric</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">invert_h</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Compute the dual Riemannian Metric</span>
+<span class="sd">        This is not satisfactory, because if mdimG&lt;mdimY the shape of H</span>
+<span class="sd">        will not be the same as the shape of G. TODO(maybe): return a (copied) </span>
+<span class="sd">        smaller H with only the rows and columns in G.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsvals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gsvals</span> <span class="o">=</span> <span class="n">riemann_metric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span><span class="p">,</span> <span class="n">invert_h</span> <span class="o">=</span> <span class="n">invert_h</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="n">mode_inv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">invert_h</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span></div>
+
+<div class="viewcode-block" id="RiemannMetric.get_rmetric"><a class="viewcode-back" href="../../../geometry/API.html#Mmani.geometry.rmetric.RiemannMetric.get_rmetric">[docs]</a>    <span class="k">def</span> <span class="nf">get_rmetric</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span><span class="p">,</span> <span class="n">return_svd</span> <span class="o">=</span> <span class="bp">False</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the Reimannian Metric</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsval</span> <span class="o">=</span> <span class="n">riemann_metric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span><span class="p">,</span> <span class="n">invert_h</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="n">mode_inv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsvals</span><span class="p">,</span>  <span class="bp">self</span><span class="o">.</span><span class="n">Gsvals</span> <span class="o">=</span> <span class="n">compute_G_from_H</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_inv</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode_inv</span> <span class="ow">is</span> <span class="s1">&#39;svd&#39;</span> <span class="ow">and</span> <span class="n">return_svd</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsvals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gsvals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span></div>
+    <span class="k">def</span> <span class="nf">get_mdimG</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span>
+
+    <span class="k">def</span> <span class="nf">get_detG</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsval</span> <span class="o">=</span> <span class="n">riemann_metric</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span><span class="p">,</span> <span class="n">invert_h</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode_inv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">detG</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimY</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">detG</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">H</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">detG</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">H</span><span class="p">[:,:</span><span class="n">mdimG</span><span class="p">,:</span><span class="n">mdimG</span><span class="p">])</span></div>
+            <span class="c1"># could also be prod eigenvalues</span>
+            <span class="c1"># inefficient? shall I do it on G?</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
