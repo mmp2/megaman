@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Spectral Embedding &mdash; Mmani 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../index.html" />
+    <link rel="up" title="Tools for Embedding (Mmani.embedding)" href="index.html" />
+    <link rel="next" title="API Documentation" href="API.html" />
+    <link rel="prev" title="Local Tangent Space Alignment" href="ltsa.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="spectral-embedding">
+<span id="id1"></span><h1>Spectral Embedding<a class="headerlink" href="#spectral-embedding" title="Permalink to this headline">¶</a></h1>
+<p>Spectral Embedding is on of the methods implemented in the Mmani package.
+Spectral embedding (and diffusion maps) uses the spectrum (eigen vectors
+and eigen values) of a graph Laplacian estimated from the data set. There
+are a number of different graph Laplacians that can be used.</p>
+<p>For more information see:</p>
+<ul class="simple">
+<li>A Tutorial on Spectral Clustering, 2007
+Ulrike von Luxburg
+<a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323</a></li>
+</ul>
+<dl class="docutils">
+<dt>:class:&#8217;~Mmani.embedding.SpectralEmbedding&#8217;</dt>
+<dd>This class is used to interface with spectral embedding function.
+Like all embedding functions in Mmani it operates using a
+Geometry object. The Isomap class allows you to optionally
+pass an exiting Geometry object, otherwise it creates one.</dd>
+</dl>
+<div class="section" id="api-of-spectral-embedding">
+<h2>API of Spectral Embedding<a class="headerlink" href="#api-of-spectral-embedding" title="Permalink to this headline">¶</a></h2>
+<p>The Spectral Embedding model, along with all the other models in Mmani,
+have an API designed to follow in the same vein of
+<a class="reference external" href="http://scikit-learn.org/">scikit-learn</a> API.</p>
+<p>Consequentially, the LTSA class functions as follows</p>
+<ol class="arabic simple">
+<li>At class instantiation <cite>.SpectralEmbedding()</cite> parameters are passed. See API
+documementation for more information. An existing Geometry object
+can be passed to <cite>.SpectralEmbedding()</cite>. Here is also where
+you have the option to use diffusion maps.</li>
+<li>The <cite>.fit()</cite> method creates a Geometry object if one was not
+already passed and then calculates th embedding.
+The eigen solver can also be passed to the
+<cite>.fit()</cite> function. WARNING: NOT COMPLETED
+Since Geometry caches important quantities
+(like the graph Laplacian) which do not change by selecting
+different eigen solvers and this can be passed
+and a new embedding computed without re-computing existing quantities.
+the <cite>.fit()</cite> function does not return anything but it does create
+the attribute <cite>self.embedding_</cite> only one <cite>self.embedding_</cite> exists
+at a given time. If a new embedding is computed the old one is overwritten.</li>
+<li>The <cite>.fit_transform()</cite> function calls the <cite>fit()</cite> function and returns
+the embedding. It does not allow for changing parameters.</li>
+</ol>
+<p>See the API documentation for further information.</p>
+</div>
+<div class="section" id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
+<p>Here is an example using the function on a random data set:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">Mmani.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<span class="kn">import</span> <span class="nn">Mmani.embedding.spectral_embedding</span> <span class="kn">as</span> <span class="nn">se</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;cython&#39;</span><span class="p">,</span>
+                        <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span>
+                        <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">)</span>
+<span class="n">Spectral</span> <span class="o">=</span> <span class="n">se</span><span class="o">.</span><span class="n">SpectralEmbedding</span><span class="p">(</span><span class="n">n_components</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;pyamg&#39;</span><span class="p">,</span>
+                                <span class="n">Geometry</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">)</span>
+<span class="n">embedding</span> <span class="o">=</span> <span class="n">Spectral</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spectral Embedding</a><ul>
+<li><a class="reference internal" href="#api-of-spectral-embedding">API of Spectral Embedding</a></li>
+<li><a class="reference internal" href="#example-usage">Example Usage</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Tools for Embedding (<code class="docutils literal"><span class="pre">Mmani.embedding</span></code>)</a><ul>
+      <li>Previous: <a href="ltsa.html" title="previous chapter">Local Tangent Space Alignment</a></li>
+      <li>Next: <a href="API.html" title="next chapter">API Documentation</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/embedding/spectral_embedding.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="../_sources/embedding/spectral_embedding.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
