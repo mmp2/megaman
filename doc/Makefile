@@ -196,7 +196,7 @@ publish: html
 	if test -d _build/Mmani; \
 	then echo "using existing cloned Mmani directory"; \
 	else cd _build && \
-	git clone git@github.com:mmp2/Mmani; \
+	git clone https://github.com/mmp2/Mmani.git; \
 	fi && \
 	cd _build/Mmani && git checkout gh-pages && \
 	rsync -r ../html/* ./ && \
