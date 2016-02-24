@@ -1,20 +1,29 @@
-# Authors: Zhongyue Zhang <zhangz6@cs.washington.edu>
-# License: BSD 3 clause
-
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Build import cythonize
 import os
+import sys
 
-# use "export FLANN_ROOT=<FLANN_ROOT>"to set enviromental variable
-# to build: python setup.py build_ext --inplace 
 
-flann_path = os.environ['FLANN_ROOT']   
+flann_root = os.environ.get('FLANN_ROOT', sys.exec_prefix)
+print("Compiling FLANN with FLANN_ROOT={0}".format(flann_root))
 
-setup(ext_modules = cythonize(
-    Extension(
-           "index",
-           sources=["index.pyx","cyflann_index.cc"],
-           language="c++",
-           extra_compile_args=["-O3", "-I" + flann_path + "/src/cpp/"],
-    )))
+flann_include = os.path.join(flann_root, 'include')
+flann_lib = os.path.join(flann_root, 'lib')
+
+
+def configuration(parent_package='', top_path=None):
+    import numpy
+    from numpy.distutils.misc_util import Configuration
+
+    config = Configuration('geometry/cyflann', parent_package, top_path)
+    libraries = ['flann', 'flann_cpp']
+    if os.name == 'posix':
+        libraries.append('m')
+
+    config.add_extension("index",
+           sources=["index.cpp", "cyflann_index.cc"],
+           include_dirs=[numpy.get_include(), flann_include],
+           libraries = libraries,
+           library_dirs = [flann_lib],
+           runtime_library_dirs= [flann_lib],
+           extra_compile_args=["-O3"])
+
+    return config
