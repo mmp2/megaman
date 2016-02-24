@@ -14,12 +14,12 @@ def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
 
     config = Configuration('geometry/cyflann', parent_package, top_path)
-    libraries = ['flann', 'flann_cpp']
+    libraries = ['flann_cpp']
     if os.name == 'posix':
         libraries.append('m')
 
     config.add_extension("index",
-           sources=["index.cpp", "cyflann_index.cc"],
+           sources=["index.cxx", "cyflann_index.cc"],
            include_dirs=[numpy.get_include(), flann_include],
            libraries = libraries,
            library_dirs = [flann_lib],

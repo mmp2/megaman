@@ -1,6 +1,8 @@
 *~
 *.pyc
 junk*
+*.cxx
+cythonize.dat
 
 MANIFEST
 

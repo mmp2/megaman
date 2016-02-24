@@ -2,6 +2,7 @@ import io
 import os
 import re
 import sys
+import subprocess
 
 
 def read(path, encoding='utf-8'):
@@ -21,6 +22,18 @@ def version(path):
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
+
+
+def generate_cython():
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    print("Cythonizing sources")
+    p = subprocess.call([sys.executable,
+                         os.path.join(cwd, 'tools', 'cythonize.py'),
+                         'Mmani'],
+                        cwd=cwd)
+    if p != 0:
+        raise RuntimeError("Running cythonize failed!")
+
 
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
@@ -68,6 +81,11 @@ def setup_package():
     old_path = os.getcwd()
     os.chdir(src_path)
     sys.path.insert(0, src_path)
+
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
+        # Generate Cython sources, unless building from source release
+        generate_cython()
 
     try:
         setup(name='Mmani',
