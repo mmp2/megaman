@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 
 
 flann_root = os.environ.get('FLANN_ROOT', sys.exec_prefix)
@@ -14,9 +15,14 @@ def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
 
     config = Configuration('geometry/cyflann', parent_package, top_path)
-    libraries = ['flann_cpp']
+    libraries = ['flann', 'flann_cpp']
     if os.name == 'posix':
         libraries.append('m')
+
+    # from http://stackoverflow.com/questions/19123623/python-runtime-library-dirs-doesnt-work-on-mac
+    extra_link_args = []
+    if platform.system() == 'Darwin':
+        extra_link_args.append('-Wl,-rpath,'+flann_lib)
 
     config.add_extension("index",
            sources=["index.cxx", "cyflann_index.cc"],
@@ -24,6 +30,7 @@ def configuration(parent_package='', top_path=None):
            libraries = libraries,
            library_dirs = [flann_lib],
            runtime_library_dirs= [flann_lib],
+           extra_link_args=extra_link_args,
            extra_compile_args=["-O3"])
 
     return config
