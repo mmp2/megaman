@@ -1,6 +1,9 @@
 # megaman: Scalable manifold learning
 
-megaman is a scalable manifold learning package implemented in
+[![build status](http://img.shields.io/travis/mmp2/megaman/master.svg?style=flat)](https://travis-ci.org/mmp2/megaman)
+[![license](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/mmp2/megaman/blob/master/LICENSE)
+
+``megaman`` is a scalable manifold learning package implemented in
 python. It has a front-end API designed to be familiar
 to [scikit-learn](http://scikit-learn.org/) but harnesses
 the C++ Fast Library for Approximate Nearest Neighbors (FLANN)
