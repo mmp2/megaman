@@ -53,8 +53,6 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
         else:
             graph = fl_radius_neighbors_graph(X, radius, flindex)
     elif method == 'cyflann':
-        graph = fl_cpp_radius_neighbors_graph(X, radius)
-    elif method == 'cython':
         if cyindex is None:
             cyindex = Index(X)
         cyindex.buildIndex()
@@ -92,67 +90,6 @@ def radius_neighbors_graph(X, radius):
         # sparse will complain this is faster with lil_matrix:
         graph.setdiag(0.0) # diagonal values are true zeros, otherwise they're infinite
     return(graph)
-
-def fl_cpp_radius_neighbors_graph(X, radius):
-    """
-    Constructs a sparse distance matrix called graph in coo
-    format using pre-compiled C++ function.
-
-    Parameters
-    ----------
-    X: data matrix, array_like, shape = (n_samples, n_dimensions )
-    radius: neighborhood radius, scalar
-        the neighbors lying approximately within radius of a node will
-        be returned. Or, in other words, all distances will be less or equal
-        to radius. There will be entries in the matrix for zero distances.
-        Attention when converting to dense: The rest of the distances
-        should not be considered 0, but "large".
-
-    Returns
-    -------
-    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
-           sparse csr format
-
-    Notes
-    -----
-    With approximate neiborhood search, the matrix is not necessarily symmetric.
-    """
-    radius *= radius # FLANN computes squared distance.
-    # To run the C++ executable we must save the data to a binary file
-    nsam, ndim = X.shape
-    fname = os.getcwd() + "/test_data_file.dat"
-    X.tofile(fname)
-    geom_path = os.path.abspath(__file__) # this is where geometry.py is located
-    split_path = geom_path.split("/")
-    split_path[-1] = "compute_flann_neighbors_cpp"
-    cpp_file_path = "/".join(split_path)
-    unix_call = "{file_path} {N} {D} {radius} {fname}"
-    dist_call = unix_call.format(file_path = cpp_file_path, N=nsam, D=ndim,
-                                    radius=radius, fname=fname)
-    ret_code = subprocess.call([dist_call], shell = True)
-    if ret_code != 0:
-        raise RuntimeError("shell call: " + dist_call + " failed with code: " + str(ret_code))
-
-    # the resulting files from the C++ function are:
-    # neighbors.dat: contains nsam rows with space separated index of nbr
-    # distances.dat: contains nsam rows with space separated distance of nbr
-    with open("neighbors.dat", "rb") as handle:
-        allnbrs = handle.readlines()
-    with open("distances.dat", "rb") as handle:
-        alldists = handle.readlines()
-    allnbrs = [nbrs.split() for nbrs in allnbrs]
-    alldists = [dists.split() for dists in alldists]
-
-    # for sparse storage
-    indices = np.array([int(nbr) for nbri in allnbrs for nbr in nbri])
-    data = np.array([float(dist) for disti in alldists for dist in disti])
-    lengths = [len(nbri) for nbri in allnbrs]
-    indpts = list(np.cumsum(lengths))
-    indpts.insert(0,0)
-    indpts = np.array(indpts)
-    graph = sparse.csr_matrix((data, indices, indpts), shape = (nsam, nsam))
-    graph.data = np.sqrt(graph.data) # FLANN returns squared distance
-    return graph
 
 def fl_radius_neighbors_graph(X, radius, flindex):
     """

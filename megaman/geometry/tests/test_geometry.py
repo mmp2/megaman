@@ -111,24 +111,22 @@ def test_equal_original(almost_equal_decimals = 5):
                 assert_array_almost_equal( L, Ltest, 5 )
                 di = np.diag_indices( L.shape[0] )
                 assert_array_equal(diag, np.array( L[di] ))
+
 def test_distance_types(almost_equal_decimals = 5):
     X = np.random.uniform(size=(20,2))
-    G1 = geom.Geometry(X, input_type = 'data', distance_method = 'cython',
+    G1 = geom.Geometry(X, input_type = 'data', distance_method = 'brute',
                         neighborhood_radius = 1)
-    G2 = geom.Geometry(X, input_type = 'data', distance_method = 'brute',
+    G2 = geom.Geometry(X, input_type = 'data', distance_method = 'cyflann',
                         neighborhood_radius = 1)
-    G3 = geom.Geometry(X, input_type = 'data', distance_method = 'cyflann',
-                        neighborhood_radius = 1)
-    #G4 = geom.Geometry(X, input_type = 'data', distance_method = 'pyflann',
+    #G3 = geom.Geometry(X, input_type = 'data', distance_method = 'pyflann',
     #                    neighborhood_radius = 1, path_to_flann = path_to_flann)
     d1 = G1.get_distance_matrix()
     d2 = G2.get_distance_matrix()
-    d3 = G3.get_distance_matrix()
-    #d4 = G4.get_distance_matrix()
+    #d3 = G3.get_distance_matrix()
+
     # if they're all close to d1 then they're all close enough together.
     assert_array_almost_equal(d1.todense(), d2.todense(), almost_equal_decimals)
-    assert_array_almost_equal(d1.todense(), d3.todense(), almost_equal_decimals)
-    #assert_array_almost_equal(d1.todense(), d4.todense(), almost_equal_decimals)
+    #assert_array_almost_equal(d1.todense(), d3.todense(), almost_equal_decimals)
 
 def test_get_distance_matrix(almost_equal_decimals = 5):
     """ test different ways to call get_distance_matrix """
