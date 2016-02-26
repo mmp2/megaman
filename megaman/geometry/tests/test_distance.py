@@ -24,7 +24,7 @@ def test_all_methods_close(almost_equal_decimals = 5):
     except ImportError:
         raise SkipTest("pyflann not installed. Will not test pyflann method")
     t1 = time.clock()
-    D1 = distance_matrix(X, method = 'cython')
+    D1 = distance_matrix(X, method = 'cyflann')
     print "cython version:",time.clock() - t1
 
     flindex = pyf.FLANN()
@@ -34,20 +34,15 @@ def test_all_methods_close(almost_equal_decimals = 5):
     print "pyflann version:",time.clock() - t2
 
     t3 = time.clock()
-    D3 = distance_matrix(X, method = 'cyflann')
-    print "cyflann version:",time.clock() - t3
+    D3 = distance_matrix(X, method = 'brute')
+    print "brute version:",time.clock() - t3
 
-    t4 = time.clock()
-    D4 = distance_matrix(X, method = 'brute')
-    print "brute version:",time.clock() - t4
-
-    D5 = distance_matrix(X)
+    D4 = distance_matrix(X)
 
     assert_array_almost_equal(D1.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D2.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D3.todense(), D, almost_equal_decimals)
     assert_array_almost_equal(D4.todense(), D, almost_equal_decimals)
-    assert_array_almost_equal(D5.todense(), D, almost_equal_decimals)
 
 def test_flindex_passed():
     assert_raises(ValueError, distance_matrix, X, 'pyflann')
