@@ -13,7 +13,7 @@ the number of dimensions.
 
 TODO: generate the data -- what should it be
       with precomputing of the index?
-      
+
       (todo next: benchmarks for rmetric, for spectral embedding, for other methods like isomap)
 
 """
@@ -29,7 +29,7 @@ def compute_bench(n_samples, n_features, rad0, dim, quiet = False):
     dense_a_results = []
     dense_l_results = []
     it = 0
-    
+
     for ns in n_samples:
         # make a dataset
         X, t = make_swiss_roll( ns, noise = 0.0 )
@@ -52,7 +52,7 @@ def compute_bench(n_samples, n_features, rad0, dim, quiet = False):
                 n_noisef = nf - 3
                 noise_rad_frac = 0.1
                 noiserad = rad/np.sqrt(n_noisef) * noise_rad_frac
-                Xnoise = np.random.random((ns, n_noisef)) * noiserad 
+                Xnoise = np.random.random((ns, n_noisef)) * noiserad
                 X = np.hstack((X, Xnoise))
                 rad = rad*(1+noise_rad_frac) # add a fraction for noisy dimensions
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     sys.path.append(path)
 #    path = os.path.abspath('../..')
 #    sys.path.append(path)
-    from Mmani.embedding.geometry import *
+    from megaman.embedding.geometry import *
     import pylab as pl
     import scipy.io
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         scipy.io.savemat( 'results_bench_laplacian_dense.mat', save_dict )
 
 
-    pl.figure('Mmani.embedding benchmark results')
+    pl.figure('megaman.embedding benchmark results')
     pl.subplot(211)
     pl.plot(list_n_samples, dense_d_results, 'b-',
                             label=' distance matrix')
@@ -143,4 +143,3 @@ if __name__ == '__main__':
         pl.savefig('results_bench_laplacian_dense'+'.png', format='png')
     else:
         pl.show()
-

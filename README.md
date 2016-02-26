@@ -1,18 +1,18 @@
-# Mmani: Scalable manifold learning
+# megaman: Scalable manifold learning
 
-Mmani is a scalable manifold learning package implemented in
+megaman is a scalable manifold learning package implemented in
 python. It has a front-end API designed to be familiar
 to [scikit-learn](http://scikit-learn.org/) but harnesses
 the C++ Fast Library for Approximate Nearest Neighbors (FLANN)
 and the Sparse Symmetric Positive Definite (SSPD) solver
 Locally Optimal Block Precodition Gradient (LOBPCG) method
 to scale manifold learning algorithms to large data sets.
-On a personal computer Mmani can embed 1 million data points
+On a personal computer megaman can embed 1 million data points
 with hundreds of dimensions in 10 minutes.
-Mmani is designed for researchers and as such caches intermediary
+megaman is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters.
 
-Documentation can be found at http://mmp2.github.io/Mmani/
+Documentation can be found at http://mmp2.github.io/megaman/
 
 ## Examples
 
@@ -46,14 +46,14 @@ Set environment variable for FLANN:
 
     $ export FLANN_ROOT=<FLANN_ROOT>
 
-Finally, you can instal Mmani by running
+Finally, you can instal megaman by running
 
     $ python setup.py install
 
 ## Unit Tests
-Mmani uses ``nose`` for unit tests. With nosetests installed, type
+megaman uses ``nose`` for unit tests. With nosetests installed, type
 
-    $ nosetests Mmani
+    $ nosetests megaman
 
 to run the unit tests.
 

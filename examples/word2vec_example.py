@@ -3,9 +3,9 @@ import sys
 import numpy as np
 import time
 
-sys.path.append('/home/jmcq/GitHub/Mmani')
-from Mmani.geometry.geometry import Geometry
-from Mmani.embedding.spectral_embedding import spectral_embedding
+sys.path.append('/home/jmcq/GitHub/megaman')
+from megaman.geometry.geometry import Geometry
+from megaman.embedding.spectral_embedding import spectral_embedding
 from scipy.io import mmwrite, mmread
 from word2vec import *
 
@@ -27,7 +27,7 @@ model.syn0 # (nwords, ndim) data corresponding to the words in index2word
 
 my_word = model.vocab['king']
 print(my_word.count) # the occurances of that word in the corpus
-print(my_word.index) # the index of the word in 
+print(my_word.index) # the index of the word in
 print(model.index2word[my_word.index]) # the word itself ('king')
 print(model.syn0[my_word.index]) # and the word2vec projection of 'king'
 '''
@@ -39,11 +39,11 @@ X = np.array(model.syn0, dtype = 'd')
 (nwords, ndim) = X.shape
 
 # we want the radius to be big enough that each data point has at least 1 nbr
-radius = 20 
+radius = 20
 
 # instantiate the Geometry class
-Geom = Geometry(X, neighborhood_radius = radius, affinity_radius = radius, 
-                distance_method = 'cython', input_type = 'data', 
+Geom = Geometry(X, neighborhood_radius = radius, affinity_radius = radius,
+                distance_method = 'cython', input_type = 'data',
                 laplacian_type = 'geometric')
 # Call the get distance -- no need to copy
 dists = Geom.get_distance_matrix(copy=False)
@@ -60,7 +60,7 @@ mmwrite( 'wor2vec_distance_radius_20.mtx', dists )
 '''
 print("using sub-sample method...")
 seed = 123
-sub_n = 1500000 
+sub_n = 1500000
 
 print("Using subset of data:  % d random data points" % sub_n)
 # To read back:
@@ -83,8 +83,8 @@ print('subsetting data...')
 dists = dists[sub_sample,:]; dists = dists[:, sub_sample]
 
 print('instantiating Geometry...')
-Geom = Geometry(dists, neighborhood_radius = radius, affinity_radius = radius, 
-                distance_method = 'cython', input_type = 'distance', 
+Geom = Geometry(dists, neighborhood_radius = radius, affinity_radius = radius,
+                distance_method = 'cython', input_type = 'distance',
                 laplacian_type = 'geometric')
 print('computing Laplacian...')
 Lapl = Geom.get_laplacian_matrix(scaling_epps = radius, copy = False, return_lapsym = True)

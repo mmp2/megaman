@@ -3,7 +3,7 @@
 """ cythonize
 Cythonize pyx files into C files as needed.
 Usage: cythonize [root_dir]
-Default [root_dir] is 'Mmani'.
+Default [root_dir] is 'megaman'.
 Checks pyx files to see if they have been changed relative to their
 corresponding C files.  If they have, then runs cython on these files to
 recreate the C files.
@@ -30,7 +30,7 @@ import hashlib
 import subprocess
 
 HASH_FILE = 'cythonize.dat'
-DEFAULT_ROOT = 'Mmani'
+DEFAULT_ROOT = 'megaman'
 
 # WindowsError is not defined on unix systems
 try:
@@ -46,7 +46,7 @@ def process_pyx(fromfile, tofile):
         from Cython.Compiler.Version import version as cython_version
         from distutils.version import LooseVersion
         if LooseVersion(cython_version) < LooseVersion('0.22'):
-            raise Exception('Building Mmani requires Cython >= 0.22')
+            raise Exception('Building megaman requires Cython >= 0.22')
 
     except ImportError:
         pass
@@ -79,7 +79,7 @@ def process_tempita_pyx(fromfile, tofile):
         except ImportError:
             import tempita
     except ImportError:
-        raise Exception('Building Mmani requires Tempita: '
+        raise Exception('Building megaman requires Tempita: '
                         'pip install --user Tempita')
     from_filename = tempita.Template.from_filename
     template = from_filename(fromfile, encoding=sys.getdefaultencoding())

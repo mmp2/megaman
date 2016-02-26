@@ -1,7 +1,7 @@
 .. _embedding:
 
 ***************************************************
-Tools for Embedding (``Mmani.embedding``)
+Tools for Embedding (``megaman.embedding``)
 ***************************************************
 
 This module contains tools for nonlinear embedding data sets.

@@ -11,8 +11,8 @@ sys.path.append(path)
 path = os.path.abspath('../..')
 sys.path.append(path)
 from covar_plotter import plot_cov_ellipse
-from Mmani.embedding.embed_with_rmetric import *
-from Mmani.embedding.spectral_embedding_ import _graph_is_connected
+from megaman.embedding.embed_with_rmetric import *
+from megaman.embedding.spectral_embedding_ import _graph_is_connected
 
 
 """ Small demo with sdss_corrected_spectra """
@@ -36,7 +36,7 @@ n_samples = X.shape[0]
 
 flann = FLANN()
 params = flann.build_index(X)
-dists = distance_matrix( X, flindex = flann, mode='radius_neighbors', 
+dists = distance_matrix( X, flindex = flann, mode='radius_neighbors',
                          neighbors_radius=rad*1.5 )
 A = affinity_matrix( dists, rad )
 
@@ -108,8 +108,3 @@ if compute_H:
     if save_fig:
         plt.savefig( "spectra-emb"+".png", format='png' )
     plt.show()
-
-
-
-
-

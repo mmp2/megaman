@@ -1,4 +1,4 @@
 include *.md
 include *.py
-recursive-include Mmani *.py
+recursive-include megaman *.py
 include LICENSE

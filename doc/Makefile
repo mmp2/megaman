@@ -87,9 +87,9 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Mmani.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/megaman.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/Mmani.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/megaman.qhc"
 
 applehelp:
 	$(SPHINXBUILD) -b applehelp $(ALLSPHINXOPTS) $(BUILDDIR)/applehelp
@@ -104,8 +104,8 @@ devhelp:
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/Mmani"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/Mmani"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/megaman"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/megaman"
 	@echo "# devhelp"
 
 epub:
@@ -193,12 +193,12 @@ pseudoxml:
 
 
 publish: html
-	if test -d _build/Mmani; \
-	then echo "using existing cloned Mmani directory"; \
+	if test -d _build/megaman; \
+	then echo "using existing cloned megaman directory"; \
 	else cd _build && \
-	git clone https://github.com/mmp2/Mmani.git; \
+	git clone https://github.com/mmp2/megaman.git; \
 	fi && \
-	cd _build/Mmani && git checkout gh-pages && \
+	cd _build/megaman && git checkout gh-pages && \
 	rsync -r ../html/* ./ && \
 	git add * && \
 	git commit -a -m 'Make install' && \

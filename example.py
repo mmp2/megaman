@@ -1,13 +1,13 @@
 import sys
-sys.path.append('/homes/jmcq/Mmani/') # this is stupid 
+sys.path.append('/homes/jmcq/megaman/') # this is stupid
 
 import numpy as np
-import Mmani.geometry.geometry as geom
+import megaman.geometry.geometry as geom
 import scipy as sp
 import scipy.sparse as sparse
 from sklearn import datasets
 
-# Generate an example data set 
+# Generate an example data set
 N = 10
 X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
 n_components = 2
@@ -21,31 +21,31 @@ Geometry = geom.Geometry(X, distance_method = 'brute',
                         laplacian_type = 'geometric')
 
 # You can get the distance, affinity etc with e.g: Geometry.get_distance_matrix()
-# you can also use the assign_distance, assign_affinity, and assign_laplacian 
+# you can also use the assign_distance, assign_affinity, and assign_laplacian
 
 # If you pass X to the embedding functions it will create a Geometry object.
 # But if you're planning on trying multiple embeddings it's best to pass it directly
 
 # LTSA
-import Mmani.embedding.ltsa as ltsa
+import megaman.embedding.ltsa as ltsa
 LTSA = ltsa.LTSA(n_components = n_components, eigen_solver = 'arpack',
                 Geometry = Geometry)
 (embed_ltsa, err) = LTSA.fit_transform(X)
 
 # LLE
-import Mmani.embedding.locally_linear as lle
+import megaman.embedding.locally_linear as lle
 LLE = lle.LocallyLinearEmbedding(n_components = n_components, eigen_solver = 'arpack',
                                 Geometry = Geometry)
 (embed_lle, err) = LLE.fit_transform(X)
 
 # Isomap
-import Mmani.embedding.isomap as iso
-ISOMAP = iso.Isomap(n_components = n_components, eigen_solver = 'arpack', 
+import megaman.embedding.isomap as iso
+ISOMAP = iso.Isomap(n_components = n_components, eigen_solver = 'arpack',
                     Geometry = Geometry)
 embed_isomap = ISOMAP.fit_transform(X)
 
 # Spectral Embedding (
-import Mmani.embedding.spectral_embedding as se
+import megaman.embedding.spectral_embedding as se
 Spectral = se.SpectralEmbedding(n_components = n_components, eigen_solver = 'arpack',
                                 Geometry = Geometry)
 embed_spectral = Spectral.fit_transform(X)

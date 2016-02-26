@@ -13,14 +13,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pylab import polyfit
 
-# Mmani imports:
-sys.path.append('/home/jmcq/GitHub/Mmani')
-from Mmani.geometry.geometry import affinity_matrix
-from Mmani.geometry.distance import distance_matrix
-from Mmani.geometry.cyflann.index import Index
+# megaman imports:
+sys.path.append('/home/jmcq/GitHub/megaman')
+from megaman.geometry.geometry import affinity_matrix
+from megaman.geometry.distance import distance_matrix
+from megaman.geometry.cyflann.index import Index
 
 print("Loading Data...")
-fname = '/home/jmcq/GitHub/Mmani/astrodemo/spectra100000_clean.hdf5'
+fname = '/home/jmcq/GitHub/megaman/astrodemo/spectra100000_clean.hdf5'
 file = h5py.File(fname, 'r')
 wavelengths = np.array(file['wavelengths'])
 X = np.array(file['spectra'])
@@ -32,7 +32,7 @@ nradii = 15
 backwards = True
 
 is_outliers = False   # find outliers
-rad = 500 #~100 spectra with no neighbors 
+rad = 500 #~100 spectra with no neighbors
 
 is_connected = False
 rad = 1500
@@ -60,11 +60,11 @@ if is_neighborhoods:
                 print('computing distance matrix...')
                 dists = distance_matrix(X, method='cython', radius=rad, cyindex=cyindex)
                 print("Symmetrizing distance matrix...")
-                dists = dists + dists.T # symmetrize, removes zero on diagonal        
+                dists = dists + dists.T # symmetrize, removes zero on diagonal
             else:
                 print("censoring distance matrix...")
                 dists.data[dists.data > rad] = 0
-                dists.eliminate_zeros()   
+                dists.eliminate_zeros()
         else:
             rad = radii[ii]
             print("radius: " + str(radii[ii]))
@@ -121,21 +121,21 @@ if is_neighborhoods:
     plt.grid(b=True,which='minor')
     print('dim=', m )
     plt.savefig("neighbors"+".png", format='png')
-    
+
 if is_outliers:
     print("evaluating graph degrees & outliers...")
     print("building index...")
     cyindex = Index(X)
     print("calculating distance...")
-    dists = distance_matrix( X, method='cython', radius=rad, cyindex = cyindex )    
+    dists = distance_matrix( X, method='cython', radius=rad, cyindex = cyindex )
     print("symmetrizing distance...")
     dists = dists + dists.T
     print("Average of non-zero distance values: " + str(np.mean(dists.data)))
     avgd = np.asarray(dists.sum(axis=1)).squeeze()/n_samples
     d_mean = np.mean(avgd)
     d_std = np.std(avgd)
-    print('radius=' + repr(rad) +': average distances mean (std)=' + 
-          repr(d_mean) + '(' + repr(d_std) +')')    
+    print('radius=' + repr(rad) +': average distances mean (std)=' +
+          repr(d_mean) + '(' + repr(d_std) +')')
     print("calculating affinity matrix...")
     A = affinity_matrix(dists, rad)
     degrees = np.asarray(A.sum(axis=1)).squeeze()
@@ -143,19 +143,19 @@ if is_outliers:
     deg_std = np.std(degrees)
     outlier_results = {'avgd':avgd, 'degrees':degrees,'radius':rad}
     scipy.io.savemat('outlier_results.mat', outlier_results)
-    print('average degrees mean (std)=' + repr(deg_mean) + '(' + 
-          repr(deg_std) +')')    
+    print('average degrees mean (std)=' + repr(deg_mean) + '(' +
+          repr(deg_std) +')')
     plt.plot(np.sort(degrees))
     plt.title('degrees')
     plt.grid(b=True)
     plt.savefig("outlier_degrees"+".png", format='png')
-    
+
 if is_connected:
     print("evaluating connected components...")
     print("building index...")
     cyindex = Index(X)
     print("calculating distance...")
-    dists = distance_matrix( X, method='cython', radius=rad, cyindex = cyindex )    
+    dists = distance_matrix( X, method='cython', radius=rad, cyindex = cyindex )
     print("symmetrizing distance...")
     dists = dists + dists.T
     print("calculating affinity matrix...")
@@ -167,9 +167,9 @@ if is_connected:
     for i in range(n_components):
         num_per_comp[i] = list(labels).count(i)
         if num_per_comp[i] > 100:
-            print("there are " + str(num_per_comp[i]) + " spectra in the " + 
+            print("there are " + str(num_per_comp[i]) + " spectra in the " +
                   str(i) + "th component")
     print("the largest connected component contains %d of the %d spectra" % (np.max(num_per_comp), n_samples))
-    components_results = {'n_components':n_components, 'labels':labels, 
+    components_results = {'n_components':n_components, 'labels':labels,
                           'num_per_comp':num_per_comp, 'radius':rad}
     scipy.io.savemat('connected_components.mat', components_results)

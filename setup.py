@@ -29,7 +29,7 @@ def generate_cython():
     print("Cythonizing sources")
     p = subprocess.call([sys.executable,
                          os.path.join(cwd, 'tools', 'cythonize.py'),
-                         'Mmani'],
+                         'megaman'],
                         cwd=cwd)
     if p != 0:
         raise RuntimeError("Running cythonize failed!")
@@ -43,28 +43,28 @@ def configuration(parent_package='',top_path=None):
                        delegate_options_to_subpackages=True,
                        quiet=True)
 
-    config.add_subpackage('Mmani')
+    config.add_subpackage('megaman')
 
     return config
 
-DESCRIPTION = "Mmani: Scalable Manifold Learning"
+DESCRIPTION = "megaman: Scalable Manifold Learning"
 LONG_DESCRIPTION = """
-Mmani: Scalable Manifold Learning
+megaman: Scalable Manifold Learning
 =================================
 
 This repository contains a scalable implementation of several manifold learning
 algorithms, making use of FLANN for fast approximate nearest neighbors and
 scipy routines for fast matrix decompositions.
 
-For more information, visit https://github.com/mmp2/Mmani
+For more information, visit https://github.com/mmp2/megaman
 """
-NAME = "Mmani"
+NAME = "megaman"
 AUTHOR = "Marina Meila"
-URL = 'https://github.com/mmp2/Mmani'
-DOWNLOAD_URL = 'https://github.com/mmp2/Mmani'
+URL = 'https://github.com/mmp2/megaman'
+DOWNLOAD_URL = 'https://github.com/mmp2/megaman'
 LICENSE = 'BSD 3'
 
-VERSION = version('Mmani/__init__.py')
+VERSION = version('megaman/__init__.py')
 
 
 def setup_package():
@@ -88,7 +88,7 @@ def setup_package():
         generate_cython()
 
     try:
-        setup(name='Mmani',
+        setup(name='megaman',
               author=AUTHOR,
               url=URL,
               download_url=DOWNLOAD_URL,

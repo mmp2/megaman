@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mmani documentation build configuration file, created by
+# megaman documentation build configuration file, created by
 # sphinx-quickstart on Fri Jun  5 13:49:21 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -33,7 +33,7 @@ import warnings
 # is relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 sys.path.insert(0, os.path.abspath('sphinxext'))
-sys.path.append('/homes/jmcq/Mmani') # This is a hack...
+sys.path.append('/homes/jmcq/megaman') # This is a hack...
 numpydoc_show_class_members = False
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -76,7 +76,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Mmani'
+project = 'megaman'
 copyright = '2015, James McQueen, Marina Meila'
 author = 'James McQueen, Marina Meila'
 
@@ -231,7 +231,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Mmanidoc'
+htmlhelp_basename = 'megamandoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -253,7 +253,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'Mmani.tex', 'Mmani Documentation',
+  (master_doc, 'megaman.tex', 'megaman Documentation',
    'James McQueen, Marina Meila', 'manual'),
 ]
 
@@ -283,7 +283,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'Mmani', 'Mmani Documentation',
+    (master_doc, 'megaman', 'megaman Documentation',
      [author], 1)
 ]
 
@@ -297,8 +297,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'Mmani', 'Mmani Documentation',
-   author, 'Mmani', 'One line description of project.',
+  (master_doc, 'megaman', 'megaman Documentation',
+   author, 'megaman', 'One line description of project.',
    'Miscellaneous'),
 ]
 

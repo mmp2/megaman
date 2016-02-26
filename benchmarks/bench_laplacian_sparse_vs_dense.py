@@ -24,7 +24,7 @@ def generate_data(ns, nf, rng, rad0):
         raise ValueError('n_features must be at least 3 for swiss roll')
     else:
         if method == 1:
-            # Method one: noise dimensions adjust 
+            # Method one: noise dimensions adjust
             # add noise dimensions up to n_features
             n_noisef = nf - 3
             noise_rad_frac = 0.1
@@ -42,7 +42,7 @@ def generate_data(ns, nf, rng, rad0):
                 rad = rad*1.5
             if nf > 5000:
                 rad = rad*1.5
-        # Method two: noise dimensions do not adjust 
+        # Method two: noise dimensions do not adjust
     return X, rad
 
 def compute_bench(n_samples, n_features, rad0, dim, method, quiet = False):
@@ -65,34 +65,34 @@ def compute_bench(n_samples, n_features, rad0, dim, method, quiet = False):
             gc.collect()
             if not quiet:
                 print( 'rad=', rad, 'ns=', ns, 'nf=', nf )
-            
+
             # Set up method:
             if method == 'sparse':
                 if not quiet:
                     print("- benchmarking sparse")
-                Geom = Geometry(X, neighborhood_radius = 1.5*rad, affinity_radius = 1.5*rad, 
-                                distance_method = 'cython', input_type = 'data', 
+                Geom = Geometry(X, neighborhood_radius = 1.5*rad, affinity_radius = 1.5*rad,
+                                distance_method = 'cython', input_type = 'data',
                                 laplacian_type = 'symmetricnormalized')
             elif method == 'dense':
                 if not quiet:
                     print("- benchmarking dense")
-                Geom = Geometry(X, neighborhood_radius = 1.5*rad, affinity_radius = 1.5*rad, 
-                                distance_method = 'brute', input_type = 'data', 
+                Geom = Geometry(X, neighborhood_radius = 1.5*rad, affinity_radius = 1.5*rad,
+                                distance_method = 'brute', input_type = 'data',
                                 laplacian_type = 'symmetricnormalized')
             else:
                 if not quiet:
                     print("- benchmarking sklearn")
-            
+
             # Distance matrix:
             tstart = time()
             if method == 'sparse' or method == 'dense':
                 dists = Geom.get_distance_matrix(copy=False)
-            else: 
+            else:
                 dists = radius_neighbors_graph(X, radius = rad*1.5, mode = 'distance')
                 dists = 0.5 * (dists + dists.T)
             d_results.append(time() - tstart)
             print(d_results[len(d_results)-1])
-                
+
             # Affinity Matrix
             if method == 'sparse' or method == 'dense':
                 print("skipping A")
@@ -102,17 +102,17 @@ def compute_bench(n_samples, n_features, rad0, dim, method, quiet = False):
                 A = dists.copy()
                 A.data = A.data**2
                 A.data = A.data/(-(rad*1.5)**2)
-                np.exp(A.data,A.data)                
+                np.exp(A.data,A.data)
             a_results.append(time() - tstart)
-            
-            # Laplacian Matrix: 
+
+            # Laplacian Matrix:
             if method == 'sparse' or method == 'dense':
                 # lap = Geom.get_laplacian_matrix(scaling_epps=rad*1.5, return_lapsym=True,
                                                 # copy = True)
                 print("Skipping L")
             l_results.append(time() - tstart)
             gc.collect()
-            
+
             # Embedding:
             if not quiet:
                 print("embedding...")
@@ -129,24 +129,24 @@ def compute_bench(n_samples, n_features, rad0, dim, method, quiet = False):
 if __name__ == '__main__':
     import sys
     import os
-    path = '/home/jmcq/GitHub/Mmani'
+    path = '/home/jmcq/GitHub/megaman'
     sys.path.append(path)
-    from Mmani.geometry.geometry import *
-    from Mmani.geometry.distance import *
-    from Mmani.embedding.spectral_embedding import *
+    from megaman.geometry.geometry import *
+    from megaman.geometry.distance import *
+    from megaman.embedding.spectral_embedding import *
     from sklearn.manifold.spectral_embedding_ import spectral_embedding as se
     from sklearn.neighbors.graph import radius_neighbors_graph
     import matplotlib
     matplotlib.use('Agg')
     import pylab as pl
-    
+
     import scipy.io
-    
+
     is_save = True
     rad0 = 3
     rad0 = 2
     dim = 2
-    
+
     if sys.argv > 1:
         try:
             input_vary = str(sys.argv[1])
@@ -158,9 +158,9 @@ if __name__ == '__main__':
                 vary = 'n'
         except:
             vary = 'n'
-            
+
     print(vary)
-    
+
     if vary == 'n':
         print("N = 5,000,000 sparse, 1,000,000 sklearn;  D = 100, sparse only")
         n_features = 100
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         list_n_samples_sparse = []
         list_n_samples_sklearn = []
         save_dict = {'n_features':n_features}
-        
+
         if len(list_n_samples_sparse) > 0:
             rad0 = 20
             sparse_d_results, sparse_a_results, sparse_l_results, sparse_e_results = compute_bench(list_n_samples_sparse,
@@ -178,30 +178,30 @@ if __name__ == '__main__':
                             'ns_sparse_l_results':sparse_l_results, 'ns_sparse_e_results': sparse_e_results,
                             'sparse_n_samples':list_n_samples_sparse}
             scipy.io.savemat('results_bench_N_sparse.mat', sparse_dict)
-            save_dict.update(sparse_dict)        
+            save_dict.update(sparse_dict)
         if len(list_n_samples_dense) > 0:
             dense_d_results, dense_a_results, dense_l_results, dense_e_results = compute_bench(list_n_samples_dense,
                                                     [n_features], rad0, dim, method = 'dense', quiet=False)
-            dense_dict = {'ns_dense_d_results':dense_d_results, 'ns_dense_a_results':dense_a_results, 
+            dense_dict = {'ns_dense_d_results':dense_d_results, 'ns_dense_a_results':dense_a_results,
                           'ns_dense_l_results':dense_l_results, 'ns_dense_e_results':dense_e_results,
                           'dense_n_samples':list_n_samples_dense}
             scipy.io.savemat('results_bench_N_dense.mat', dense_dict)
-            save_dict.update(dense_dict)        
+            save_dict.update(dense_dict)
         if len(list_n_samples_sklearn) > 0:
             rad0 = 20
             sklearn_d_results, sklearn_a_results, sklearn_l_results, sklearn_e_results = compute_bench(list_n_samples_sklearn,
                                                     [n_features], rad0, dim, method = 'sklearn', quiet=False)
-            sklearn_dict = {'ns_sklearn_d_results':sklearn_d_results, 'ns_sklearn_a_results':sklearn_a_results, 
+            sklearn_dict = {'ns_sklearn_d_results':sklearn_d_results, 'ns_sklearn_a_results':sklearn_a_results,
                             'ns_sklearn_l_results':sklearn_l_results, 'ns_sklearn_e_results':sklearn_e_results,
                             'sklearn_n_samples':list_n_samples_sklearn}
             scipy.io.savemat('results_bench_N_sklearn.mat', sklearn_dict)
             save_dict.update(sklearn_dict)
-        
-        
+
+
         # if is_save:
             # scipy.io.savemat( 'results_bench_N_sparse_vs_dense_vs_sklearn.mat', save_dict )
-        
-        # pl.figure('Mmani.embedding benchmark results sparse vs dense')
+
+        # pl.figure('megaman.embedding benchmark results sparse vs dense')
         # pl.subplot(111)
         # if len(list_n_samples_sparse) > 0:
             # pl.plot(list_n_samples_sparse, sparse_e_results, 'r--',
@@ -233,11 +233,11 @@ if __name__ == '__main__':
         list_n_features_sparse = [10000]
         list_n_features_sklearn = [10000]
         save_dict = {'n_samples':n_samples}
-        
+
         if len(list_n_features_dense) > 0:
             dense_d_results, dense_a_results, dense_l_results, dense_e_results = compute_bench([n_samples],
                                                     list_n_features_dense, rad0, dim, method = 'dense', quiet=False)
-            dense_dict = {'nf_dense_d_results':dense_d_results, 'nf_dense_a_results':dense_a_results, 
+            dense_dict = {'nf_dense_d_results':dense_d_results, 'nf_dense_a_results':dense_a_results,
                           'nf_dense_l_results':dense_l_results, 'nf_dense_e_results':dense_e_results,
                           'dense_nf_samples':list_n_features_dense}
             scipy.io.savemat('results_bench_D_dense.mat', dense_dict)
@@ -255,16 +255,16 @@ if __name__ == '__main__':
             rad0 = 2
             sklearn_d_results, sklearn_a_results, sklearn_l_results, sklearn_e_results = compute_bench([n_samples],
                                                     list_n_features_sklearn, rad0, dim, method = 'sklearn', quiet=False)
-            sklearn_dict = {'ns_sklearn_d_results':sklearn_d_results, 'ns_sklearn_a_results':sklearn_a_results, 
+            sklearn_dict = {'ns_sklearn_d_results':sklearn_d_results, 'ns_sklearn_a_results':sklearn_a_results,
                             'ns_sklearn_l_results':sklearn_l_results, 'ns_sklearn_e_results':sklearn_e_results,
                             'sklearn_n_samples':list_n_features_sklearn}
             scipy.io.savemat('results_bench_D_sklearn.mat', sklearn_dict)
             save_dict.update(sklearn_dict)
-        
+
         if is_save:
             scipy.io.savemat( 'results_bench_D_sparse_vs_dense_vs_sklearn.mat', save_dict )
-        
-        pl.figure('Mmani.embedding benchmark results sparse vs dense')
+
+        pl.figure('megaman.embedding benchmark results sparse vs dense')
         pl.subplot(111)
         if len(list_n_features_sparse) > 0:
             pl.plot(list_n_features_sparse, sparse_e_results, 'r--',
@@ -274,7 +274,7 @@ if __name__ == '__main__':
                                     label='dense embedding')
         if len(list_n_features_sklearn) > 0:
             pl.plot(list_n_features_sklearn, sklearn_e_results, 'k--',
-                                    label='sklearn embedding')        
+                                    label='sklearn embedding')
         pl.title('data index built every step, %d samples' % (n_samples))
         pl.legend(loc='lower right', prop={'size':5})
         pl.xlabel('number of features')
@@ -282,7 +282,7 @@ if __name__ == '__main__':
         pl.axis('tight')
         pl.yscale( 'log' )
         pl.xscale( 'log' )
-        
+
         if is_save:
             pl.savefig('results_bench_D_sparse_vs_dense_vs_sklearn'+'.png', format='png')
         else:
