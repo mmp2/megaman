@@ -32,7 +32,7 @@ install:
 
 script:
 - mkdir -p $TEST_DIR
-- cd $TEST_DIR && nosetests -v --with-coverage --cover-package=megaman
+- cd $TEST_DIR && nosetests -v --with-coverage --cover-package=megaman megaman
 
 after_success:
 - coveralls
