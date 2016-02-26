@@ -2,10 +2,10 @@
 
 .. testsetup:: *
 
-   from Mmani.utils import *   
-   
+   from megaman.utils import *
+
 API Documentation
 =================
 
-.. automodule:: Mmani.utils.eigendecomp
+.. automodule:: megaman.utils.eigendecomp
    :members:

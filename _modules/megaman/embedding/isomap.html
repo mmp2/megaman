@@ -1,0 +1,374 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>megaman.embedding.isomap &mdash; megaman 0.3.dev0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.3.dev0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="megaman 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for megaman.embedding.isomap</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ISOMAP&quot;&quot;&quot;</span>
+
+<span class="c1"># Author: James McQueen &lt;jmcq@u.washington.edu&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># License: BSD 3 clause</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<span class="kn">from</span> <span class="nn">megaman.utils.eigendecomp</span> <span class="kn">import</span> <span class="n">eigen_decomposition</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse.csgraph</span> <span class="kn">import</span> <span class="n">shortest_path</span> <span class="k">as</span> <span class="n">graph_shortest_path</span>
+<span class="kn">from</span> <span class="nn">megaman.utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+
+
+<span class="k">def</span> <span class="nf">center_matrix</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
+    <span class="c1"># Let S = -1/2* D_g^2 and  N_1 = np.ones([N, N])/N</span>
+    <span class="c1"># Compute centred version: K = S - N_1*S - S*N_1  + N_1*S*N_1</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">G</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">S</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">0.5</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">row_sums</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">/</span><span class="n">N</span>
+    <span class="n">K</span> <span class="o">-=</span> <span class="n">row_sums</span>
+    <span class="n">K</span> <span class="o">-=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">N</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="n">K</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">row_sums</span><span class="p">)</span><span class="o">/</span><span class="n">N</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+
+<div class="viewcode-block" id="isomap"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.isomap">[docs]</a><span class="k">def</span> <span class="nf">isomap</span><span class="p">(</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+           <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">path_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+           <span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+           <span class="n">centered_matrix</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Geometry : a Geometry object from megaman.geometry.geometry</span>
+
+<span class="sd">    n_components : integer, optional</span>
+<span class="sd">        The dimension of the projection subspace.</span>
+<span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">        &#39;auto&#39; :</span>
+<span class="sd">            algorithm will attempt to choose the best method for input data</span>
+<span class="sd">        &#39;dense&#39; :</span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition.</span>
+<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">        &#39;arpack&#39; :</span>
+<span class="sd">            use arnoldi iteration in shift-invert mode. For this method,</span>
+<span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator.</span>
+<span class="sd">            Warning: ARPACK can be unstable for some problems.  It is best to</span>
+<span class="sd">            try several random seeds in order to check results.</span>
+<span class="sd">        &#39;lobpcg&#39; :</span>
+<span class="sd">            Locally Optimal Block Preconditioned Conjugate Gradient Method.</span>
+<span class="sd">            A preconditioned eigensolver for large symmetric positive definite</span>
+<span class="sd">            (SPD) generalized eigenproblems.</span>
+<span class="sd">        &#39;amg&#39; :</span>
+<span class="sd">            AMG requires pyamg to be installed. It can be faster on very large,</span>
+<span class="sd">            sparse problems, but may also lead to instabilities.</span>
+<span class="sd">    random_state : int seed, RandomState instance, or None (default)</span>
+<span class="sd">        A pseudo random number generator used for the initialization of the</span>
+<span class="sd">        lobpcg eigen vectors decomposition when eigen_solver == &#39;amg&#39;.</span>
+<span class="sd">        By default, arpack is used.</span>
+<span class="sd">    eigen_tol : float, optional, default=0.0</span>
+<span class="sd">        Stopping criterion for eigendecomposition of the Laplacian matrix</span>
+<span class="sd">        when using arpack eigen_solver.</span>
+<span class="sd">    path_method : string, method for computing graph shortest path. One of :</span>
+<span class="sd">        &#39;auto&#39;, &#39;D&#39;, &#39;FW&#39;, &#39;BF&#39;, &#39;J&#39;. See scipy.sparse.csgraph.shortest_path</span>
+<span class="sd">        for more information.</span>
+<span class="sd">    distance_matrix : sparse Ndarray (n_obs, n_obs), optional. Pairwise distance matrix</span>
+<span class="sd">        sparse zeros considered &#39;infinite&#39;.</span>
+<span class="sd">    graph_distance_matrix : Ndarray (n_obs, n_obs), optional. Pairwise graph distance</span>
+<span class="sd">        matrix. Output of graph_shortest_path.</span>
+<span class="sd">    centered_matrix : Ndarray (n_obs, n_obs), optional. Centered version of</span>
+<span class="sd">        graph_distance_matrix</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    embedding : array, shape=(n_samples, n_components)</span>
+<span class="sd">        The reduced samples.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Geometry object not megaman.embedding.geometry &quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;Geometry class&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Step 1: use geometry to calculate the distance matrix</span>
+    <span class="k">if</span> <span class="p">((</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">centered_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)):</span>
+        <span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">()</span>
+
+    <span class="c1"># Step 2: use graph_shortest_path to construct D_G</span>
+    <span class="c1">## WARNING: D_G is an (NxN) DENSE matrix!!</span>
+    <span class="k">if</span> <span class="p">((</span><span class="n">graph_distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">centered_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)):</span>
+        <span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="n">graph_shortest_path</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">,</span>
+                                                    <span class="n">method</span><span class="o">=</span><span class="n">path_method</span><span class="p">,</span>
+                                                    <span class="n">directed</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="c1"># Step 3: center graph distance matrix</span>
+    <span class="k">if</span> <span class="n">centered_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">centered_matrix</span> <span class="o">=</span> <span class="n">center_matrix</span><span class="p">(</span><span class="n">graph_distance_matrix</span><span class="p">)</span>
+
+
+    <span class="c1"># Step 4: compute d largest eigenvectors/values of centered_matrix</span>
+    <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">centered_matrix</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="p">,</span>
+                                                 <span class="n">random_state</span><span class="p">,</span> <span class="n">eigen_tol</span><span class="p">,</span>
+                                                 <span class="n">largest</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="c1"># Step 5:</span>
+    <span class="c1"># return Y = [sqrt(lambda_1)*V_1, ..., sqrt(lambda_d)*V_d]</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">lambdas</span><span class="p">);</span> <span class="n">ind</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># sort largest</span>
+    <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">ind</span><span class="p">];</span>
+    <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="n">ind</span><span class="p">]</span>
+    <span class="n">embedding</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">n_components</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">lambdas</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_components</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">embedding</span></div>
+
+<div class="viewcode-block" id="Isomap"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.Isomap">[docs]</a><span class="k">class</span> <span class="nc">Isomap</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    n_components : integer, default: 2</span>
+<span class="sd">        The dimension of the projected subspace.</span>
+<span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">        &#39;auto&#39; :</span>
+<span class="sd">            algorithm will attempt to choose the best method for input data</span>
+<span class="sd">        &#39;dense&#39; :</span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition.</span>
+<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">        &#39;arpack&#39; :</span>
+<span class="sd">            use arnoldi iteration in shift-invert mode. For this method,</span>
+<span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator.</span>
+<span class="sd">            Warning: ARPACK can be unstable for some problems.  It is best to</span>
+<span class="sd">            try several random seeds in order to check results.</span>
+<span class="sd">        &#39;lobpcg&#39; :</span>
+<span class="sd">            Locally Optimal Block Preconditioned Conjugate Gradient Method.</span>
+<span class="sd">            A preconditioned eigensolver for large symmetric positive definite</span>
+<span class="sd">            (SPD) generalized eigenproblems.</span>
+<span class="sd">        &#39;amg&#39; :</span>
+<span class="sd">            AMG requires pyamg to be installed. It can be faster on very large,</span>
+<span class="sd">            sparse problems, but may also lead to instabilities.</span>
+<span class="sd">    random_state : int seed, RandomState instance, or None, default : None</span>
+<span class="sd">        A pseudo random number generator used for the initialization of the</span>
+<span class="sd">        lobpcg eigen vectors decomposition when eigen_solver == &#39;amg&#39;.</span>
+<span class="sd">    eigen_tol : float, optional. Tolerance for &#39;arpack&#39; solver.</span>
+<span class="sd">    path_method : string, optionl. method for computing graph shortest path.</span>
+<span class="sd">        One of :</span>
+<span class="sd">        &#39;auto&#39;, &#39;D&#39;, &#39;FW&#39;, &#39;BF&#39;, &#39;J&#39;. See scipy.sparse.csgraph.shortest_path</span>
+<span class="sd">        for more information.</span>
+<span class="sd">    neighborhood_radius : scalar, passed to distance_matrix. Value such that all</span>
+<span class="sd">        distances beyond neighborhood_radius are considered infinite.</span>
+<span class="sd">    affinity_radius : scalar, passed to affinity_matrix. &#39;bandwidth&#39; parameter</span>
+<span class="sd">        used in Guassian kernel for affinity matrix</span>
+<span class="sd">    distance_method : string, one of &#39;auto&#39;, &#39;brute&#39;, &#39;cython&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;.</span>
+<span class="sd">        method for computing pairwise radius neighbors graph.</span>
+<span class="sd">    input_type : string, one of: &#39;data&#39;, &#39;distance&#39;, &#39;affinity&#39;.</span>
+<span class="sd">        The values of input data X.</span>
+<span class="sd">    path_to_flann : string. full file path location of FLANN if not installed to root or</span>
+<span class="sd">        FLANN_ROOT set to path location. Used for importing pyflann from a</span>
+<span class="sd">        different location.</span>
+<span class="sd">    Geometry : a Geometry object from megaman.geometry.geometry</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ----------</span>
+<span class="sd">    embedding_ : array, shape = (n_samples, n_components)</span>
+<span class="sd">        Spectral embedding of the training matrix.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    * Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C.</span>
+<span class="sd">      A global geometric framework for nonlinear dimensionality reduction.</span>
+<span class="sd">      Science 290 (5500)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">eigen_tol</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">path_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                 <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                 <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                 <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">Geometry</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="c1"># embedding parameters:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span> <span class="o">=</span> <span class="n">eigen_tol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span> <span class="o">=</span> <span class="n">path_method</span>
+
+        <span class="c1"># Geometry parameters:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="n">Geometry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="o">=</span> <span class="n">distance_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="o">=</span> <span class="n">path_to_flann</span>
+
+        <span class="c1"># intermediary steps for storage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">fit_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span>
+                                      <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">,</span>
+                                      <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">,</span>
+                                      <span class="n">distance_method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span><span class="p">,</span>
+                                      <span class="n">input_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span><span class="p">,</span>
+                                      <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Isomap.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.Isomap.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">eigen_solver</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like, shape (n_samples, n_features)</span>
+<span class="sd">            Training vector, where n_samples in the number of samples</span>
+<span class="sd">            and n_features is the number of features.</span>
+
+<span class="sd">        If self.input_type is &#39;distance&#39;, or &#39;affinity&#39;:</span>
+
+<span class="sd">        X : array-like, shape (n_samples, n_samples),</span>
+<span class="sd">            Interpret X as precomputed distance or adjacency graph</span>
+<span class="sd">            computed from samples.</span>
+
+<span class="sd">        input_type : string, one of: &#39;data&#39;, &#39;distance&#39;, &#39;affinity&#39;.</span>
+<span class="sd">            The values of input data X. (default = &#39;data&#39;)</span>
+
+<span class="sd">        eigen_solver : {None, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
+<span class="sd">            The eigenvalue decomposition strategy to use. AMG requires pyamg</span>
+<span class="sd">            to be installed. It can be faster on very large, sparse problems,</span>
+<span class="sd">            but may also lead to instabilities.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        self : object</span>
+<span class="sd">            Returns the instance itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">input_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="c1"># might want to change the eigen solver</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">eigen_solver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">eigen_sovler</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
+        <span class="c1"># we also might want to change the # of components:</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">n_components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_components</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+
+        <span class="c1"># don&#39;t re-compute these if it&#39;s already been done.</span>
+        <span class="c1"># This might be the case if an eigendecompostion fails and a different sovler is selected</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="n">graph_shortest_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">,</span>
+                                                             <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span><span class="p">,</span>
+                                                             <span class="n">directed</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="o">=</span> <span class="n">center_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span><span class="p">)</span>
+
+        <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span> <span class="o">=</span> <span class="n">isomap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
+                                 <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
+                                 <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                                 <span class="n">eigen_tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span><span class="p">,</span>
+                                 <span class="n">path_method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span><span class="p">,</span>
+                                 <span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">,</span>
+                                 <span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span><span class="p">,</span>
+                                 <span class="n">centered_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Isomap.fit_transform"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.Isomap.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fit the model from data in X and transform X.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: array-like, shape (n_samples, n_features)</span>
+<span class="sd">            Training vector, where n_samples in the number of samples</span>
+<span class="sd">            and n_features is the number of features.</span>
+
+<span class="sd">        If self.input_type is &#39;distance&#39;, or &#39;affinity&#39;:</span>
+
+<span class="sd">        X : array-like, shape (n_samples, n_samples),</span>
+<span class="sd">            Interpret X as precomputed distance or adjacency graph</span>
+<span class="sd">            computed from samples.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        X_new: array-like, shape (n_samples, n_components)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, James McQueen, Marina Meila.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

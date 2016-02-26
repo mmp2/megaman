@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; Mmani 0.3.dev0 documentation</title>
+    <title>API Documentation &mdash; megaman 0.3.dev0 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -23,9 +23,9 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../index.html" />
-    <link rel="up" title="Tools for Geometric Analysis (Mmani.geometry)" href="index.html" />
-    <link rel="next" title="Tools for Embedding (Mmani.embedding)" href="../embedding/index.html" />
+    <link rel="top" title="megaman 0.3.dev0 documentation" href="../index.html" />
+    <link rel="up" title="Tools for Geometric Analysis (megaman.geometry)" href="index.html" />
+    <link rel="next" title="Tools for Embedding (megaman.embedding)" href="../embedding/index.html" />
     <link rel="prev" title="Geometry" href="geometry.html" />
    
   
@@ -39,8 +39,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <span class="target" id="geometry-api"></span><div class="section" id="module-Mmani.geometry.geometry">
-<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-Mmani.geometry.geometry" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="geometry-api"></span><div class="section" id="module-megaman.geometry.geometry">
+<span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-megaman.geometry.geometry" title="Permalink to this headline">¶</a></h1>
 <p>Scalable Manifold learning utilities and algorithms.</p>
 <p>Graphs are represented with their weighted adjacency matrices, preferably using
 sparse matrices.</p>
@@ -57,7 +57,7 @@ mean that if one tries to symmetrize distance_matrix, the scipy.sparse
 code eliminates the 0.0 entries from distance_matrix. In the Affinity
 matrix we explicitly set the diagonal to 1.0 for sparse matrices.</p>
 <dl class="docutils">
-<dt>Hence, I adopted the following convention: </dt>
+<dt>Hence, I adopted the following convention:</dt>
 <dd><ul class="first last simple">
 <li>distance_matrix will NOT BE GUARANTEED symmetric</li>
 <li>affinity_matrix will perform a symmetrization by default</li>
@@ -67,12 +67,12 @@ matrix we explicitly set the diagonal to 1.0 for sparse matrices.</p>
 </dd>
 </dl>
 <dl class="class">
-<dt id="Mmani.geometry.geometry.Geometry">
-<em class="property">class </em><code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">Geometry</code><span class="sig-paren">(</span><em>X</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.Geometry">
+<em class="property">class </em><code class="descclassname">megaman.geometry.geometry.</code><code class="descname">Geometry</code><span class="sig-paren">(</span><em>X</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>The Geometry class stores the data, distance, affinity and laplacian
 matrices used by the various embedding methods and is the primary
 object passed to embedding functions.</p>
-<p>The Geometry class contains functions to build the aforementioned 
+<p>The Geometry class contains functions to build the aforementioned
 matrices and allows for re-computation whenever necessary.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -109,9 +109,9 @@ type of laplacian to be computed. See graph_laplacian for more information.</p>
 </tbody>
 </table>
 <dl class="method">
-<dt id="Mmani.geometry.geometry.Geometry.assign_parameters">
-<code class="descname">assign_parameters</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method=None</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.assign_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.assign_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Note: self.neighborhood_radius, self.affinity_radius, 
+<dt id="megaman.geometry.geometry.Geometry.assign_parameters">
+<code class="descname">assign_parameters</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method=None</em>, <em>laplacian_type=None</em>, <em>path_to_flann=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.assign_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.assign_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note: self.neighborhood_radius, self.affinity_radius,
 and self.laplacian_type refer to the CURRENT
 version of these matrices.</p>
 <p>If you want to re-calculate with a new parameter DO NOT
@@ -121,21 +121,21 @@ and pass the desired new parameter. This will automatically update
 the self.parameter version.</p>
 <p>If you change these values with assign_parameters Geometry will assume
 that the existing matrix follows that parameter and so, for example,
-calling get_distance_matrix() with a passed radius will <em>not</em> 
-recalculate if the passed radius is equal to self.neighborhood_radius 
+calling get_distance_matrix() with a passed radius will <em>not</em>
+recalculate if the passed radius is equal to self.neighborhood_radius
 and there already exists a distance matrix.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="Mmani.geometry.geometry.Geometry.get_affinity_matrix">
-<code class="descname">get_affinity_matrix</code><span class="sig-paren">(</span><em>affinity_radius=None</em>, <em>copy=True</em>, <em>symmetrize=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_affinity_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_affinity_matrix" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.Geometry.get_affinity_matrix">
+<code class="descname">get_affinity_matrix</code><span class="sig-paren">(</span><em>affinity_radius=None</em>, <em>copy=True</em>, <em>symmetrize=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.get_affinity_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.get_affinity_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
 <blockquote>
-<div><p>used in Guassian kernel for affinity matrix 
+<div><p>used in Guassian kernel for affinity matrix
 If this value is not passed then the self.affinity_radius value is used.</p>
 </div></blockquote>
 <p><strong>copy</strong> : boolean, whether to return a copied version of the affinity matrix</p>
@@ -158,15 +158,15 @@ affinity_radius</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="Mmani.geometry.geometry.Geometry.get_distance_matrix">
-<code class="descname">get_distance_matrix</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>copy=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.Geometry.get_distance_matrix">
+<code class="descname">get_distance_matrix</code><span class="sig-paren">(</span><em>neighborhood_radius=None</em>, <em>copy=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.get_distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.get_distance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
 <blockquote>
-<div><p>distances beyond neighborhood_radius are considered infinite. 
+<div><p>distances beyond neighborhood_radius are considered infinite.
 if this value is not passed the value of self.neighborhood_radius is used</p>
 </div></blockquote>
 <p><strong>copy</strong> : boolean, whether to return a copied version of the distance matrix</p>
@@ -183,8 +183,8 @@ if this value is not passed the value of self.neighborhood_radius is used</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="Mmani.geometry.geometry.Geometry.get_laplacian_matrix">
-<code class="descname">get_laplacian_matrix</code><span class="sig-paren">(</span><em>laplacian_type=None</em>, <em>symmetrize=False</em>, <em>scaling_epps=None</em>, <em>renormalization_exponent=1</em>, <em>copy=True</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#Geometry.get_laplacian_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.Geometry.get_laplacian_matrix" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.Geometry.get_laplacian_matrix">
+<code class="descname">get_laplacian_matrix</code><span class="sig-paren">(</span><em>laplacian_type=None</em>, <em>symmetrize=False</em>, <em>scaling_epps=None</em>, <em>renormalization_exponent=1</em>, <em>copy=True</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.get_laplacian_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.get_laplacian_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -227,8 +227,8 @@ if this value is not passed the value of self.neighborhood_radius is used</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.geometry.graph_laplacian">
-<code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">graph_laplacian</code><span class="sig-paren">(</span><em>csgraph</em>, <em>normed='geometric'</em>, <em>symmetrize=False</em>, <em>scaling_epps=0.0</em>, <em>renormalization_exponent=1</em>, <em>return_diag=False</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#graph_laplacian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.graph_laplacian" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.graph_laplacian">
+<code class="descclassname">megaman.geometry.geometry.</code><code class="descname">graph_laplacian</code><span class="sig-paren">(</span><em>csgraph</em>, <em>normed='geometric'</em>, <em>symmetrize=False</em>, <em>scaling_epps=0.0</em>, <em>renormalization_exponent=1</em>, <em>return_diag=False</em>, <em>return_lapsym=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#graph_laplacian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.graph_laplacian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the Laplacian matrix of an undirected graph.</p>
 <p>Computes a consistent estimate of the Laplace-Beltrami operator L
 from the similarity matrix A . See &#8220;Diffusion Maps&#8221; (Coifman and
@@ -236,13 +236,13 @@ Lafon, 2006) and &#8220;Graph Laplacians and their Convergence on Random
 Neighborhood Graphs&#8221; (Hein, Audibert, Luxburg, 2007) for more
 details.</p>
 <p>A is the similarity matrix from the sampled data on the manifold M.
-Typically A is obtained from the data X by applying the heat kernel 
+Typically A is obtained from the data X by applying the heat kernel
 A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is
 need to obtained the properly scaled version of L. Following the usual
-convention, the laplacian (Laplace-Beltrami operator) is defined as 
+convention, the laplacian (Laplace-Beltrami operator) is defined as
 div(grad(f)) (that is the laplacian is taken to be negative
 semi-definite).</p>
-<p>Note that the Laplacians defined here are the negative of what is 
+<p>Note that the Laplacians defined here are the negative of what is
 commonly used in the machine learning literature. This convention is used
 so that the Laplacians converge to the standard definition of the
 differential operator.</p>
@@ -299,7 +299,7 @@ of large N</p>
 <blockquote>
 <div><p>If normed in { &#8216;geometric&#8217;, &#8216;renormalized&#8217; } then a symmetric matrix
 lapsym, and a row normalization vector w are also returned. Having
-these allows us to compute the laplacian spectral decomposition 
+these allows us to compute the laplacian spectral decomposition
 as a symmetric matrix, which has much better numerical properties.</p>
 </div></blockquote>
 </td>
@@ -321,31 +321,31 @@ diag is returned only if return_diag is True.</p>
 <p>There are a few differences from the sklearn.spectral_embedding laplacian
 function.</p>
 <ol class="arabic simple">
-<li>normed=&#8217;unnormalized&#8217; and &#8216;symmetricnormalized&#8217; correspond respectively 
-to normed=False and True in the latter. (Note also that normed was changed 
+<li>normed=&#8217;unnormalized&#8217; and &#8216;symmetricnormalized&#8217; correspond respectively
+to normed=False and True in the latter. (Note also that normed was changed
 from bool to string.</li>
 <li>the signs of this laplacians are changed w.r.t the original</li>
-<li>the diagonal of lap is no longer set to 0; also there is no checking if 
+<li>the diagonal of lap is no longer set to 0; also there is no checking if
 the matrix has zeros on the diagonal. If the degree of a node is 0, this
 is handled graciuously (by not dividing by 0).</li>
 <li>if csgraph is not symmetric the out-degree is used in the
-computation and no warning is raised. However, it is not recommended to 
+computation and no warning is raised. However, it is not recommended to
 use this function for directed graphs.</li>
 </ol>
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.geometry.symmetrize_sparse">
-<code class="descclassname">Mmani.geometry.geometry.</code><code class="descname">symmetrize_sparse</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/geometry.html#symmetrize_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.geometry.symmetrize_sparse" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.geometry.symmetrize_sparse">
+<code class="descclassname">megaman.geometry.geometry.</code><code class="descname">symmetrize_sparse</code><span class="sig-paren">(</span><em>A</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#symmetrize_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.symmetrize_sparse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Symmetrizes a sparse matrix in place (coo and csr formats only)</p>
-<p>NOTES: 
+<p>NOTES:
 1. if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them.</p>
 </dd></dl>
 
 </div>
-<span class="target" id="module-Mmani.geometry.distance"></span><dl class="function">
-<dt id="Mmani.geometry.distance.distance_matrix">
-<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>X</em>, <em>method='auto'</em>, <em>flindex=None</em>, <em>radius=None</em>, <em>cyindex=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.distance_matrix" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-megaman.geometry.distance"></span><dl class="function">
+<dt id="megaman.geometry.distance.distance_matrix">
+<code class="descclassname">megaman.geometry.distance.</code><code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>X</em>, <em>method='auto'</em>, <em>flindex=None</em>, <em>radius=None</em>, <em>cyindex=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/distance.html#distance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.distance.distance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes pairwise distance matrix. Interface function.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -355,7 +355,7 @@ use this function for directed graphs.</li>
 <p><strong>method</strong> : one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;, or &#8216;cython&#8217;.</p>
 <blockquote>
 <div><p>&#8216;pyflann&#8217; requires python library pyflann
-&#8216;cython&#8217; requires FLANN and cython 
+&#8216;cython&#8217; requires FLANN and cython
 &#8216;cyflann&#8217; requires a UNIX system</p>
 </div></blockquote>
 <p><strong>flindex</strong> : a pyflann pre-computed flindex</p>
@@ -372,7 +372,7 @@ should not be considered 0, but &#8220;large&#8221;.</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>graph</strong> : the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</p>
 <blockquote class="last">
-<div><p>sparse csr_format. Zeros on the diagonal are true zeros. 
+<div><p>sparse csr_format. Zeros on the diagonal are true zeros.
 Zeros not on the diagonal should be considered infinite</p>
 </div></blockquote>
 </td>
@@ -382,40 +382,8 @@ Zeros not on the diagonal should be considered infinite</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.distance.fl_cpp_radius_neighbors_graph">
-<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">fl_cpp_radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#fl_cpp_radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.fl_cpp_radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructs a sparse distance matrix called graph in coo
-format using pre-compiled C++ function.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: data matrix, array_like, shape = (n_samples, n_dimensions )</strong></p>
-<p><strong>radius: neighborhood radius, scalar</strong></p>
-<blockquote>
-<div><p>the neighbors lying approximately within radius of a node will
-be returned. Or, in other words, all distances will be less or equal
-to radius. There will be entries in the matrix for zero distances.
-Attention when converting to dense: The rest of the distances
-should not be considered 0, but &#8220;large&#8221;.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</p>
-<blockquote class="last">
-<div><p>sparse csr format</p>
-</div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Notes</p>
-<p>With approximate neiborhood search, the matrix is not necessarily symmetric.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="Mmani.geometry.distance.fl_radius_neighbors_graph">
-<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">fl_radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em>, <em>flindex</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#fl_radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.fl_radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.distance.fl_radius_neighbors_graph">
+<code class="descclassname">megaman.geometry.distance.</code><code class="descname">fl_radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em>, <em>flindex</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/distance.html#fl_radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.distance.fl_radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
 <dd><p>Constructs a sparse distance matrix called graph in coo format using pyflann.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -448,8 +416,8 @@ necessarily symmetric.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.distance.radius_neighbors_graph">
-<code class="descclassname">Mmani.geometry.distance.</code><code class="descname">radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/distance.html#radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.distance.radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.distance.radius_neighbors_graph">
+<code class="descclassname">megaman.geometry.distance.</code><code class="descname">radius_neighbors_graph</code><span class="sig-paren">(</span><em>X</em>, <em>radius</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/distance.html#radius_neighbors_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.distance.radius_neighbors_graph" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes pairwise distance matrix using dense method.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -461,7 +429,7 @@ necessarily symmetric.</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">graph: the distance matrix, array_like, shape (X.shape[0]. X.shape[0])</p>
 <blockquote class="last">
-<div><p>sparse csr_format. Zeros on the diagonal are true zeros. 
+<div><p>sparse csr_format. Zeros on the diagonal are true zeros.
 Zeros not on the diagonal should be considered infinite</p>
 </div></blockquote>
 </td>
@@ -470,20 +438,20 @@ Zeros not on the diagonal should be considered infinite</p>
 </table>
 </dd></dl>
 
-<span class="target" id="module-Mmani.geometry.rmetric"></span><p>Riemannian Metric learning utilities and algorithms.</p>
+<span class="target" id="module-megaman.geometry.rmetric"></span><p>Riemannian Metric learning utilities and algorithms.</p>
 <p>To use the &#8220;geometric&#8221; Laplacian from geometry.py for statistically
 consistent results.</p>
 <dl class="class">
-<dt id="Mmani.geometry.rmetric.RiemannMetric">
-<em class="property">class </em><code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">RiemannMetric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian</em>, <em>n_dim=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.rmetric.RiemannMetric">
+<em class="property">class </em><code class="descclassname">megaman.geometry.rmetric.</code><code class="descname">RiemannMetric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian</em>, <em>n_dim=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#RiemannMetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.RiemannMetric" title="Permalink to this definition">¶</a></dt>
 <dd><p>RiemannMetric computes and stores the Riemannian metric and its dual
 associated with an embedding Y. The Riemannian metric is currently denoted
-by G, its dual by H, and the Laplacian by L. G at each point is the 
+by G, its dual by H, and the Laplacian by L. G at each point is the
 matrix inverse of H.</p>
 <p>For performance, the following choices have been made:
 * the class makes no defensive copies of L, Y
 * no defensive copies of the array attributes H, G, Hvv, ....
-* G is computed on request only 
+* G is computed on request only
 In the future, this class will be extended to compute H only once,
 for mdimY dimensions, but to store multiple G&#8217;s, with different dimensions.</p>
 <p>In the near future plans is also a &#8220;lazy&#8221; implementation, which will
@@ -515,32 +483,32 @@ H and the singular values of H and G</p>
 </tbody>
 </table>
 <p class="rubric">Notes</p>
-<p>H is always computed at full dimension self.mdimY 
+<p>H is always computed at full dimension self.mdimY
 G is computed at mdimG (some contradictions persist here)</p>
 <p class="rubric">References</p>
 <p>&#8220;Non-linear dimensionality reduction: Riemannian metric estimation and
-the problem of geometric discovery&#8221;, 
+the problem of geometric discovery&#8221;,
 Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
 <dl class="method">
-<dt id="Mmani.geometry.rmetric.RiemannMetric.get_dual_rmetric">
-<code class="descname">get_dual_rmetric</code><span class="sig-paren">(</span><em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric.get_dual_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric.get_dual_rmetric" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.rmetric.RiemannMetric.get_dual_rmetric">
+<code class="descname">get_dual_rmetric</code><span class="sig-paren">(</span><em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#RiemannMetric.get_dual_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.RiemannMetric.get_dual_rmetric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the dual Riemannian Metric
 This is not satisfactory, because if mdimG&lt;mdimY the shape of H
-will not be the same as the shape of G. TODO(maybe): return a (copied) 
+will not be the same as the shape of G. TODO(maybe): return a (copied)
 smaller H with only the rows and columns in G.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="Mmani.geometry.rmetric.RiemannMetric.get_rmetric">
-<code class="descname">get_rmetric</code><span class="sig-paren">(</span><em>mode_inv='svd'</em>, <em>return_svd=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#RiemannMetric.get_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.RiemannMetric.get_rmetric" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.rmetric.RiemannMetric.get_rmetric">
+<code class="descname">get_rmetric</code><span class="sig-paren">(</span><em>mode_inv='svd'</em>, <em>return_svd=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#RiemannMetric.get_rmetric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.RiemannMetric.get_rmetric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the Reimannian Metric</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.rmetric.compute_G_from_H">
-<code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">compute_G_from_H</code><span class="sig-paren">(</span><em>H</em>, <em>mdimG=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#compute_G_from_H"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.compute_G_from_H" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.rmetric.compute_G_from_H">
+<code class="descclassname">megaman.geometry.rmetric.</code><code class="descname">compute_G_from_H</code><span class="sig-paren">(</span><em>H</em>, <em>mdimG=None</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#compute_G_from_H"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.compute_G_from_H" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -567,8 +535,8 @@ that riemann_metric and h_dual_metric have the same dimensions)</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="Mmani.geometry.rmetric.riemann_metric">
-<code class="descclassname">Mmani.geometry.rmetric.</code><code class="descname">riemann_metric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian=None</em>, <em>n_dim=None</em>, <em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/Mmani/geometry/rmetric.html#riemann_metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#Mmani.geometry.rmetric.riemann_metric" title="Permalink to this definition">¶</a></dt>
+<dt id="megaman.geometry.rmetric.riemann_metric">
+<code class="descclassname">megaman.geometry.rmetric.</code><code class="descname">riemann_metric</code><span class="sig-paren">(</span><em>Y</em>, <em>laplacian=None</em>, <em>n_dim=None</em>, <em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#riemann_metric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.riemann_metric" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -590,16 +558,16 @@ n_dim:mdimY are ignored.</p>
 <p><strong>invert_h: boolean, optional</strong></p>
 <blockquote>
 <div><p>if False, only the &#8220;dual Riemannian metric&#8221; is computed
-if True, the dual metric matrices are inverted to obtain the 
+if True, the dual metric matrices are inverted to obtain the
 Riemannian metric G.</p>
 </div></blockquote>
 <p><strong>mode_inv: string, optional</strong></p>
 <blockquote>
 <div><dl class="docutils">
-<dt>How to compute the inverses of h_dual_metric, if invert_h </dt>
-<dd><p class="first last">&#8220;inv&#8221;, use numpy.inv() 
+<dt>How to compute the inverses of h_dual_metric, if invert_h</dt>
+<dd><p class="first last">&#8220;inv&#8221;, use numpy.inv()
 &#8220;svd&#8221; (default), use numpy.linalg.svd(), then invert the eigenvalues
-(possibly a more numerically stable method with H is symmetric and 
+(possibly a more numerically stable method with H is symmetric and
 ill conditioned)</p>
 </dd>
 </dl>
@@ -619,7 +587,7 @@ ill conditioned)</p>
 <p class="rubric">Notes</p>
 <p class="rubric">References</p>
 <p>&#8220;Non-linear dimensionality reduction: Riemannian metric estimation and
-the problem of geometric discovery&#8221;, 
+the problem of geometric discovery&#8221;,
 Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
 </dd></dl>
 
@@ -642,9 +610,9 @@ Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">Mmani.geometry</span></code>)</a><ul>
+  <li><a href="index.html">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">megaman.geometry</span></code>)</a><ul>
       <li>Previous: <a href="geometry.html" title="previous chapter">Geometry</a></li>
-      <li>Next: <a href="../embedding/index.html" title="next chapter">Tools for Embedding (<code class="docutils literal"><span class="pre">Mmani.embedding</span></code>)</a></li>
+      <li>Next: <a href="../embedding/index.html" title="next chapter">Tools for Embedding (<code class="docutils literal"><span class="pre">megaman.embedding</span></code>)</a></li>
   </ul></li>
   </ul></li>
 </ul>

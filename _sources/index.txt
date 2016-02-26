@@ -1,7 +1,7 @@
-Mmani: Scalable manifold learning
+megaman: Scalable manifold learning
 =================================
 
-Mmani is a scalable manifold learning package implemented in 
+megaman is a scalable manifold learning package implemented in
 python. It has a front-end API designed to be familiar
 to `scikit-learn <http://scikit-learn.org/>`_ but harnesses
 the C++ Fast Library for Approximate Nearest Neighbors (FLANN)
@@ -12,7 +12,7 @@ It is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters.
 
 For issues & contributions, see the source repository
-`on github <http://github.com/mmp2/Mmani/>`_.
+`on github <http://github.com/mmp2/megaman/>`_.
 
 Documentation
 =============
@@ -23,7 +23,7 @@ Documentation
    geometry/index
    embedding/index
    utils/index
-   
+
 
 Indices and tables
 ==================
@@ -31,4 +31,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

@@ -2,16 +2,16 @@
 
 .. testsetup:: *
 
-   from Mmani.geometry import *   
-   
+   from megaman.geometry import *
+
 API Documentation
 =================
 
-.. automodule:: Mmani.geometry.geometry
+.. automodule:: megaman.geometry.geometry
    :members:
 
-.. automodule:: Mmani.geometry.distance
+.. automodule:: megaman.geometry.distance
    :members:
 
-.. automodule:: Mmani.geometry.rmetric
+.. automodule:: megaman.geometry.rmetric
    :members:

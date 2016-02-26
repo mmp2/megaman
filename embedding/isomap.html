@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Isomap &mdash; Mmani 0.3.dev0 documentation</title>
+    <title>Isomap &mdash; megaman 0.3.dev0 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -23,10 +23,10 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../index.html" />
-    <link rel="up" title="Tools for Embedding (Mmani.embedding)" href="index.html" />
+    <link rel="top" title="megaman 0.3.dev0 documentation" href="../index.html" />
+    <link rel="up" title="Tools for Embedding (megaman.embedding)" href="index.html" />
     <link rel="next" title="Locally Linear Embedding" href="locally_linear.html" />
-    <link rel="prev" title="Tools for Embedding (Mmani.embedding)" href="index.html" />
+    <link rel="prev" title="Tools for Embedding (megaman.embedding)" href="index.html" />
    
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
@@ -41,7 +41,7 @@
             
   <div class="section" id="isomap">
 <span id="id1"></span><h1>Isomap<a class="headerlink" href="#isomap" title="Permalink to this headline">¶</a></h1>
-<p>Isomap is one of the embeddings implemented in the Mmani package.
+<p>Isomap is one of the embeddings implemented in the megaman package.
 Isomap uses Multidimensional Scaling (MDS) to preserve pairwsise
 graph shortest distance computed using a sparse neighborhood graph.</p>
 <p>For more information see:</p>
@@ -51,15 +51,15 @@ A global geometric framework for nonlinear dimensionality reduction.
 Science 290 (5500)</li>
 </ul>
 <dl class="docutils">
-<dt>:class:&#8217;~Mmani.embedding.Isomap&#8217;</dt>
+<dt>:class:&#8217;~megaman.embedding.Isomap&#8217;</dt>
 <dd>This class is used to interface with isomap embedding function.
-Like all embedding functions in Mmani it operates using a
+Like all embedding functions in megaman it operates using a
 Geometry object. The Isomap class allows you to optionally
 pass an exiting Geometry object, otherwise it creates one.</dd>
 </dl>
 <div class="section" id="api-of-isomap">
 <h2>API of Isomap<a class="headerlink" href="#api-of-isomap" title="Permalink to this headline">¶</a></h2>
-<p>The Isomap model, along with all the other models in Mmani, have an API
+<p>The Isomap model, along with all the other models in megaman, have an API
 designed to follow in the same vein of
 <a class="reference external" href="http://scikit-learn.org/">scikit-learn</a> API.</p>
 <p>Consequentially, the Isomap class functions as follows</p>
@@ -85,9 +85,9 @@ the embedding. It does not allow for changing parameters.</li>
 <div class="section" id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>Here is an example using the function on a random data set:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">Mmani.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
-<span class="kn">import</span> <span class="nn">Mmani.embedding.isomap</span> <span class="kn">as</span> <span class="nn">iso</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<span class="kn">import</span> <span class="nn">megaman.embedding.isomap</span> <span class="kn">as</span> <span class="nn">iso</span>
 
 <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 <span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;cython&#39;</span><span class="p">,</span>
@@ -118,8 +118,8 @@ the embedding. It does not allow for changing parameters.</li>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html">Tools for Embedding (<code class="docutils literal"><span class="pre">Mmani.embedding</span></code>)</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Tools for Embedding (<code class="docutils literal"><span class="pre">Mmani.embedding</span></code>)</a></li>
+  <li><a href="index.html">Tools for Embedding (<code class="docutils literal"><span class="pre">megaman.embedding</span></code>)</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Tools for Embedding (<code class="docutils literal"><span class="pre">megaman.embedding</span></code>)</a></li>
       <li>Next: <a href="locally_linear.html" title="next chapter">Locally Linear Embedding</a></li>
   </ul></li>
   </ul></li>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Geometry &mdash; Mmani 0.3.dev0 documentation</title>
+    <title>Geometry &mdash; megaman 0.3.dev0 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -23,10 +23,10 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="Mmani 0.3.dev0 documentation" href="../index.html" />
-    <link rel="up" title="Tools for Geometric Analysis (Mmani.geometry)" href="index.html" />
+    <link rel="top" title="megaman 0.3.dev0 documentation" href="../index.html" />
+    <link rel="up" title="Tools for Geometric Analysis (megaman.geometry)" href="index.html" />
     <link rel="next" title="API Documentation" href="API.html" />
-    <link rel="prev" title="Tools for Geometric Analysis (Mmani.geometry)" href="index.html" />
+    <link rel="prev" title="Tools for Geometric Analysis (megaman.geometry)" href="index.html" />
    
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
@@ -45,7 +45,7 @@
 the geometry of the data. As such the primary class of this package
 is the geometry class:</p>
 <dl class="docutils">
-<dt>:class:&#8217;~Mmani.geometry.Geometry&#8217;</dt>
+<dt>:class:&#8217;~megaman.geometry.Geometry&#8217;</dt>
 <dd>This class is used as the interface to compute various quantities
 on the original data set including: pairwise distance graphs,
 affinity matrices, and laplacian matrices. It also caches these
@@ -56,7 +56,7 @@ quantities and allows for fast re-computation with new parameters.</dd>
 <p>The Geometry class is used to interface with functions that compute various
 geometric quantities with respect to the original data set. This is the object
 that is passed (or computed) within each embedding function. It is how
-Mmani caches important quantities allowing for fast re-computation with
+megaman caches important quantities allowing for fast re-computation with
 various new parameters. Geometry class has the following methods:</p>
 <ol class="arabic simple">
 <li>Class instantiation : during class instantiation you input the parameters
@@ -104,8 +104,8 @@ and there already exists a distance matrix.</li>
 <div class="section" id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>Here is an example using the function on a random data set:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">Mmani.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
 
 <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 <span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;cython&#39;</span><span class="p">,</span>
@@ -137,8 +137,8 @@ and there already exists a distance matrix.</li>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">Mmani.geometry</span></code>)</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">Mmani.geometry</span></code>)</a></li>
+  <li><a href="index.html">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">megaman.geometry</span></code>)</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Tools for Geometric Analysis (<code class="docutils literal"><span class="pre">megaman.geometry</span></code>)</a></li>
       <li>Next: <a href="API.html" title="next chapter">API Documentation</a></li>
   </ul></li>
   </ul></li>

@@ -2,19 +2,19 @@
 
 .. testsetup:: *
 
-   from Mmani.embedding import *   
-   
+   from megaman.embedding import *
+
 API Documentation
 =================
 
-.. automodule:: Mmani.embedding.spectral_embedding
+.. automodule:: megaman.embedding.spectral_embedding
    :members:
 
-.. automodule:: Mmani.embedding.isomap
+.. automodule:: megaman.embedding.isomap
    :members:
 
-.. automodule:: Mmani.embedding.locally_linear
+.. automodule:: megaman.embedding.locally_linear
    :members:
 
-.. automodule:: Mmani.embedding.ltsa
+.. automodule:: megaman.embedding.ltsa
    :members:
