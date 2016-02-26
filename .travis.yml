@@ -3,6 +3,10 @@ language: python
 # sudo false implies containerized builds, so we can use cacheing
 sudo: false
 
+os:
+  - linux
+  - osx
+
 python:
   - 2.7
 
