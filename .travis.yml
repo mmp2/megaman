@@ -31,7 +31,7 @@ install:
 - python setup.py install --record installed_files.txt
 
 script:
-- cd \
+- cd $TEST_DIR
 - nosetests -v --with-coverage --cover-package=megaman
 
 after_success:
