@@ -2,6 +2,7 @@ from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
 import sys, os
+from nose import SkipTest
 from nose.tools import assert_true, assert_equal, assert_raises
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from scipy.spatial.distance import pdist, squareform
@@ -21,13 +22,7 @@ def test_all_methods_close(almost_equal_decimals = 5):
     try:
         import pyflann as pyf
     except ImportError:
-        try:
-            # use "export FLANN_ROOT=<FLANN_ROOT>"to set enviromental variable
-            path_to_flann = os.environ['FLANN_ROOT'] + '/src/python'
-            sys.path.insert(0, path_to_flann)
-            import pyflann as pyf
-        except ImportError:
-            warnings.warn("pyflann not installed. Will not test pyflann method")
+        raise SkipTest("pyflann not installed. Will not test pyflann method")
     t1 = time.clock()
     D1 = distance_matrix(X, method = 'cython')
     print "cython version:",time.clock() - t1

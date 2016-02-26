@@ -1,3 +1,5 @@
+import os
+
 from nose.tools import assert_true
 from nose.tools import assert_equal
 import scipy.io
@@ -13,6 +15,9 @@ from nose.plugins.skip import SkipTest
 from megaman.geometry.rmetric import *
 from megaman.embedding.spectral_embedding import _graph_is_connected
 
+TEST_DATA = os.path.join(os.path.dirname(__file__),
+                        'testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+
 def _load_test_data():
     """ Loads a .mat file from . and extract the following dense matrices
     test_dist_matrix = matrix of distances
@@ -25,8 +30,7 @@ def _load_test_data():
         make it a scalar by rad = rad[0]
 
     """
-    xdict = scipy.io.loadmat('megaman/geometry/tests/testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
-    #xdict = scipy.io.loadmat('testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+    xdict = scipy.io.loadmat(TEST_DATA)
     rad = xdict[ 'rad' ]
     test_dist_matrix = xdict[ 'S' ] # S contains squared distances
     test_dist_matrix = np.sqrt( test_dist_matrix ) #unused

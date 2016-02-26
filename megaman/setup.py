@@ -19,6 +19,7 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('geometry/tests')
     config.add_subpackage('utils')
     config.add_subpackage('utils/tests')
+    config.add_data_files('geometry/tests/testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
 
     return config
 
