@@ -34,8 +34,9 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import pdist
 import subprocess, os, sys, warnings
-from megaman.geometry.distance import distance_matrix
-from megaman.utils.validation import check_array
+
+from .distance import distance_matrix
+from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
 distance_methods = ['auto', 'brute', 'cyflann', 'pyflann', 'cython']
@@ -419,10 +420,10 @@ class Geometry:
         if distance_method == 'cython':
             if input_type == 'data':
                 try:
-                    from megaman.geometry.cyflann.index import Index
-                    self.cyindex = Index(X)
+                    from .cyflann.index import Index
                 except ImportError:
                     raise ValueError("distance_method set to cython but cyflann_index cannot be imported.")
+                self.cyindex = Index(X)
         else:
             self.cyindex = None
 
@@ -432,12 +433,12 @@ class Geometry:
                 sys.path.insert(0, self.path_to_flann)
             try:
                 import pyflann as pyf
-                self.flindex = pyf.FLANN()
-                self.flparams = self.flindex.build_index(X, algorithm = 'kmeans',
-                                                         target_precision = 0.9)
             except ImportError:
                 raise ValueError("distance_method is set to pyflann but pyflann is "
                                 "not available.")
+            self.flindex = pyf.FLANN()
+            self.flparams = self.flindex.build_index(X, algorithm = 'kmeans',
+                                                                         target_precision = 0.9)
         else:
             self.flindex = None
             self.flparams = None

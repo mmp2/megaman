@@ -1,6 +1,6 @@
 """Utilities for input validation"""
 
-# Author: James McQueen. 
+# Author: James McQueen.
 #
 # Edited the sklearn version by:
 # Authors: Olivier Grisel
@@ -22,6 +22,7 @@ class DataConversionWarning(UserWarning):
 
 warnings.simplefilter("always", DataConversionWarning)
 
+
 def _assert_all_finite(X):
     """Like assert_all_finite, but only for ndarray."""
     X = np.asanyarray(X)
@@ -32,6 +33,8 @@ def _assert_all_finite(X):
             and not np.isfinite(X).all()):
         raise ValueError("Input contains NaN, infinity"
                          " or a value too large for %r." % X.dtype)
+
+
 def _shape_repr(shape):
     """Return a platform independent reprensentation of an array shape
     Under Python 2, the `long` type introduces an 'L' suffix when using the
@@ -60,6 +63,8 @@ def _shape_repr(shape):
         # special notation for singleton tuples
         joined += ','
     return "(%s)" % joined
+
+
 def _num_samples(x):
     """Return number of samples in array-like x."""
     if hasattr(x, 'fit'):
@@ -79,6 +84,8 @@ def _num_samples(x):
         return x.shape[0]
     else:
         return len(x)
+
+
 def _ensure_sparse_format(spmatrix, accept_sparse, dtype, copy,
                           force_all_finite):
     """Convert a sparse matrix to a given format.
@@ -132,6 +139,7 @@ def _ensure_sparse_format(spmatrix, accept_sparse, dtype, copy,
         else:
             _assert_all_finite(spmatrix.data)
     return spmatrix
+
 
 def check_symmetric(array, tol=1E-10, raise_warning=True,
                     raise_exception=False):
@@ -197,7 +205,7 @@ def check_random_state(seed):
         return seed
     raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
                      ' instance' % seed)
-                     
+
 
 def check_array(array, accept_sparse=None, dtype="numeric", order=None,
                 copy=False, force_all_finite=True, ensure_2d=True,

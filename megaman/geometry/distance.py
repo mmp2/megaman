@@ -5,8 +5,9 @@ from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
 from scipy.spatial.distance import pdist
-from megaman.geometry.cyflann.index import Index
 import subprocess, os, sys, warnings
+
+from .cyflann.index import Index
 
 def _row_col_from_condensed_index(N,compr_ind):
     # convert from pdist compressed index format to (I, J) (upper triangular) pairs.

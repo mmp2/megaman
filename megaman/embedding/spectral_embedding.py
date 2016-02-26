@@ -10,11 +10,12 @@
 
 import warnings
 import numpy as np
-import megaman.geometry.geometry as geom
-from megaman.utils.eigendecomp import eigen_decomposition
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
-from megaman.utils.validation import check_random_state
+
+from ..geometry import geometry as geom
+from ..utils.validation import check_random_state
+from ..utils.eigendecomp import eigen_decomposition
 
 def _graph_connected_component(graph, node_id):
     """

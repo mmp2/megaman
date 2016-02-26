@@ -7,6 +7,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import scipy.sparse as sp
 from nose.tools import assert_raises, assert_true, assert_false, assert_equal
+
 from megaman.utils.validation import check_array, check_symmetric, DataConversionWarning
 from megaman.utils.testing import (assert_no_warnings, assert_warns,
                                 ignore_warnings, assert_raise_message)

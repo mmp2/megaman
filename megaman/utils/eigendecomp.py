@@ -3,8 +3,10 @@ import numpy as np
 from scipy import sparse
 from scipy.linalg import eigh, eig
 from scipy.sparse.linalg import lobpcg, eigs, eigsh
-from megaman.utils.validation import check_random_state
-from megaman.utils.validation import check_array
+
+from .validation import check_random_state
+from .validation import check_array
+
 eigen_solvers = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
 
 def _is_symmetric(M, tol = 1e-8):

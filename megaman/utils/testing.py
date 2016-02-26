@@ -1,5 +1,5 @@
 # Author: James McQueen
-# 
+#
 # Edited from the original sklearn:
 # Copyright (c) 2011, 2012
 # Authors: Pietro Berkes,
@@ -25,6 +25,8 @@ def clean_warning_registry():
             continue
         if hasattr(mod, reg):
             getattr(mod, reg).clear()
+
+
 def assert_raise_message(exceptions, message, function, *args, **kwargs):
     """Helper function to test error messages in exceptions
     Parameters
@@ -54,6 +56,7 @@ def assert_raise_message(exceptions, message, function, *args, **kwargs):
         raise AssertionError("%s not raised by %s" %
                              (names, function.__name__))
 
+
 def assert_no_warnings(func, *args, **kw):
     # XXX: once we may depend on python >= 2.6, this can be replaced by the
 
@@ -73,6 +76,7 @@ def assert_no_warnings(func, *args, **kw):
             raise AssertionError("Got warnings when calling %s: %s"
                                  % (func.__name__, w))
     return result
+
 
 def assert_warns(warning_class, func, *args, **kw):
     """Test that a certain warning occurs.
@@ -112,6 +116,7 @@ def assert_warns(warning_class, func, *args, **kw):
                                  % (func.__name__, warning_class, w))
     return result
 
+
 def ignore_warnings(obj=None):
     """ Context manager and decorator to ignore warnings
     Note. Using this (in both variants) will clear all warnings
@@ -132,6 +137,7 @@ def ignore_warnings(obj=None):
     else:
         return _IgnoreWarnings()
 
+
 def _ignore_warnings(fn):
     """Decorator to catch and hide warnings without visual nesting"""
     @wraps(fn)
@@ -144,7 +150,8 @@ def _ignore_warnings(fn):
             w[:] = []
 
     return wrapper
-    
+
+
 class _IgnoreWarnings(object):
 
     """Improved and simplified Python warnings context manager

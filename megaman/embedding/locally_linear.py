@@ -11,11 +11,12 @@
 import warnings
 import numpy as np
 import scipy.sparse as sparse
-import megaman.geometry.geometry as geom
 from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
-from megaman.utils.validation import check_random_state, check_array
-from megaman.utils.eigendecomp import null_space
+
+from ..geometry import geometry as geom
+from ..utils.validation import check_random_state, check_array
+from ..utils.eigendecomp import null_space
 
 def barycenter_graph(distance_matrix, X, reg=1e-3):
     """

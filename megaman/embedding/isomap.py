@@ -5,12 +5,14 @@
 # License: BSD 3 clause
 
 import warnings
+
 import numpy as np
-import megaman.geometry.geometry as geom
-from megaman.utils.eigendecomp import eigen_decomposition
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path as graph_shortest_path
-from megaman.utils.validation import check_random_state
+
+from ..geometry import geometry as geom
+from ..utils.eigendecomp import eigen_decomposition
+from ..utils.validation import check_random_state
 
 
 def center_matrix(G):

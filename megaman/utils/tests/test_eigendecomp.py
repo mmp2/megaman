@@ -1,6 +1,7 @@
 from megaman.utils.eigendecomp import eigen_decomposition, null_space
 from numpy.testing import assert_array_almost_equal
 import numpy as np
+
 spd_solvers = ['auto', 'dense', 'arpack', 'amg', 'lobpcg']
 non_spd_solvers = ['auto', 'dense', 'arpack']
 
