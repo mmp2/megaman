@@ -23,44 +23,43 @@ See documentation and example.py for usage.
 
 ## Installation
 
-This package can be run as pure python with the following required
-dependencies:
+megaman has the following dependencies:
 
+- [python](http://python.org) version 2.7
 - [numpy](http://numpy.org) version 1.8 or higher
 - [scipy](http://scipy.org) version 0.16.0 or higher
-
-For optimal performance we also require:
-
-- [cython](http://cython.org/)
-- [pyamg](http://pyamg.org/)
+- [scikit-learn](http://scikit-learn.org)
 - [FLANN](http://www.cs.ubc.ca/research/flann/)
 
-Install required dependencies:
+Additionally, installation from source requires [cython](http://cython.org/) and a C++ compiler such as ``gcc``/``g++``
 
-    $ pip install numpy, scipy
+Optional requirements include
 
-For optimal usage install the following:
+- [pyamg](http://pyamg.org/), which allows for faster decompositions of large matrices
+- [pyflann](https://github.com/primetang/pyflann) which offers another method of computing distance matrices
 
-    $ pip install pyamg, cython
+The package uses ``nose`` for unit tests
 
-Follow directions for installing FLANN.
+### Installing from source pip and conda
 
-Set environment variable for FLANN:
+The above requirements can be installed on Linux and Mac OSX using [conda](http://conda.pydata.org/miniconda.html):
 
-    $ export FLANN_ROOT=<FLANN_ROOT>
+```
+$ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage cython numpy scipy scikit-learn flann pyamg gcc
+$ pip install pyflann
+```
 
-Finally, you can instal megaman by running
-
-    $ python setup.py install
+Finally, install the ``megaman`` package itself:
+```
+$ python setup.py install
+```
 
 ## Unit Tests
 megaman uses ``nose`` for unit tests. With nosetests installed, type
 
-    $ nosetests megaman
+    $ make test
 
-to run the unit tests.
-
-The tests are run on Python versions 2.7
+to run the unit tests. The tests are run on Python versions 2.7
 
 ## Authors
 - [James McQueen](http://www.stat.washington.edu/people/jmcq/)
