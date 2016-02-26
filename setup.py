@@ -1,8 +1,8 @@
 import io
 import os
 import re
-
-from distutils.core import setup
+import sys
+import subprocess
 
 
 def read(path, encoding='utf-8'):
@@ -24,6 +24,29 @@ def version(path):
     raise RuntimeError("Unable to find version string.")
 
 
+def generate_cython():
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    print("Cythonizing sources")
+    p = subprocess.call([sys.executable,
+                         os.path.join(cwd, 'tools', 'cythonize.py'),
+                         'Mmani'],
+                        cwd=cwd)
+    if p != 0:
+        raise RuntimeError("Running cythonize failed!")
+
+
+def configuration(parent_package='',top_path=None):
+    from numpy.distutils.misc_util import Configuration
+    config = Configuration(None, parent_package, top_path)
+    config.set_options(ignore_setup_xxx_py=True,
+                       assume_default_configuration=True,
+                       delegate_options_to_subpackages=True,
+                       quiet=True)
+
+    config.add_subpackage('Mmani')
+
+    return config
+
 DESCRIPTION = "Mmani: Scalable Manifold Learning"
 LONG_DESCRIPTION = """
 Mmani: Scalable Manifold Learning
@@ -43,27 +66,50 @@ LICENSE = 'BSD 3'
 
 VERSION = version('Mmani/__init__.py')
 
-setup(name=NAME,
-      version=VERSION,
-      description=DESCRIPTION,
-      long_description=LONG_DESCRIPTION,
-      author=AUTHOR,
-      url=URL,
-      download_url=DOWNLOAD_URL,
-      license=LICENSE,
-      packages=['Mmani',
-                'Mmani.embedding',
-                'Mmani.embedding.tests',
-                'Mmani.geometry',
-                'Mmani.geometry.tests',
-                'Mmani.utils',
-                'Mmani.utils.tests',
-            ],
-      classifiers=[
-        'Development Status :: 4 - Beta',
-        'Environment :: Console',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 2.7'],
-     )
+
+def setup_package():
+    from numpy.distutils.core import setup
+
+    old_path = os.getcwd()
+    local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    src_path = local_path
+
+    os.chdir(local_path)
+    sys.path.insert(0, local_path)
+
+    # Run build
+    old_path = os.getcwd()
+    os.chdir(src_path)
+    sys.path.insert(0, src_path)
+
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
+        # Generate Cython sources, unless building from source release
+        generate_cython()
+
+    try:
+        setup(name='Mmani',
+              author=AUTHOR,
+              url=URL,
+              download_url=DOWNLOAD_URL,
+              description=DESCRIPTION,
+              long_description = LONG_DESCRIPTION,
+              version=VERSION,
+              license=LICENSE,
+              configuration=configuration,
+              classifiers=[
+                'Development Status :: 4 - Beta',
+                'Environment :: Console',
+                'Intended Audience :: Science/Research',
+                'License :: OSI Approved :: BSD License',
+                'Natural Language :: English',
+                'Programming Language :: Python :: 2.7'],)
+    finally:
+        del sys.path[0]
+        os.chdir(old_path)
+
+    return
+
+
+if __name__ == '__main__':
+    setup_package()
