@@ -60,6 +60,7 @@ For more information, visit https://github.com/mmp2/megaman
 """
 NAME = "megaman"
 AUTHOR = "Marina Meila"
+AUTHOR_EMAIL = "mmp@stat.washington.delete_this.edu"
 URL = 'https://github.com/mmp2/megaman'
 DOWNLOAD_URL = 'https://github.com/mmp2/megaman'
 LICENSE = 'BSD 3'
@@ -90,6 +91,7 @@ def setup_package():
     try:
         setup(name='megaman',
               author=AUTHOR,
+              author_email=AUTHOR_EMAIL,
               url=URL,
               download_url=DOWNLOAD_URL,
               description=DESCRIPTION,
