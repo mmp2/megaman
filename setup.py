@@ -50,7 +50,7 @@ def configuration(parent_package='',top_path=None):
 DESCRIPTION = "megaman: Scalable Manifold Learning"
 LONG_DESCRIPTION = """
 megaman: Scalable Manifold Learning
-=================================
+===================================
 
 This repository contains a scalable implementation of several manifold learning
 algorithms, making use of FLANN for fast approximate nearest neighbors and
