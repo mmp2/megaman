@@ -42,6 +42,7 @@ sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
 distance_methods = ['auto', 'brute', 'cyflann', 'pyflann', 'cython']
 laplacian_types = ['symmetricnormalized', 'geometric', 'renormalized', 'unnormalized', 'randomwalk']
 
+
 def symmetrize_sparse(A):
     """
     Symmetrizes a sparse matrix in place (coo and csr formats only)
@@ -53,6 +54,7 @@ def symmetrize_sparse(A):
         A = A.tocsr()
     A = (A + A.transpose(copy = True))/2
     return A
+
 
 def affinity_matrix(distances, neighbors_radius, symmetrize = True):
     if neighbors_radius <= 0.:
@@ -80,6 +82,7 @@ def affinity_matrix(distances, neighbors_radius, symmetrize = True):
         else:
             pass
     return A
+
 
 ###############################################################################
 # Graph laplacian
@@ -171,27 +174,35 @@ def graph_laplacian(csgraph, normed = 'geometric', symmetrize = False,
     if csgraph.ndim != 2 or csgraph.shape[0] != csgraph.shape[1]:
         raise ValueError('csgraph must be a square matrix or array')
 
+    normed_options = ['unnormalized', 'geometric', 'randomwalk',
+                      'symmetricnormalized', 'renormalized']
     normed = normed.lower()
-    if normed not in ('unnormalized', 'geometric', 'randomwalk', 'symmetricnormalized','renormalized' ):
-        raise ValueError('normed must be one of unnormalized, geometric, randomwalk, symmetricnormalized, renormalized')
-    if (np.issubdtype(csgraph.dtype, np.int) or np.issubdtype(csgraph.dtype, np.uint)):
+    if normed.lower() not in normed_options:
+        raise ValueError('normed must be one of {0}'.format(normed_options))
+
+    if np.issubdtype(csgraph.dtype, np.integer):
         csgraph = csgraph.astype(np.float)
 
     if sparse.isspmatrix(csgraph):
-        return _laplacian_sparse(csgraph, normed = normed, symmetrize = symmetrize,
-                                    scaling_epps = scaling_epps,
-                                    renormalization_exponent = renormalization_exponent,
-                                    return_diag = return_diag, return_lapsym = return_lapsym)
+        return _laplacian_sparse(csgraph, normed=normed,
+                                 symmetrize=symmetrize,
+                                 scaling_epps=scaling_epps,
+                                 renormalization_exponent=renormalization_exponent,
+                                 return_diag=return_diag,
+                                 return_lapsym=return_lapsym)
 
     else:
-        return _laplacian_dense(csgraph, normed = normed, symmetrize = symmetrize,
-                                scaling_epps = scaling_epps,
-                                renormalization_exponent = renormalization_exponent,
-                                return_diag = return_diag, return_lapsym = return_lapsym)
+        return _laplacian_dense(csgraph, normed=normed,
+                                symmetrize=symmetrize,
+                                scaling_epps=scaling_epps,
+                                renormalization_exponent=renormalization_exponent,
+                                return_diag=return_diag,
+                                return_lapsym=return_lapsym)
 
-def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
-                        scaling_epps = 0., renormalization_exponent = 1,
-                        return_diag = False, return_lapsym = False):
+
+def _laplacian_sparse(csgraph, normed='geometric', symmetrize=True,
+                      scaling_epps=0., renormalization_exponent=1,
+                      return_diag=False, return_lapsym=False):
     n_nodes = csgraph.shape[0]
     lap = csgraph.copy()
     if symmetrize:
@@ -213,7 +224,7 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
         if return_lapsym:
             lapsym = lap.copy()
 
-    if normed == 'geometric':
+    elif normed == 'geometric':
         w = degrees.copy()     # normzlize one symmetrically by d
         w_zeros = (w == 0)
         w[w_zeros] = 1
@@ -225,7 +236,7 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
 
-    if normed == 'renormalized':
+    elif normed == 'renormalized':
         w = degrees**renormalization_exponent;
         # same as 'geometric' from here on
         w_zeros = (w == 0)
@@ -238,17 +249,18 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
 
-    if normed == 'unnormalized':
+    elif normed == 'unnormalized':
         lap.data[diag_mask] -= degrees
         if return_lapsym:
             lapsym = lap.copy()
 
-    if normed == 'randomwalk':
+    elif normed == 'randomwalk':
         w = degrees.copy()
         if return_lapsym:
             lapsym = lap.copy()
         lap.data /= w[lap.row]
         lap.data[diag_mask] -= 1.
+
     if scaling_epps > 0.:
         lap.data *= 4/(scaling_epps**2)
 
@@ -257,14 +269,16 @@ def _laplacian_sparse(csgraph, normed = 'geometric', symmetrize = True,
             return lap, lap.data[diag_mask], lapsym, w
         else:
             return lap, lap.data[diag_mask]
+
     elif return_lapsym:
         return lap, lapsym, w
     else:
         return lap
 
-def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
-                        scaling_epps = 0., renormalization_exponent = 1,
-                        return_diag = False, return_lapsym = False):
+
+def _laplacian_dense(csgraph, normed='geometric', symmetrize=True,
+                     scaling_epps=0., renormalization_exponent=1,
+                     return_diag=False, return_lapsym=False):
     n_nodes = csgraph.shape[0]
     if symmetrize:
         lap = (csgraph + csgraph.T)/2.
@@ -283,7 +297,7 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
         if return_lapsym:
             lapsym = lap.copy()
-    if normed == 'geometric':
+    elif normed == 'geometric':
         w = degrees.copy()     # normalize once symmetrically by d
         w_zeros = (w == 0)
         w[w_zeros] = 1
@@ -294,7 +308,7 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
             lapsym = lap.copy()
         lap /= w[:, np.newaxis]
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
-    if normed == 'renormalized':
+    elif normed == 'renormalized':
         w = degrees**renormalization_exponent;
         # same as 'geometric' from here on
         w_zeros = (w == 0)
@@ -306,12 +320,12 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
             lapsym = lap.copy()
         lap /= w[:, np.newaxis]
         lap[di] -= (1 - w_zeros).astype(lap.dtype)
-    if normed == 'unnormalized':
+    elif normed == 'unnormalized':
         dum = lap[di]-degrees[np.newaxis,:]
         lap[di] = dum[0,:]
         if return_lapsym:
             lapsym = lap.copy()
-    if normed == 'randomwalk':
+    elif normed == 'randomwalk':
         w = degrees.copy()
         if return_lapsym:
             lapsym = lap.copy()
@@ -331,6 +345,7 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
         return lap, lapsym, w
     else:
         return lap
+
 
 class Geometry(object):
     """
@@ -359,10 +374,9 @@ class Geometry(object):
         FLANN_ROOT set to path location. Used for importing pyflann from a different location.
 
     """
-
-    def __init__(self, X, neighborhood_radius = None, affinity_radius = None,
-                 distance_method = 'auto', input_type = 'data',
-                 laplacian_type = None, path_to_flann = None):
+    def __init__(self, X, neighborhood_radius=None, affinity_radius=None,
+                 distance_method='auto', input_type='data',
+                 laplacian_type=None, path_to_flann=None):
         self.distance_method = distance_method
         self.input_type = input_type
         self.path_to_flann = path_to_flann

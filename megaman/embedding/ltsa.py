@@ -16,7 +16,7 @@ from scipy.sparse import eye, csr_matrix
 
 from ..geometry import geometry as geom
 from ..utils.validation import check_random_state, check_array
-from ..utils.eigendecomp import null_space
+from ..utils.eigendecomp import null_space, check_eigen_solver
 
 
 def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
@@ -69,13 +69,13 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
           dimensionality reduction via tangent space alignment.
           Journal of Shanghai Univ.  8:406 (2004)
     """
+    check_eigen_solver(eigen_solver)
+
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
     X = Geometry.X
     (N, d_in) = X.shape
 
-    if eigen_solver not in ('auto', 'arpack', 'dense', 'amg', 'lobpcg'):
-        raise ValueError("unrecognised eigen_solver '%s'" % eigen_solver)
     if n_components > d_in:
         raise ValueError("output dimension must be less than or equal "
                          "to input dimension")
@@ -118,6 +118,7 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
 
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
+
 
 class LTSA(object):
     """

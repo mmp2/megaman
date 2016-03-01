@@ -15,7 +15,7 @@ from scipy.sparse.csgraph import connected_components
 
 from ..geometry import geometry as geom
 from ..utils.validation import check_random_state
-from ..utils.eigendecomp import eigen_decomposition
+from ..utils.eigendecomp import eigen_decomposition, check_eigen_solver
 
 def _graph_connected_component(graph, node_id):
     """
@@ -152,6 +152,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
     random_state = check_random_state(random_state)
+    eigen_solver = check_eigen_solver(eigen_solver)
 
     if not isinstance(Geometry, geom.Geometry):
         raise RuntimeError("Geometry object not megaman.embedding.geometry Geometry class")

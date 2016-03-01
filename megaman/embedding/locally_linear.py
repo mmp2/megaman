@@ -15,26 +15,27 @@ from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
 
 from ..geometry import geometry as geom
-from ..utils.validation import check_random_state, check_array
-from ..utils.eigendecomp import null_space
+from ..utils.validation import check_array
+from ..utils.eigendecomp import null_space, check_eigen_solver
+
 
 def barycenter_graph(distance_matrix, X, reg=1e-3):
     """
-        Computes the barycenter weighted graph for points in X
+    Computes the barycenter weighted graph for points in X
 
-        Parameters
-        ----------
-        distance_matrix: sparse Ndarray, (N_obs, N_obs) pairwise distance matrix.
-        X : Ndarray (N_obs, N_dim) observed data matrix.
-        reg : float, optional
-            Amount of regularization when solving the least-squares
-            problem. Only relevant if mode='barycenter'. If None, use the
-            default.
+    Parameters
+    ----------
+    distance_matrix: sparse Ndarray, (N_obs, N_obs) pairwise distance matrix.
+    X : Ndarray (N_obs, N_dim) observed data matrix.
+    reg : float, optional
+        Amount of regularization when solving the least-squares
+        problem. Only relevant if mode='barycenter'. If None, use the
+        default.
 
-        Returns
-        -------
-        W : sparse matrix in CSR format, shape = [n_samples, n_samples]
-            W[i, j] is assigned the weight of edge that connects i to j.
+    Returns
+    -------
+    W : sparse matrix in CSR format, shape = [n_samples, n_samples]
+        W[i, j] is assigned the weight of edge that connects i to j.
     """
     (N, d_in) = X.shape
     (rows, cols) = distance_matrix.nonzero()
@@ -55,61 +56,63 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
         W[i, nbrs_i] = w / np.sum(w)
     return W
 
+
 def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
                             eigen_solver='auto', tol=1e-6,  random_state=None):
     """
-        Perform a Locally Linear Embedding analysis on the data.
+    Perform a Locally Linear Embedding analysis on the data.
 
-        Parameters
-        ----------
-        n_components : integer
-            number of coordinates for the manifold.
-        reg : float
-            regularization constant, multiplies the trace of the local covariance
-            matrix of the distances.
-        eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
-            'auto' :
-                algorithm will attempt to choose the best method for input data
-            'dense' :
-                use standard dense matrix operations for the eigenvalue decomposition.
-                For this method, M must be an array or matrix type.  This method should be avoided for large problems.
-            'arpack' :
-                use arnoldi iteration in shift-invert mode. For this method,
-                M may be a dense matrix, sparse matrix, or general linear operator.
-                Warning: ARPACK can be unstable for some problems.  It is best to
-                try several random seeds in order to check results.
-            'lobpcg' :
-                Locally Optimal Block Preconditioned Conjugate Gradient Method.
-                A preconditioned eigensolver for large symmetric positive definite
-                (SPD) generalized eigenproblems.
-            'amg' :
-                AMG requires pyamg to be installed. It can be faster on very large,
-                sparse problems, but may also lead to instabilities.
-        tol : float, optional
-            Tolerance for 'arpack' method
-            Not used if eigen_solver=='dense'.
-        max_iter : integer
-            maximum number of iterations for the arpack solver.
-        random_state : numpy.RandomState or int, optional
-            The generator or seed used to determine the starting vector for arpack
-            iterations.  Defaults to numpy.random.
-        Geometry : a Geometry object from megaman.geometry.geometry
+    Parameters
+    ----------
+    n_components : integer
+        number of coordinates for the manifold.
+    reg : float
+        regularization constant, multiplies the trace of the local covariance
+        matrix of the distances.
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+        'auto' :
+            algorithm will attempt to choose the best method for input data
+        'dense' :
+            use standard dense matrix operations for the eigenvalue decomposition.
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+        'arpack' :
+            use arnoldi iteration in shift-invert mode. For this method,
+            M may be a dense matrix, sparse matrix, or general linear operator.
+            Warning: ARPACK can be unstable for some problems.  It is best to
+            try several random seeds in order to check results.
+        'lobpcg' :
+            Locally Optimal Block Preconditioned Conjugate Gradient Method.
+            A preconditioned eigensolver for large symmetric positive definite
+            (SPD) generalized eigenproblems.
+        'amg' :
+            AMG requires pyamg to be installed. It can be faster on very large,
+            sparse problems, but may also lead to instabilities.
+    tol : float, optional
+        Tolerance for 'arpack' method
+        Not used if eigen_solver=='dense'.
+    max_iter : integer
+        maximum number of iterations for the arpack solver.
+    random_state : numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.
+    Geometry : a Geometry object from megaman.geometry.geometry
 
-        Returns
-        -------
-        Y : array-like, shape [n_samples, n_components]
-            Embedding vectors.
-        squared_error : float
-            Reconstruction error for the embedding vectors. Equivalent to
-            ``norm(Y - W Y, 'fro')**2``, where W are the reconstruction weights.
+    Returns
+    -------
+    Y : array-like, shape [n_samples, n_components]
+        Embedding vectors.
+    squared_error : float
+        Reconstruction error for the embedding vectors. Equivalent to
+        ``norm(Y - W Y, 'fro')**2``, where W are the reconstruction weights.
 
-        References
-        ----------
-        * Roweis, S. & Saul, L. Nonlinear dimensionality reduction
-          by locally linear embedding.  Science 290:2323 (2000).
+    References
+    ----------
+
+    .. [1] Roweis, S. & Saul, L. Nonlinear dimensionality reduction
+        by locally linear embedding.  Science 290:2323 (2000).
     """
-    if eigen_solver not in ('auto', 'arpack', 'dense', 'amg', 'lobpcg'):
-        raise ValueError("unrecognized eigen_solver '%s'" % eigen_solver)
+    check_eigen_solver(eigen_solver)
+
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
     X = Geometry.X
@@ -125,6 +128,7 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
         M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
+
 
 class LocallyLinearEmbedding(object):
     """
@@ -230,11 +234,13 @@ class LocallyLinearEmbedding(object):
         """
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
-        random_state = check_random_state(self.random_state)
-        (self.embedding_, self.error_) = locally_linear_embedding(self.Geometry, n_components=self.n_components,
-                                                    eigen_solver=self.eigen_solver, tol = self.tol,
-                                                    random_state=random_state, reg = self.reg,
-                                                    max_iter = self.max_iter)
+        self.embedding_, self.error_ = locally_linear_embedding(self.Geometry,
+                                                                n_components=self.n_components,
+                                                                eigen_solver=self.eigen_solver,
+                                                                tol=self.tol,
+                                                                random_state=self.random_state,
+                                                                reg=self.reg,
+                                                                max_iter=self.max_iter)
         return self
 
     def fit_transform(self, X):

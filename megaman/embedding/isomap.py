@@ -10,9 +10,8 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path as graph_shortest_path
 
-from ..geometry import geometry as geom
+from .. import geometry as geom
 from ..utils.eigendecomp import eigen_decomposition
-from ..utils.validation import check_random_state
 
 
 def center_matrix(G):
@@ -27,6 +26,7 @@ def center_matrix(G):
     K -= (np.sum(S, axis = 1)/N)[:, np.newaxis]
     K += np.sum(row_sums)/N
     return(K)
+
 
 def isomap(Geometry, n_components=8, eigen_solver='auto',
            random_state=None, eigen_tol=1e-12, path_method='auto',
@@ -82,9 +82,6 @@ def isomap(Geometry, n_components=8, eigen_solver='auto',
     Notes
     -----
     """
-
-    random_state = check_random_state(random_state)
-
     if not isinstance(Geometry, geom.Geometry):
         raise RuntimeError("Geometry object not megaman.embedding.geometry ",
                             "Geometry class")
@@ -106,9 +103,11 @@ def isomap(Geometry, n_components=8, eigen_solver='auto',
 
 
     # Step 4: compute d largest eigenvectors/values of centered_matrix
-    lambdas, diffusion_map = eigen_decomposition(centered_matrix, n_components, eigen_solver,
-                                                 random_state, eigen_tol,
-                                                 largest = True)
+    lambdas, diffusion_map = eigen_decomposition(centered_matrix, n_components,
+                                                 largest=True,
+                                                 eigen_solver=eigen_solver,
+                                                 random_state=random_state,
+                                                 eigen_tol=eigen_tol)
     # Step 5:
     # return Y = [sqrt(lambda_1)*V_1, ..., sqrt(lambda_d)*V_d]
     ind = np.argsort(lambdas); ind = ind[::-1] # sort largest
@@ -118,7 +117,10 @@ def isomap(Geometry, n_components=8, eigen_solver='auto',
     return embedding
 
 class Isomap(object):
-    """
+    """Isomap Embedding
+
+    Non-linear dimensionality reduction through Isometric Mapping
+
     Parameters
     -----------
     n_components : integer, default: 2
@@ -169,15 +171,15 @@ class Isomap(object):
 
     References
     ----------
-    * Tenenbaum, J.B.; De Silva, V.; & Langford, J.C.
-      A global geometric framework for nonlinear dimensionality reduction.
-      Science 290 (5500)
+
+    .. [1] Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. A global geometric
+           framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol = 1e-12, path_method = 'auto',
-                 neighborhood_radius = None, affinity_radius = None,
-                 distance_method = 'auto', input_type = 'data',
-                 path_to_flann = None, Geometry = None):
+                 eigen_tol=1e-12, path_method='auto',
+                 neighborhood_radius=None, affinity_radius=None,
+                 distance_method='auto', input_type='data',
+                 path_to_flann=None, Geometry=None):
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -206,7 +208,7 @@ class Isomap(object):
                                       input_type = self.input_type,
                                       path_to_flann = self.path_to_flann)
 
-    def fit(self, X, eigen_solver = None, input_type = 'data', n_components=None):
+    def fit(self, X, eigen_solver=None, input_type='data', n_components=None):
         """Fit the model from data in X.
 
         Parameters
@@ -239,10 +241,10 @@ class Isomap(object):
         if not isinstance(self.Geometry, geom.Geometry):
             self.fit_geometry(X)
         # might want to change the eigen solver
-        if ((eigen_solver is not None) and (eigen_sovler != self.eigen_solver)):
+        if (eigen_solver is not None) and (eigen_solver != self.eigen_solver):
             self.eigen_solver = eigen_solver
         # we also might want to change the # of components:
-        if ((n_components is not None) and (n_components != self.n_components)):
+        if (n_components is not None) and (n_components != self.n_components):
             self.n_components = n_components
 
         # don't re-compute these if it's already been done.
@@ -256,10 +258,9 @@ class Isomap(object):
         if self.centered_matrix is None:
             self.centered_matrix = center_matrix(self.graph_distance_matrix)
 
-        random_state = check_random_state(self.random_state)
         self.embedding_ = isomap(self.Geometry, n_components=self.n_components,
                                  eigen_solver=self.eigen_solver,
-                                 random_state=random_state,
+                                 random_state=self.random_state,
                                  eigen_tol = self.eigen_tol,
                                  path_method = self.path_method,
                                  distance_matrix = self.distance_matrix,

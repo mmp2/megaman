@@ -3,11 +3,32 @@ import numpy as np
 from scipy import sparse
 from scipy.linalg import eigh, eig
 from scipy.sparse.linalg import lobpcg, eigs, eigsh
+from sklearn.utils.validation import check_random_state
 
-from .validation import check_random_state
 from .validation import check_array
 
-eigen_solvers = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
+try:
+    from pyamg import smoothed_aggregation_solver
+    PYAMG_LOADED = True
+except ImportError:
+    PYAMG_LOADED = False
+
+EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
+
+def check_eigen_solver(eigen_solver):
+    """Check that the selected eigensolver is valid"""
+    if eigen_solver not in EIGEN_SOLVERS:
+        raise ValueError("Unrecognized eigen_solver: '{0}'."
+                         "Should be one of: {1}".format(eigen_solver,
+                                                        eigen_solvers))
+
+    if eigen_solver == 'amg' and not PYAMG_LOADED:
+        raise ValueError("The eigen_solver was set to 'amg', but pyamg is "
+                         "not available. Please either install pyamg or "
+                         "use another method.")
+
+    return eigen_solver
+
 
 def _is_symmetric(M, tol = 1e-8):
     if sparse.isspmatrix(M):
@@ -15,6 +36,7 @@ def _is_symmetric(M, tol = 1e-8):
     else:
         conditions = np.abs((M - M.T)) < tol
     return(np.all(conditions))
+
 
 def eigen_decomposition(G, n_components=8, eigen_solver='auto',
                         random_state=None, eigen_tol=0.0,
@@ -61,23 +83,14 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
     """
     n_nodes = G.shape[0]
 
-    if eigen_solver not in eigen_solvers:
-        raise ValueError("Unrecognized eigen_solver: '%s'."
-                         "Should be one of: '%s'"
-                         % (eigen_solver, eigen_solvers))
+    eigen_solver = check_eigen_solver(eigen_solver)
+
     if eigen_solver == 'auto':
         if G.shape[0] > 200:
             eigen_solver = 'arpack'
         else:
             eigen_solver = 'dense'
 
-    # Check eigen_solver method
-    try:
-        from pyamg import smoothed_aggregation_solver
-    except ImportError:
-        if eigen_solver == "amg":
-            raise ValueError("The eigen_solver was set to 'amg', but pyamg is "
-                             "not available.")
     # Check input values
     if not isinstance(largest, bool):
         raise ValueError("largest should be True if you want largest eigenvalues otherwise False")

@@ -15,6 +15,7 @@ import numpy as np
 from scipy import sparse
 from numpy.linalg import eigh, svd, inv
 
+
 def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 'svd'):
     """
     Parameters
@@ -73,6 +74,7 @@ def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 's
 
     return h_dual_metric, riemann_metric, Hvv, Hsvals, Gsvals
 
+
 def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
     """
     Parameters
@@ -114,6 +116,7 @@ def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
     else:
         riemann_metric = np.linalg.inv(h_dual_metric)
         return riemann_metric, None, None, None
+
 
 class RiemannMetric(object):
     """
@@ -164,8 +167,7 @@ class RiemannMetric(object):
     Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255
 
     """
-    def __init__(self, Y, laplacian, n_dim = None, mode_inv = 'svd' ):
-
+    def __init__(self, Y, laplacian, n_dim=None, mode_inv='svd'):
         # input data
         self.Y = Y
         self.n, self.mdimY = Y.shape
@@ -217,6 +219,7 @@ class RiemannMetric(object):
             return self.G, self.Hvv, self.Hsvals, self.Gsvals
         else:
             return self.G
+
     def get_mdimG(self):
         return self.mdimG
 

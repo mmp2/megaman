@@ -9,12 +9,14 @@ import subprocess, os, sys, warnings
 
 from .cyflann.index import Index
 
+
 def _row_col_from_condensed_index(N,compr_ind):
     # convert from pdist compressed index format to (I, J) (upper triangular) pairs.
     b = 1 -2*N
     i = np.floor((-b - np.sqrt(b**2 - 8*compr_ind))/2)
     j = compr_ind + i*(b + i + 2)/2 + 1
     return (i,j)
+
 
 def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex = None):
     """
@@ -65,6 +67,7 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
         return None
     return graph
 
+
 def radius_neighbors_graph(X, radius):
     """
     Computes pairwise distance matrix using dense method.
@@ -91,6 +94,7 @@ def radius_neighbors_graph(X, radius):
         # sparse will complain this is faster with lil_matrix:
         graph.setdiag(0.0) # diagonal values are true zeros, otherwise they're infinite
     return(graph)
+
 
 def fl_radius_neighbors_graph(X, radius, flindex):
     """
