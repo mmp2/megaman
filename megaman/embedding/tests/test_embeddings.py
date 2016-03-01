@@ -2,7 +2,7 @@
 from itertools import product
 
 import numpy as np
-from numpy.testing import assert_raises
+from numpy.testing import assert_raises, assert_allclose
 
 from megaman.embedding import (Isomap, LocallyLinearEmbedding,
                                LTSA, SpectralEmbedding)
@@ -10,7 +10,7 @@ from megaman.geometry import Geometry
 
 EMBEDDINGS = [Isomap, LocallyLinearEmbedding, LTSA, SpectralEmbedding]
 
-def test_embeddings_common():
+def test_embeddings_fit_vs_transform():
     rand = np.random.RandomState(42)
     X = rand.rand(100, 5)
     geom = Geometry(X, neighborhood_radius=1.0)
@@ -18,9 +18,9 @@ def test_embeddings_common():
     def check_embedding(Embedding, n_components):
         model = Embedding(n_components=n_components,
                           Geometry=geom, random_state=rand)
-        model.fit(X)
+        embedding = model.fit_transform(X)
         assert model.embedding_.shape == (X.shape[0], n_components)
-
+        assert_allclose(embedding, model.embedding_)
 
     for Embedding in EMBEDDINGS:
         for n_components in [1, 2, 3]:
