@@ -119,7 +119,7 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 
-class LTSA():
+class LTSA(object):
     """
     Local Tangent Space Alignment
 
@@ -172,7 +172,7 @@ class LTSA():
       dimensionality reduction via tangent space alignment.
       Journal of Shanghai Univ.  8:406 (2004)
     """
-    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  tol = 1e-6, max_iter=100, neighborhood_radius = None,
                  affinity_radius = None,  distance_method = 'auto',
                  input_type = 'data', path_to_flann = None, Geometry = None):

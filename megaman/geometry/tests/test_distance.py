@@ -25,17 +25,17 @@ def test_all_methods_close(almost_equal_decimals = 5):
         raise SkipTest("pyflann not installed. Will not test pyflann method")
     t1 = time.clock()
     D1 = distance_matrix(X, method = 'cyflann')
-    print "cython version:",time.clock() - t1
+    print("cython version:",time.clock() - t1)
 
     flindex = pyf.FLANN()
     flparams = flindex.build_index(X, algorithm = 'kmeans', target_precision = 0.9)
     t2 = time.clock()
     D2 = distance_matrix(X, method = 'pyflann', flindex = flindex)
-    print "pyflann version:",time.clock() - t2
+    print("pyflann version:",time.clock() - t2)
 
     t3 = time.clock()
     D3 = distance_matrix(X, method = 'brute')
-    print "brute version:",time.clock() - t3
+    print("brute version:",time.clock() - t3)
 
     D4 = distance_matrix(X)
 

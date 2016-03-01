@@ -5,6 +5,7 @@ sudo: false
 
 python:
   - 2.7
+  - 3.5
 
 env:
   global:
@@ -12,7 +13,7 @@ env:
     - TEST_DIR=/tmp/megaman
     - CONDA_CHANNEL="https://conda.anaconda.org/jakevdp"
   matrix:
-    - CONDA_DEPS="pip nose coverage cython numpy scipy scikit-learn flann pyamg" PIP_DEPS="pyflann coveralls"
+    - CONDA_DEPS="pip nose coverage cython numpy scipy scikit-learn flann" PIP_DEPS="pyamg pyflann coveralls"
 
 before_install:
 - export MINICONDA=$HOME/miniconda

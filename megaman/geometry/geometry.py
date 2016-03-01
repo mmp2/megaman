@@ -332,7 +332,7 @@ def _laplacian_dense(csgraph, normed = 'geometric', symmetrize = True,
     else:
         return lap
 
-class Geometry:
+class Geometry(object):
     """
     The Geometry class stores the data, distance, affinity and laplacian
     matrices used by the various embedding methods and is the primary
@@ -552,7 +552,7 @@ class Geometry:
             return self.affinity_matrix
 
     def get_laplacian_matrix(self, laplacian_type=None, symmetrize=False,
-                            scaling_epps=None, renormalization_exponent=1,
+                            scaling_epps=0, renormalization_exponent=1,
                             copy=True, return_lapsym=False):
         """
         Parameters

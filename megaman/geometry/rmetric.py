@@ -1,4 +1,4 @@
-"""Riemannian Metric learning utilities and algorithms. 
+"""Riemannian Metric learning utilities and algorithms.
 
    To use the "geometric" Laplacian from geometry.py for statistically
    consistent results.
@@ -115,7 +115,7 @@ def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
         riemann_metric = np.linalg.inv(h_dual_metric)
         return riemann_metric, None, None, None
 
-class RiemannMetric:
+class RiemannMetric(object):
     """
     RiemannMetric computes and stores the Riemannian metric and its dual
     associated with an embedding Y. The Riemannian metric is currently denoted

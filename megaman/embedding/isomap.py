@@ -28,7 +28,7 @@ def center_matrix(G):
     K += np.sum(row_sums)/N
     return(K)
 
-def isomap(Geometry, n_components=8, eigen_solver=None,
+def isomap(Geometry, n_components=8, eigen_solver='auto',
            random_state=None, eigen_tol=1e-12, path_method='auto',
            distance_matrix = None, graph_distance_matrix = None,
            centered_matrix = None):
@@ -117,7 +117,7 @@ def isomap(Geometry, n_components=8, eigen_solver=None,
     embedding = diffusion_map[:, 0:n_components] * np.sqrt(lambdas[0:n_components])
     return embedding
 
-class Isomap():
+class Isomap(object):
     """
     Parameters
     -----------
@@ -173,7 +173,7 @@ class Isomap():
       A global geometric framework for nonlinear dimensionality reduction.
       Science 290 (5500)
     """
-    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  eigen_tol = 1e-12, path_method = 'auto',
                  neighborhood_radius = None, affinity_radius = None,
                  distance_method = 'auto', input_type = 'data',

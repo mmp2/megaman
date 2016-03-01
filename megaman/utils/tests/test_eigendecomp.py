@@ -29,7 +29,7 @@ def _test_all_solvers(solvers_to_test, S):
         # pairwise comparison:
         for i in range(len(solvers_to_test)):
             for j in range(i+1, len(solvers_to_test)):
-                print largest
+                print(largest)
                 print(str(solvers_to_test[i]) + " + " + str(solvers_to_test[j]))
                 assert_array_almost_equal(Lambdas[solvers_to_test[i]],
                                         Lambdas[solvers_to_test[j]])
@@ -43,7 +43,7 @@ def _test_all_null_solvers(solvers_to_test, S):
         # pairwise comparison:
         for i in range(len(solvers_to_test)):
             for j in range(i+1, len(solvers_to_test)):
-                print largest
+                print(largest)
                 print(str(solvers_to_test[i]) + " + " + str(solvers_to_test[j]))
                 _check_with_col_sign_flipping(Null_Space[solvers_to_test[i]],
                                         Null_Space[solvers_to_test[j]], 0.05)

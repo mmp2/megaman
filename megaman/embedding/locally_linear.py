@@ -126,7 +126,7 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 
-class LocallyLinearEmbedding():
+class LocallyLinearEmbedding(object):
     """
     Locally Linear Embedding
 
@@ -181,7 +181,7 @@ class LocallyLinearEmbedding():
     * Roweis, S. & Saul, L. Nonlinear dimensionality reduction
       by locally linear embedding.  Science 290:2323 (2000).
     """
-    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
                  affinity_radius = None,  distance_method = 'auto',
                  input_type = 'data', path_to_flann = None, Geometry = None):

@@ -72,7 +72,7 @@ def _graph_is_connected(graph):
         # dense graph, find all connected components start from node 0
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
 
-def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
+def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
                        random_state=None, eigen_tol=0.0, drop_first=True,
                        diffusion_maps = False):
     """
@@ -218,7 +218,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver=None,
     return embedding
 
 
-class SpectralEmbedding():
+class SpectralEmbedding(object):
     """
     Spectral embedding for non-linear dimensionality reduction.
 
@@ -290,7 +290,7 @@ class SpectralEmbedding():
       Jianbo Shi, Jitendra Malik
       http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
-    def __init__(self, n_components=2, eigen_solver=None, random_state=None,
+    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  eigen_tol = 1e-12, drop_first = True, diffusion_maps = False,
                  neighborhood_radius = None, affinity_radius = None,
                  distance_method = 'auto', input_type = 'data',
