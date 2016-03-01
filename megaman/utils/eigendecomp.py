@@ -16,23 +16,25 @@ def _is_symmetric(M, tol = 1e-8):
         conditions = np.abs((M - M.T)) < tol
     return(np.all(conditions))
 
-def eigen_decomposition(G, n_components=8, eigen_solver=None,
-                       random_state=None, eigen_tol=0.0,
-                       drop_first=True, largest = True):
+def eigen_decomposition(G, n_components=8, eigen_solver='auto',
+                        random_state=None, eigen_tol=0.0,
+                        drop_first=True, largest = True):
     """
     Function to compute the eigendecomposition of a square matrix.
 
     Parameters
     ----------
-    G : 2d numpy/scipy array. Potentially sparse. The matrix to find the eigendecomposition of
+    G : array_like or sparse matrix
+        The square matrix for which to compute the eigen-decomposition.
     n_components : integer, optional
         The number of eigenvectors to return
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
         'auto' :
-            algorithm will attempt to choose the best method for input data
+            attempt to choose the best method for input data (default)
         'dense' :
             use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            For this method, M must be an array or matrix type.
+            This method should be avoided for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -57,14 +59,12 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
     -------
     lambdas, diffusion_map : eigenvalues, eigenvectors
     """
-
     n_nodes = G.shape[0]
-    if eigen_solver is None:
-        eigen_solver = 'auto'
-    elif not eigen_solver in eigen_solvers:
-        raise ValueError("Unknown value for eigen_solver: '%s'."
-                         "Should be: '%s'"
-                         % eigen_solver, eigen_solvers)
+
+    if eigen_solver not in eigen_solvers:
+        raise ValueError("Unrecognized eigen_solver: '%s'."
+                         "Should be one of: '%s'"
+                         % (eigen_solver, eigen_solvers))
     if eigen_solver == 'auto':
         if G.shape[0] > 200:
             eigen_solver = 'arpack'
