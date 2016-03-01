@@ -43,8 +43,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver=None,
             A preconditioned eigensolver for large symmetric positive definite
             (SPD) generalized eigenproblems.
         'amg' :
-            AMG requires pyamg to be installed. It can be faster on very large,
-            sparse problems, but may also lead to instabilities.
+            Algebraic Multigrid solver (requires ``pyamg`` to be installed)
+            It can be faster on very large, sparse problems, but may also lead
+            to instabilities.
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
