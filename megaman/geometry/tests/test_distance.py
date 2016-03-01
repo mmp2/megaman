@@ -1,25 +1,21 @@
 from __future__ import division ## removes integer division
+
 import numpy as np
-from scipy import sparse
-import sys, os
 from nose import SkipTest
-from nose.tools import assert_true, assert_equal, assert_raises
-from numpy.testing import assert_allclose, assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_raises, assert_allclose
+
 from scipy.spatial.distance import pdist, squareform
-import warnings
 from megaman.geometry.distance import distance_matrix
-import time
 
 random_state = np.random.RandomState(36)
 n_sample = 10
 d = 2
 X = random_state.randn(n_sample, d)
-D = squareform(pdist(X))
-D[D > 1/d] = 0
+D_true = squareform(pdist(X))
+D_true[D_true > 1/d] = 0
+
 
 def test_all_methods_close():
-    D = distance_matrix(X)
-
     def check_method(method):
         if method == 'pyflann':
             try:
@@ -27,14 +23,14 @@ def test_all_methods_close():
             except ImportError:
                 raise SkipTest("pyflann not installed.")
             flindex = pyf.FLANN()
-            flparams = flindex.build_index(X, algorithm='kmeans',
-                                           target_precision=0.9)
+            flindex.build_index(X, algorithm='kmeans',
+                                target_precision=0.9)
         else:
             flindex = None
         this_D = distance_matrix(X, method=method, flindex=flindex)
-        assert_allclose(this_D.toarray(), D.toarray(), rtol=1E-5)
+        assert_allclose(this_D.toarray(), D_true, rtol=1E-5)
 
-    for method in ['cyflann', 'pyflann', 'brute']:
+    for method in ['auto', 'cyflann', 'pyflann', 'brute']:
         yield check_method, method
 
 

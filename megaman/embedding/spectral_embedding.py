@@ -155,7 +155,9 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
     eigen_solver = check_eigen_solver(eigen_solver)
 
     if not isinstance(Geometry, geom.Geometry):
-        raise RuntimeError("Geometry object not megaman.embedding.geometry Geometry class")
+        raise ValueError("Geometry object not megaman.embedding.geometry ",
+                         "Geometry class")
+
     affinity_matrix = Geometry.get_affinity_matrix()
     if not _graph_is_connected(affinity_matrix):
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
@@ -306,7 +308,7 @@ class SpectralEmbedding(object):
         self.drop_first = drop_first
 
         # Geometry parameters:
-        self.Geometry = None
+        self.Geometry = Geometry
         self.neighborhood_radius = neighborhood_radius
         self.affinity_radius = affinity_radius
         self.distance_method = distance_method
@@ -342,7 +344,7 @@ class SpectralEmbedding(object):
         self : object
             Returns the instance itself.
         """
-        if not isinstance(self.Geometry, geom.Geometry):
+        if self.Geometry is None:
             self.fit_geometry(X)
         random_state = check_random_state(self.random_state)
         self.embedding_ = spectral_embedding(self.Geometry,

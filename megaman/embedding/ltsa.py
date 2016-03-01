@@ -219,8 +219,13 @@ class LTSA(object):
         self : object
             Returns the instance itself.
         """
-        if not isinstance(self.Geometry, geom.Geometry):
+        if self.Geometry is None:
             self.fit_geometry(X)
+
+        if not isinstance(self.Geometry, geom.Geometry):
+            raise ValueError("Geometry object not megaman.embedding.geometry ",
+                             "Geometry class")
+
         random_state = check_random_state(self.random_state)
         (self.embedding_, self.error_) = ltsa(self.Geometry,n_components=self.n_components,
                                                 eigen_solver=self.eigen_solver, tol = self.tol,

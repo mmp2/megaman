@@ -113,6 +113,10 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     """
     check_eigen_solver(eigen_solver)
 
+    if not isinstance(Geometry, geom.Geometry):
+        raise ValueError("Geometry object not megaman.embedding.geometry ",
+                         "Geometry class")
+
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
     X = Geometry.X
@@ -232,7 +236,7 @@ class LocallyLinearEmbedding(object):
         self : object
             Returns the instance itself.
         """
-        if not isinstance(self.Geometry, geom.Geometry):
+        if self.Geometry is None:
             self.fit_geometry(X)
         self.embedding_, self.error_ = locally_linear_embedding(self.Geometry,
                                                                 n_components=self.n_components,

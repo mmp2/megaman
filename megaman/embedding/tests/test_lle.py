@@ -6,6 +6,9 @@ from scipy.spatial.distance import squareform, pdist
 from itertools import product
 from numpy.testing import assert_array_almost_equal
 
+from sklearn import manifold, datasets
+from sklearn.neighbors import NearestNeighbors
+
 import megaman.embedding.locally_linear as lle
 import megaman.geometry.geometry as geom
 
@@ -25,9 +28,6 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
     return True
 
 def test_lle_with_sklearn():
-    from sklearn import manifold
-    from sklearn import datasets
-    from sklearn.neighbors import NearestNeighbors
     N = 10
     X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
     n_components = 2

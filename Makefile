@@ -19,5 +19,5 @@ test-coverage: test-dir install
 
 test-coverage-html: test-dir install
 	cd $(TEST_DIR) && nosetests --with-coverage --cover-html --cover-package=$(PKG) $(PKG)
-	rsync -r $(TEST_DIR)/cover $(CURRENT_DIR)/cover
+	rsync -r $(TEST_DIR)/cover $(CURRENT_DIR)/
 	echo "open ./cover/index.html with a web browser to see coverage report"

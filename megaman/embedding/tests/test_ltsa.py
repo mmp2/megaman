@@ -4,10 +4,14 @@ import scipy as sp
 import scipy.sparse as sparse
 from itertools import product
 
+from sklearn import manifold, datasets
+from sklearn.neighbors import NearestNeighbors
+
 from numpy.testing import assert_array_almost_equal
 import megaman.embedding.ltsa as ltsa
 from megaman.embedding.locally_linear import barycenter_graph
 import megaman.geometry.geometry as geom
+
 
 eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 
@@ -25,9 +29,6 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
     return True
 
 def test_ltsa_with_sklearn():
-    from sklearn import manifold
-    from sklearn import datasets
-    from sklearn.neighbors import NearestNeighbors
     N = 10
     X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
     n_components = 2
@@ -42,8 +43,6 @@ def test_ltsa_with_sklearn():
     assert(_check_with_col_sign_flipping(sk_Y_ltsa, mm_Y_ltsa, 0.05))
 
 def test_ltsa_eigendecomps():
-    from sklearn import manifold
-    from sklearn import datasets
     N = 10
     X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
     n_components = 2

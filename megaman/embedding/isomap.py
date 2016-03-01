@@ -83,7 +83,7 @@ def isomap(Geometry, n_components=8, eigen_solver='auto',
     -----
     """
     if not isinstance(Geometry, geom.Geometry):
-        raise RuntimeError("Geometry object not megaman.embedding.geometry ",
+        raise ValueError("Geometry object not megaman.embedding.geometry ",
                             "Geometry class")
 
     # Step 1: use geometry to calculate the distance matrix
@@ -238,8 +238,14 @@ class Isomap(object):
         """
         if input_type is not None:
             self.input_type = input_type
-        if not isinstance(self.Geometry, geom.Geometry):
+
+        if self.Geometry is None:
             self.fit_geometry(X)
+
+        if not isinstance(self.Geometry, geom.Geometry):
+            raise ValueError("Geometry object not megaman.embedding.geometry ",
+                             "Geometry class")
+
         # might want to change the eigen solver
         if (eigen_solver is not None) and (eigen_solver != self.eigen_solver):
             self.eigen_solver = eigen_solver
