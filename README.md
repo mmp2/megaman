@@ -26,7 +26,7 @@ See documentation and example.py for usage.
 
 megaman has the following dependencies:
 
-- [python](http://python.org) version 2.7
+- [python](http://python.org) tested with versions 2.7, 3.4, and 3.5
 - [numpy](http://numpy.org) version 1.8 or higher
 - [scipy](http://scipy.org) version 0.16.0 or higher
 - [scikit-learn](http://scikit-learn.org)

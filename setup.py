@@ -105,7 +105,9 @@ def setup_package():
                 'Intended Audience :: Science/Research',
                 'License :: OSI Approved :: BSD License',
                 'Natural Language :: English',
-                'Programming Language :: Python :: 2.7'],)
+                'Programming Language :: Python :: 2.7',
+                'Programming Language :: Python :: 3.4',
+                'Programming Language :: Python :: 3.5'])
     finally:
         del sys.path[0]
         os.chdir(old_path)
