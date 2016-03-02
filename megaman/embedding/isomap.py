@@ -30,8 +30,8 @@ def center_matrix(G):
 
 def isomap(Geometry, n_components=8, eigen_solver='auto',
            random_state=None, eigen_tol=1e-12, path_method='auto',
-           distance_matrix = None, graph_distance_matrix = None,
-           centered_matrix = None):
+           distance_matrix=None, graph_distance_matrix = None,
+           centered_matrix=None):
     """
     Parameters
     ----------

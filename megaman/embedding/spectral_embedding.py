@@ -152,7 +152,6 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
     random_state = check_random_state(random_state)
-    eigen_solver = check_eigen_solver(eigen_solver)
 
     if not isinstance(Geometry, geom.Geometry):
         raise ValueError("Geometry object not megaman.embedding.geometry ",
@@ -165,6 +164,10 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
     laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True, copy = False)
     n_nodes = laplacian.shape[0]
     lapl_type = Geometry.laplacian_type
+
+    eigen_solver = check_eigen_solver(eigen_solver,
+                                      size=laplacian.shape[0],
+                                      nvec=n_components + 1)
 
     re_normalize = False
     if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
@@ -198,6 +201,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
                 symmetrized_laplacian /= np.sqrt(w)
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
+                
     if re_normalize:
         print('using symmetrized laplacian')
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,

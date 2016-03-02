@@ -69,8 +69,6 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
           dimensionality reduction via tangent space alignment.
           Journal of Shanghai Univ.  8:406 (2004)
     """
-    check_eigen_solver(eigen_solver)
-
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
     X = Geometry.X
@@ -84,8 +82,11 @@ def ltsa(Geometry, n_components, eigen_solver='auto', tol=1e-6,
     distance_matrix = Geometry.get_distance_matrix()
     (rows, cols) = distance_matrix.nonzero()
 
-    M_sparse = (eigen_solver != 'dense')
-    if M_sparse:
+    eigen_solver = check_eigen_solver(eigen_solver,
+                                      size=distance_matrix.shape[0],
+                                      nvec=n_components + 1)
+
+    if eigen_solver != 'dense':
         M = sparse.csr_matrix((N, N))
     else:
         M = np.zeros((N, N))

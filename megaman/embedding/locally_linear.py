@@ -111,8 +111,6 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     .. [1] Roweis, S. & Saul, L. Nonlinear dimensionality reduction
         by locally linear embedding.  Science 290:2323 (2000).
     """
-    check_eigen_solver(eigen_solver)
-
     if not isinstance(Geometry, geom.Geometry):
         raise ValueError("Geometry object not megaman.embedding.geometry ",
                          "Geometry class")
@@ -120,16 +118,22 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     if Geometry.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
     X = Geometry.X
-    M_sparse = (eigen_solver != 'dense')
+
     W = barycenter_graph(Geometry.get_distance_matrix(), X, reg=reg)
     # we'll compute M = (I-W)'(I-W)
     # depending on the solver, we'll do this differently
-    if M_sparse:
+
+    eigen_solver = check_eigen_solver(eigen_solver,
+                                      size=W.shape[0],
+                                      nvec=n_components + 1)
+
+    if eigen_solver != 'dense':
         M = eye(*W.shape, format=W.format) - W
         M = (M.T * M).tocsr()
     else:
         M = (W.T * W - W.T - W).toarray()
         M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I
+        
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 

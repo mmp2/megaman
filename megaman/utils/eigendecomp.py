@@ -15,17 +15,49 @@ except ImportError:
 
 EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
 
-def check_eigen_solver(eigen_solver):
-    """Check that the selected eigensolver is valid"""
+
+def check_eigen_solver(eigen_solver, size=None, nvec=None):
+    """Check that the selected eigensolver is valid
+
+    Parameters
+    ----------
+    eigen_solver : string
+        string value to validate
+    size, nvec : int (optional)
+        if both provided, use the specified problem size and number of vectors
+        to determine the optimal method to use with eigen_solver='auto'
+
+    Returns
+    -------
+    eigen_solver : string
+        The eigen solver. This only differs from the input if
+        eigen_solver == 'auto' and `size` is specified.
+    """
     if eigen_solver not in EIGEN_SOLVERS:
         raise ValueError("Unrecognized eigen_solver: '{0}'."
                          "Should be one of: {1}".format(eigen_solver,
                                                         eigen_solvers))
 
-    if eigen_solver == 'amg' and not PYAMG_LOADED:
+    elif eigen_solver == 'amg' and not PYAMG_LOADED:
         raise ValueError("The eigen_solver was set to 'amg', but pyamg is "
                          "not available. Please either install pyamg or "
                          "use another method.")
+
+    elif size is not None and nvec is not None:
+        # do some checks of the eigensolver
+        if eigen_solver == 'lobpcg' and size < 5 * nvec + 1:
+            warnings.warn("lobpcg does not perform well with small matrices or "
+                          "with large numbers of vectors. Switching to 'dense'")
+            eigen_solver = 'dense'
+
+        elif eigen_solver == 'auto':
+            if size > 200 and nvec < 10:
+                if PYAMG_LOADED:
+                    eigen_solver = 'amg'
+                else:
+                    eigen_solver = 'arpack'
+            else:
+                eigen_solver = 'dense'
 
     return eigen_solver
 
@@ -40,7 +72,7 @@ def _is_symmetric(M, tol = 1e-8):
 
 def eigen_decomposition(G, n_components=8, eigen_solver='auto',
                         random_state=None, eigen_tol=0.0,
-                        drop_first=True, largest = True):
+                        drop_first=True, largest=True):
     """
     Function to compute the eigendecomposition of a square matrix.
 
@@ -82,41 +114,34 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
     lambdas, diffusion_map : eigenvalues, eigenvectors
     """
     n_nodes = G.shape[0]
-
-    eigen_solver = check_eigen_solver(eigen_solver)
-
-    if eigen_solver == 'auto':
-        if G.shape[0] > 200:
-            eigen_solver = 'arpack'
-        else:
-            eigen_solver = 'dense'
-
-    # Check input values
-    if not isinstance(largest, bool):
-        raise ValueError("largest should be True if you want largest eigenvalues otherwise False")
-    random_state = check_random_state(random_state)
     if drop_first:
         n_components = n_components + 1
-    # Check for symmetry
-    is_symmetric = _is_symmetric(G)
+
+    eigen_solver = check_eigen_solver(eigen_solver,
+                                      size=n_nodes,
+                                      nvec=n_components)
+    random_state = check_random_state(random_state)
+
     # Convert G to best type for eigendecomposition
     if sparse.issparse(G):
         if G.getformat() is not 'csr':
             G.tocsr()
     G = G.astype(np.float)
 
-    if ((eigen_solver == 'lobpcg') and (n_nodes < 5 * n_components + 1)):
-        warnings.warn("lobpcg has problems with small number of nodes. Using dense eigh")
-        eigen_solver = 'dense'
+    # Check for symmetry
+    is_symmetric = _is_symmetric(G)
 
     # Try Eigen Methods:
     if eigen_solver == 'arpack':
+        # This matches the internal initial state used by ARPACK
+        v0 = random_state.uniform(-1, 1, G.shape[0])
         if is_symmetric:
             if largest:
                 which = 'LM'
             else:
                 which = 'SM'
-            lambdas, diffusion_map = eigsh(G, k=n_components, which=which,tol=eigen_tol)
+            lambdas, diffusion_map = eigsh(G, k=n_components, which=which,
+                                           tol=eigen_tol, v0=v0)
         else:
             if largest:
                 which = 'LR'
@@ -175,6 +200,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
         diffusion_map = diffusion_map[:, :n_components]
     return (lambdas, diffusion_map)
 
+
 def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
                random_state=None):
     """
@@ -220,16 +246,14 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
     null_space : estimated k vectors of the null space
     error : estimated error (sum of eigenvalues)
     """
-
-    if eigen_solver == 'auto':
-        if M.shape[0] > 200 and k + k_skip < 10:
-            eigen_solver = 'arpack'
-        else:
-            eigen_solver = 'dense'
+    eigen_solver = check_eigen_solver(eigen_solver,
+                                      size=M.shape[0],
+                                      nvec=k + k_skip)
+    random_state = check_random_state(random_state)
 
     if eigen_solver == 'arpack':
-        random_state = check_random_state(random_state)
-        v0 = random_state.rand(M.shape[0])
+        # This matches the internal initial state used by ARPACK
+        v0 = random_state.uniform(-1, 1, M.shape[0])
         try:
             eigen_values, eigen_vectors = eigsh(M, k + k_skip, sigma=0.0,
                                                 tol=tol, maxiter=max_iter,
