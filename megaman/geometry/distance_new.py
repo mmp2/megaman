@@ -27,8 +27,9 @@ class AdjacencyMeta(type):
 class Adjacency(with_metaclass(AdjacencyMeta)):
     """Base class for adjacency methods"""
     @classmethod
-    def get_method(cls, name):
-        return cls._method_registry[name]
+    def init(cls, method, *args, **kwargs):
+        Method = cls._method_registry[method]
+        return Method(*args, **kwargs)
 
     @classmethod
     def methods(cls):

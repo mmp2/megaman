@@ -12,13 +12,15 @@ def test_adjacency():
     assert len(Adjacency.methods()) == 3
 
     def check_kneighbors(n_neighbors, method):
-        Estimator = Adjacency.get_method(method)
-        G = Estimator(n_neighbors=n_neighbors).adjacency_graph(X)
+        adj = Adjacency.init(method=method,
+                             n_neighbors=n_neighbors)
+        G = adj.adjacency_graph(X)
         assert_allclose(G.toarray(), Gtrue[n_neighbors].toarray())
 
     def check_radius(radius, method):
-        Estimator = Adjacency.get_method(method)
-        G = Estimator(radius=radius).adjacency_graph(X)
+        adj = Adjacency.init(method=method,
+                             radius=radius)
+        G = adj.adjacency_graph(X)
         assert_allclose(G.toarray(), Gtrue[radius].toarray())
 
     for n_neighbors in [5, 10, 15]:
