@@ -18,17 +18,16 @@ def _row_col_from_condensed_index(N,compr_ind):
     return (i,j)
 
 
-def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex = None):
+def distance_matrix(X, method='auto', flindex=None, radius=None, cyindex=None):
     """
     Computes pairwise distance matrix. Interface function.
 
     Parameters
     ----------
     X : data matrix, array_like, shape = (n_samples, n_dimensions)
-    method : one of 'auto', 'brute', 'pyflann', 'cyflann', or 'cython'.
+    method : {'auto', 'brute', 'pyflann', 'cyflann'}
         'pyflann' requires python library pyflann
-        'cython' requires FLANN and cython
-        'cyflann' requires a UNIX system
+        'cyflann' requires FLANN and cython
     flindex : a pyflann pre-computed flindex
     radius : neighborhood radius, scalar
         the neighbors lying approximately within radius of a node will
@@ -45,14 +44,15 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
            Zeros not on the diagonal should be considered infinite
     """
     if radius is None:
-        radius = 1/X.shape[1]
+        # TODO: is this a suitable default?
+        radius = 1 / X.shape[1]
     if method == 'auto':
-        # change this based on benchmarking results
+        # TODO: change this based on benchmarking results
         method = 'brute'
+
     if method == 'pyflann':
         if flindex is None:
             raise ValueError('must pass a flindex when using pyflann')
-            return None
         else:
             graph = fl_radius_neighbors_graph(X, radius, flindex)
     elif method == 'cyflann':
@@ -63,8 +63,7 @@ def distance_matrix(X, method = 'auto', flindex = None, radius = None, cyindex =
     elif method == 'brute':
         graph = radius_neighbors_graph(X, radius)
     else:
-        raise ValueError('method must be one of: (auto, brute, pyflann, cyflann)')
-        return None
+        raise ValueError('method must be one of: {auto, brute, pyflann, cyflann}')
     return graph
 
 
@@ -98,31 +97,27 @@ def radius_neighbors_graph(X, radius):
 
 def fl_radius_neighbors_graph(X, radius, flindex):
     """
-    Constructs a sparse distance matrix called graph in coo format using pyflann.
+    Constructs a sparse distance matrix in coo format using pyflann.
 
     Parameters
     ----------
-    X: data matrix, array_like, shape = (n_samples, n_dimensions )
-    radius: neighborhood radius, scalar
-        the neighbors lying approximately within radius of a node will
-        be returned. Or, in other words, all distances will be less or equal
-        to radius. There will be entries in the matrix for zero distances.
-
-        Attention when converting to dense: The rest of the distances
-        should not be considered 0, but "large".
-    flindex: FLANN index of the data X
+    X: array_like, shape=(n_samples, n_dimensions)
+        The matrix of data
+    radius: float
+        Neighborhood radius. The neighbors lying approximately within this
+        radius of a node will be used to construct the graph.
+    flindex: pyflann.FLANN object
+       The pre-built FLANN index for the data X
 
     Returns
     -------
-    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])
-           sparse coo or csr format
+    graph: sparse matrix, shape=(n_samples, n_samples)
+        The sparse distance matrix
 
     Notes
     -----
     With approximate neighborhood search, the matrix is not
     necessarily symmetric.
-
-    mode = 'adjacency' not implemented
     """
     if radius < 0.:
         raise ValueError('neighbors_radius must be >=0.')
