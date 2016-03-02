@@ -79,3 +79,8 @@ class KDTreeAdjacency(BruteForceAdjacency):
 
 class BallTreeAdjacency(BruteForceAdjacency):
     name = 'ball_tree'
+
+
+def adjacency_graph(X, method, *args, **kwargs):
+    """Compute an adjacency graph with the given method"""
+    return Adjacency.init(method, *args, **kwargs).adjacency_graph(X)
