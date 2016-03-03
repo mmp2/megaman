@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn import neighbors
 
+from .cyflann.index import Index as CyIndex
+
 # from six.py
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
@@ -35,12 +37,10 @@ class Adjacency(with_metaclass(AdjacencyMeta)):
     def methods(cls):
         return cls._method_registry.keys()
 
-    def __init__(self, radius=None, n_neighbors=None,
-                 mode='distance', kwds=None):
+    def __init__(self, radius=None, n_neighbors=None, mode='distance'):
         self.radius = radius
         self.n_neighbors = n_neighbors
         self.mode = mode
-        self.kwds = kwds or {}
 
         if (radius is None) == (n_neighbors is None):
            raise ValueError("Must specify either radius or n_neighbors, "
@@ -79,6 +79,32 @@ class KDTreeAdjacency(BruteForceAdjacency):
 
 class BallTreeAdjacency(BruteForceAdjacency):
     name = 'ball_tree'
+
+
+class CyFLANNAdjacency(Adjacency):
+    name = 'cyflann'
+
+    def __init__(self, radius=None, n_neighbors=None, flann_index=None):
+        self.flann_index = flann_index
+        super(CyFLANNAdjacency, self).__init__(radius=radius,
+                                               n_neighbors=n_neighbors,
+                                               mode='distance')
+
+    def _get_built_index(self, X):
+        if self.flann_index is None:
+            cyindex = CyIndex(X)
+        else:
+            cyindex = self.flann_index
+        cyindex.buildIndex()
+        return cyindex
+
+    def radius_adjacency(self, X):
+        cyindex = self._get_built_index(X)
+        return cyindex.radius_neighbors_graph(X, self.radius)
+
+    def knn_adjacency(self, X):
+        cyindex = self._get_built_index(X)
+        return cyindex.knn_neighbors_graph(X, self.n_neighbors)
 
 
 def adjacency_graph(X, method, *args, **kwargs):
