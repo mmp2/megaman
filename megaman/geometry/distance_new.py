@@ -94,15 +94,19 @@ class BallTreeAdjacency(BruteForceAdjacency):
 class CyFLANNAdjacency(Adjacency):
     name = 'cyflann'
 
-    def __init__(self, radius=None, n_neighbors=None, flann_index=None):
+    def __init__(self, radius=None, n_neighbors=None, flann_index=None,
+                 target_precision=0.9, cyflann_kwds=None):
         self.flann_index = flann_index
+        self.target_precision = target_precision
+        self.cyflann_kwds = cyflann_kwds
         super(CyFLANNAdjacency, self).__init__(radius=radius,
                                                n_neighbors=n_neighbors,
                                                mode='distance')
 
     def _get_built_index(self, X):
         if self.flann_index is None:
-            cyindex = CyIndex(X)
+            cyindex = CyIndex(X, target_precision=self.target_precision,
+                              **(self.cyflann_kwds or {}))
         else:
             cyindex = self.flann_index
         cyindex.buildIndex()
@@ -121,20 +125,21 @@ class PyFLANNAdjacency(Adjacency):
     name = 'pyflann'
 
     def __init__(self, radius=None, n_neighbors=None, flann_index=None,
-                 algorithm='kmeans', target_precision=0.9):
+                 algorithm='kmeans', target_precision=0.9, pyflann_kwds=None):
         if not PYFLANN_LOADED:
             raise ValueError("pyflann must be installed "
                              "to use method='pyflann'")
         self.flann_index = flann_index
         self.algorithm = algorithm
         self.target_precision = target_precision
+        self.pyflann_kwds = pyflann_kwds
         super(PyFLANNAdjacency, self).__init__(radius=radius,
                                                n_neighbors=n_neighbors,
                                                mode='distance')
 
     def _get_built_index(self, X):
         if self.flann_index is None:
-            pyindex = pyf.FLANN()
+            pyindex = pyf.FLANN(**(self.pyflann_kwds or {}))
         else:
             pyindex = self.flann_index
 
