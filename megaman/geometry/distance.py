@@ -10,6 +10,10 @@ import subprocess, os, sys, warnings
 from .cyflann.index import Index
 
 
+def compute_adjacency_matrix(X, method='auto', **kwargs):
+    pass
+
+
 def _row_col_from_condensed_index(N,compr_ind):
     # convert from pdist compressed index format to (I, J) (upper triangular) pairs.
     b = 1 -2*N

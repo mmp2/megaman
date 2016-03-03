@@ -35,7 +35,11 @@ from scipy import sparse
 from scipy.spatial.distance import pdist
 import subprocess, os, sys, warnings
 
-from .distance import distance_matrix
+
+from .distance import distance_matrix, compute_adjacency_matrix
+from .affinity import compute_affinity_matrix
+from .laplacian import compute_laplacian_matrix
+
 from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
