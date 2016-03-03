@@ -435,7 +435,7 @@ class Geometry(object):
         else:
             raise ValueError('input_type must be one of: data, distance, affinity.')
 
-        if distance_method == 'cython':
+        if distance_method == 'cyflann':
             if input_type == 'data':
                 try:
                     from .cyflann.index import Index
@@ -456,7 +456,7 @@ class Geometry(object):
                                 "not available.")
             self.flindex = pyf.FLANN()
             self.flparams = self.flindex.build_index(X, algorithm = 'kmeans',
-                                                                         target_precision = 0.9)
+                                                     target_precision = 0.9)
         else:
             self.flindex = None
             self.flparams = None
@@ -478,7 +478,7 @@ class Geometry(object):
         """
         if self.input_type == 'affinity':
             raise ValueError("input_method was passed as affinity. "
-                            "Distance matrix cannot be computed.")
+                             "Distance matrix cannot be computed.")
 
 
         if self.distance_matrix is None:

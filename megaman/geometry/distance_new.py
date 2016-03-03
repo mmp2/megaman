@@ -37,8 +37,11 @@ class Adjacency(with_metaclass(AdjacencyMeta)):
     """Base class for adjacency methods"""
     @classmethod
     def init(cls, method, *args, **kwargs):
-        Method = cls._method_registry[method]
-        return Method(*args, **kwargs)
+        if method not in cls._method_registry:
+            raise ValueError("method={0} not valid. Must be one of "
+                             "{1}".format(method, list(cls.methods())))
+        Adj = cls._method_registry[method]
+        return Adj(*args, **kwargs)
 
     @classmethod
     def methods(cls):
@@ -158,21 +161,25 @@ class PyFLANNAdjacency(Adjacency):
         graph_data = np.concatenate(graph_data)
         graph_i = np.concatenate(graph_i)
         graph_j = np.concatenate(graph_j)
-        graph = sparse.coo_matrix((graph_data, (graph_i, graph_j)),
-                                  shape=(n_samples, n_samples))
-        graph.data = np.sqrt(graph.data) # FLANN returns squared distance
-        return graph
+        return sparse.coo_matrix((np.sqrt(graph_data), (graph_i, graph_j)),
+                                 shape=(n_samples, n_samples))
 
     def knn_adjacency(self, X):
         n_samples = X.shape[0]
         flindex = self._get_built_index(X)
         A_ind, A_data = flindex.nn_index(X, self.n_neighbors)
-        A_indptr = np.arange(0, n_samples * self.n_neighbors + 1,
-                             self.n_neighbors)
-        return sparse.csr_matrix((A_data.ravel(), A_ind.ravel(), A_indptr),
+        A_ind = np.ravel(A_ind)
+        A_data = np.sqrt(np.ravel(A_data))  # FLANN returns square distances
+        A_indptr = self.n_neighbors * np.arange(n_samples + 1)
+        return sparse.csr_matrix((A_data, A_ind, A_indptr),
                                  shape=(n_samples, n_samples))
 
 
-def adjacency_graph(X, method, *args, **kwargs):
+def adjacency_graph(X, method='auto', **kwargs):
     """Compute an adjacency graph with the given method"""
-    return Adjacency.init(method, *args, **kwargs).adjacency_graph(X)
+    if method == 'auto':
+        if X.shape[0] > 10000:
+            method = 'cyflann'
+        else:
+            method = 'kd_tree'
+    return Adjacency.init(method, **kwargs).adjacency_graph(X)
