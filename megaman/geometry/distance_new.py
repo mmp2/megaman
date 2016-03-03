@@ -56,7 +56,6 @@ class Adjacency(with_metaclass(AdjacencyMeta)):
            raise ValueError("Must specify either radius or n_neighbors, "
                             "but not both.")
 
-
     def adjacency_graph(self, X):
         if self.n_neighbors is not None:
             return self.knn_adjacency(X)

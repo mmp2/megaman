@@ -3,8 +3,10 @@ from nose import SkipTest
 import numpy as np
 from numpy.testing import assert_allclose
 from scipy.sparse import isspmatrix
+from scipy.spatial.distance import cdist, pdist, squareform
 
 from megaman.geometry.distance_new import adjacency_graph, Adjacency
+
 
 try:
     import pyflann as pyf
@@ -16,8 +18,6 @@ except ImportError:
 def test_adjacency():
     X = np.random.rand(100, 3)
     Gtrue = {}
-
-    assert len(Adjacency.methods()) == 5
 
     exact_methods = [m for m in Adjacency.methods()
                      if not m.endswith('flann')]
@@ -55,3 +55,15 @@ def test_adjacency():
                                         radius=radius)
         for method in Adjacency.methods():
             yield check_radius, radius, method
+
+
+def test_new_adjacency():
+    class TestAdjacency(Adjacency):
+        name = "_test"
+        def adjacency_graph(self, X):
+            return squareform(pdist(X))
+
+    rand = np.random.RandomState(42)
+    X = rand.rand(10, 2)
+    D = adjacency_graph(X, method='_test', radius=1)
+    assert_allclose(D, cdist(X, X))
