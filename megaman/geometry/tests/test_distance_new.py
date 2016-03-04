@@ -57,13 +57,13 @@ def test_adjacency():
             yield check_radius, radius, method
 
 
-def test_new_adjacency():
-    class TestAdjacency(Adjacency):
-        name = "_test"
+def test_custom_adjacency():
+    class CustomAdjacency(Adjacency):
+        name = "custom"
         def adjacency_graph(self, X):
             return squareform(pdist(X))
 
     rand = np.random.RandomState(42)
     X = rand.rand(10, 2)
-    D = compute_adjacency_matrix(X, method='_test', radius=1)
+    D = compute_adjacency_matrix(X, method='custom', radius=1)
     assert_allclose(D, cdist(X, X))

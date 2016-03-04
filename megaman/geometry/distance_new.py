@@ -51,12 +51,14 @@ class BruteForceAdjacency(Adjacency):
 
     def radius_adjacency(self, X):
         model = neighbors.NearestNeighbors(algorithm=self.name).fit(X)
-        return model.radius_neighbors_graph(radius=self.radius,
+        # pass X so that diagonal will have explicit zeros
+        return model.radius_neighbors_graph(X, radius=self.radius,
                                             mode=self.mode)
 
     def knn_adjacency(self, X):
         model = neighbors.NearestNeighbors(algorithm=self.name).fit(X)
-        return model.kneighbors_graph(n_neighbors=self.n_neighbors,
+        # pass X so that diagonal will have explicit zeros
+        return model.kneighbors_graph(X, n_neighbors=self.n_neighbors,
                                       mode=self.mode)
 
 
