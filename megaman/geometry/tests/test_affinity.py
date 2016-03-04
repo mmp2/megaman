@@ -39,3 +39,5 @@ def test_custom_affinity():
     D = compute_adjacency_matrix(X, radius=10)
     A = compute_affinity_matrix(D, method='custom', radius=1)
     assert_allclose(A, np.exp(-abs(D.toarray())))
+
+    Affinity._remove_from_registry("custom")

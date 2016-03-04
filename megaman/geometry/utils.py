@@ -4,9 +4,7 @@ __all__ = ["RegisterSubclasses"]
 # From six.py
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
-    # This requires a bit of explanation: the basic idea is to make a
-    # dummy metaclass for one level of class instantiation that replaces
-    # itself with the actual metaclass.
+    # Use a dummy metaclass that replaces itself with the actual metaclass.
     class metaclass(type):
         def __new__(cls, name, this_bases, d):
             return meta(name, bases, d)
@@ -17,10 +15,10 @@ class RegistryMeta(type):
     """Metaclass for object type which registers subclasses"""
     def __init__(cls, name, bases, dct):
         if name in ['_TemporaryClass', 'RegisterSubclasses']:
-            # these are baseclasses. Do nothing
+            # these are hidden baseclasses. Do nothing
             pass
         elif not hasattr(cls, '_method_registry'):
-            # this is the base class.  Create an empty registry
+            # this is a registry class.  Create an empty registry
             cls._method_registry = {}
         elif hasattr(cls, 'name'):
             # this is a labeled derived class.  Add cls to the registry
@@ -37,6 +35,10 @@ class RegisterSubclasses(with_metaclass(RegistryMeta)):
                              "{1}".format(method, list(cls.methods())))
         Adj = cls._method_registry[method]
         return Adj(*args, **kwargs)
+
+    @classmethod
+    def _remove_from_registry(cls, method):
+        cls._method_registry.pop(method, None)
 
     @classmethod
     def methods(cls):

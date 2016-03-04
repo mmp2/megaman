@@ -67,3 +67,5 @@ def test_custom_adjacency():
     X = rand.rand(10, 2)
     D = compute_adjacency_matrix(X, method='custom', radius=1)
     assert_allclose(D, cdist(X, X))
+
+    Adjacency._remove_from_registry("custom")
