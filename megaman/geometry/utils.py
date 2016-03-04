@@ -29,11 +29,15 @@ class RegistryMeta(type):
 
 class RegisterSubclasses(with_metaclass(RegistryMeta)):
     @classmethod
-    def init(cls, method, *args, **kwargs):
+    def get_method(cls, method):
         if method not in cls._method_registry:
             raise ValueError("method={0} not valid. Must be one of "
                              "{1}".format(method, list(cls.methods())))
-        Adj = cls._method_registry[method]
+        return cls._method_registry[method]
+
+    @classmethod
+    def init(cls, method, *args, **kwargs):
+        Adj = cls.get_method(method)
         return Adj(*args, **kwargs)
 
     @classmethod

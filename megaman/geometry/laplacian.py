@@ -8,52 +8,45 @@ from .utils import RegisterSubclasses
 def compute_laplacian_matrix(affinity_matrix, method='auto', **kwargs):
     """Compute the laplacian matrix with the given method"""
     if method == 'auto':
-        method = 'squared_exponential'
-    return Affinity.init(method, **kwargs).affinity_matrix(X)
+        method = 'geometric'
+    return Laplacian.init(method, **kwargs).laplacian_matrix(affinity_matrix)
 
 
 class Laplacian(RegisterSubclasses):
-    """Base class for computing affinity matrices"""
-    def __init__(self, symmetrize=True):
-        self.symmetrize = symmetrize
+    """Base class for computing laplacian matrices
+
+    Notes
+    -----
+    The methods here all return the negative of the standard
+    Laplacian definition.
+    """
+    symmetric = False
+
+    def __init__(self, symmetrize_input=True, full_output=False):
+        self.symmetrize_input = symmetrize_input
+        self.full_output = full_output
 
     @staticmethod
     def _symmetrize(A):
         # TODO: make this more efficient?
         return 0.5 * (A + A.T)
 
-    @staticmethod
-    def _degrees(lap, remove_zeros=False):
-        degrees = np.asarray(lap.sum(1)).squeeze()
-        if remove_zeros:
-            degrees[degrees == 0] = 1
-        return degrees
+    @classmethod
+    def symmetric_methods(cls):
+        for method in cls.methods():
+            if cls.get_method(method).symmetric:
+                yield method
 
-    @staticmethod
-    def _divide_along_rows(lap, vals):
-        if isspmatrix(lap):
-            lap.data /= w[lap.row]
-        else:
-            lap /= w[:, np.newaxis]
+    @classmethod
+    def asymmetric_methods(cls):
+        for method in cls.methods():
+            if not cls.get_method(method).symmetric:
+                yield method
 
-    @staticmethod
-    def _divide_along_cols(laplacian, vals):
-        if isspmatrix(lap):
-            lap.data /= w[lap.col]
-        else:
-            lap /= w
-
-    @staticmethod
-    def _subtract_from_diagonal(laplacian, vals):
-        if isspmatrix(laplacian):
-            lap.data[lap.row == lap.col] -= vals
-        else:
-            lap.flat[::lap.shape[0] + 1] -= vals
-
-    def laplacian_matrix(self, affinity_matrix, return_symmetrized=False):
+    def laplacian_matrix(self, affinity_matrix):
         affinity_matrix = check_array(affinity_matrix, copy=False, dtype=float,
                                       accept_sparse=['csr', 'csc', 'coo'])
-        if self.symmetrize:
+        if self.symmetrize_input:
             affinity_matrix = self._symmetrize(affinity_matrix)
 
         if isspmatrix(affinity_matrix):
@@ -63,7 +56,7 @@ class Laplacian(RegisterSubclasses):
 
         lap, lapsym, w = self._compute_laplacian(affinity_matrix)
 
-        if return_symmetrized:
+        if self.full_output:
             return lap, lapsym, w
         else:
             return lap
@@ -74,73 +67,109 @@ class Laplacian(RegisterSubclasses):
 
 class UnNormalizedLaplacian(Laplacian):
     name = 'unnormalized'
+    symmetric = True
 
     def _compute_laplacian(self, lap):
-        w = self._degrees(lap)
-        self._subtract_from_diagonal(lap, w)
-        return lap, lap.copy(), w
+        w = _degree(lap)
+        _subtract_from_diagonal(lap, w)
+        return lap, lap, w
 
 
 class GeometricLaplacian(Laplacian):
     name = 'geometric'
+    symmetric = False
 
     def _compute_laplacian(self, lap):
-        # normalize symmetrically by degree
-        w = self._degrees(lap, remove_zeros=True)
-        self._divide_along_cols(lap, w)
-        self._divide_along_rows(lap, w)
+        _normalize_laplacian(lap, symmetric=True)
         lapsym = lap.copy()
 
-        #normalize again asymmetrically
-        w = self._degrees(lap, remove_zeros=True)
-        self._divide_along_rows(lap, w)
-        self._subtract_from_diagonal(lap, 1)  # XXX check for w=0
+        w, nonzero = _normalize_laplacian(lap, symmetric=False)
+        _subtract_from_diagonal(lap, nonzero)
 
         return lap, lapsym, w
 
 
 class RandomWalkLaplacian(Laplacian):
     name = 'randomwalk'
+    symmetric = False
 
     def _compute_laplacian(self, lap):
         lapsym = lap.copy()
-        w = self._degrees(lap)
-        self._divide_along_rows(lap, w)
-        self._subtract_from_diagonal(lap, 1)
+        w, nonzero = _normalize_laplacian(lap, symmetric=False)
+        _subtract_from_diagonal(lap, nonzero)
         return lap, lapsym, w
 
 
 class SymmetricNormalizedLaplacian(Laplacian):
     name = 'symmetricnormalized'
+    symmetric = True
 
     def _compute_laplacian(self, lap):
-        w = np.sqrt(self._degrees(lap, remove_zeros=True))
-        self._divide_along_cols(lap, w)
-        self._divide_along_rows(lap, w)
-        self._subtract_from_diagonal(lap, 1)
-        return lap, lap.copy(), w
+        w, nonzero = _normalize_laplacian(lap, symmetric=True, degree_exp=0.5)
+        _subtract_from_diagonal(lap, nonzero)
+        return lap, lap, w
 
 
 class RenormalizedLaplacian(Laplacian):
     name = 'renormalized'
+    symmetric = False
 
-    def __init__(self, symmetrize=True, renormalization_exponent=1):
-        self.symmetrize = symmetrize
+    def __init__(self, symmetrize_input=True, full_output=False,
+                 renormalization_exponent=1):
+        self.symmetrize_input = symmetrize_input
+        self.full_output = full_output
         self.renormalization_exponent = renormalization_exponent
 
     def _compute_laplacian(self, lap):
-        w = self._degrees(lap, remove_zeros=True)
-        w **= self.renormalization_exponent
-
-        # same as GeometricLaplacian from here on
-        self._divide_along_cols(lap, w)
-        self._divide_along_rows(lap, w)
-
+        _normalize_laplacian(lap, symmetric=True,
+                             degree_exp=self.renormalization_exponent)
         lapsym = lap.copy()
-
-        #normalize again asymmetrically
-        w = self._degrees(lap, remove_zeros=True)
-        self._divide_along_rows(lap, w)
-        self._subtract_from_diagonal(lap, 1)  # XXX check for w=0
+        w, nonzero = _normalize_laplacian(lap, symmetric=False)
+        _subtract_from_diagonal(lap, nonzero)
 
         return lap, lapsym, w
+
+
+# Utility routines: these operate in-place and assume either coo matrix or
+# dense array
+
+def _degree(lap):
+    return np.asarray(lap.sum(1)).squeeze()
+
+
+def _divide_along_rows(lap, vals):
+    if isspmatrix(lap):
+        lap.data /= vals[lap.row]
+    else:
+        lap /= vals[:, np.newaxis]
+
+
+def _divide_along_cols(lap, vals):
+    if isspmatrix(lap):
+        lap.data /= vals[lap.col]
+    else:
+        lap /= vals
+
+
+def _normalize_laplacian(lap, symmetric=False, degree_exp=None):
+    w = _degree(lap)
+    w_nonzero = (w != 0)
+    w[~w_nonzero] = 1
+
+    if degree_exp is not None:
+        w **= degree_exp
+
+    if symmetric:
+        _divide_along_rows(lap, w)
+        _divide_along_cols(lap, w)
+    else:
+        _divide_along_rows(lap, w)
+
+    return w, w_nonzero
+
+
+def _subtract_from_diagonal(lap, vals):
+    if isspmatrix(lap):
+        lap.data[lap.row == lap.col] -= vals
+    else:
+        lap.flat[::lap.shape[0] + 1] -= vals
