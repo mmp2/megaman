@@ -18,218 +18,129 @@ class Laplacian(RegisterSubclasses):
         self.symmetrize = symmetrize
 
     @staticmethod
-    def _symmetrize(self, A):
+    def _symmetrize(A):
         # TODO: make this more efficient?
         return 0.5 * (A + A.T)
 
-    def laplacian_matrix(self, affinity_matrix):
-        affinity_matrix = check_array(affinity_matrix, copy=True, dtype=float,
-                                      accept_sparse=['csr', 'csc', 'coo'])
+    @staticmethod
+    def _degrees(lap, remove_zeros=False):
+        degrees = np.asarray(lap.sum(1)).squeeze()
+        if remove_zeros:
+            degrees[degrees == 0] = 1
+        return degrees
 
+    @staticmethod
+    def _divide_along_rows(lap, vals):
+        if isspmatrix(lap):
+            lap.data /= w[lap.row]
+        else:
+            lap /= w[:, np.newaxis]
+
+    @staticmethod
+    def _divide_along_cols(laplacian, vals):
+        if isspmatrix(lap):
+            lap.data /= w[lap.col]
+        else:
+            lap /= w
+
+    @staticmethod
+    def _subtract_from_diagonal(laplacian, vals):
+        if isspmatrix(laplacian):
+            lap.data[lap.row == lap.col] -= vals
+        else:
+            lap.flat[::lap.shape[0] + 1] -= vals
+
+    def laplacian_matrix(self, affinity_matrix, return_symmetrized=False):
+        affinity_matrix = check_array(affinity_matrix, copy=False, dtype=float,
+                                      accept_sparse=['csr', 'csc', 'coo'])
         if self.symmetrize:
             affinity_matrix = self._symmetrize(affinity_matrix)
 
         if isspmatrix(affinity_matrix):
-            return self.laplacian_matrix_sparse(affinity_matrix)
+            affinity_matrix = affinity_matrix.tocoo()
         else:
-            return self.laplacian_matrix_dense(affinity_matrix)
+            affinity_matrix = affinity_matrix.copy()
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
+        lap, lapsym, w = self._compute_laplacian(affinity_matrix)
 
-    def laplacian_matrix_dense(self, affinity_matrix):
+        if return_symmetrized:
+            return lap, lapsym, w
+        else:
+            return lap
+
+    def _compute_laplacian(self, lap):
         raise NotImplementedError()
 
 
 class UnNormalizedLaplacian(Laplacian):
     name = 'unnormalized'
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
-
-    def laplacian_matrix_dense(self, affinity_matrix):
-        raise NotImplementedError()
+    def _compute_laplacian(self, lap):
+        w = self._degrees(lap)
+        self._subtract_from_diagonal(lap, w)
+        return lap, lap.copy(), w
 
 
 class GeometricLaplacian(Laplacian):
     name = 'geometric'
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
+    def _compute_laplacian(self, lap):
+        # normalize symmetrically by degree
+        w = self._degrees(lap, remove_zeros=True)
+        self._divide_along_cols(lap, w)
+        self._divide_along_rows(lap, w)
+        lapsym = lap.copy()
 
-    def laplacian_matrix_dense(self, affinity_matrix):
-        raise NotImplementedError()
+        #normalize again asymmetrically
+        w = self._degrees(lap, remove_zeros=True)
+        self._divide_along_rows(lap, w)
+        self._subtract_from_diagonal(lap, 1)  # XXX check for w=0
+
+        return lap, lapsym, w
 
 
 class RandomWalkLaplacian(Laplacian):
     name = 'randomwalk'
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
-
-    def laplacian_matrix_dense(self, affinity_matrix):
-        raise NotImplementedError()
+    def _compute_laplacian(self, lap):
+        lapsym = lap.copy()
+        w = self._degrees(lap)
+        self._divide_along_rows(lap, w)
+        self._subtract_from_diagonal(lap, 1)
+        return lap, lapsym, w
 
 
 class SymmetricNormalizedLaplacian(Laplacian):
     name = 'symmetricnormalized'
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
-
-    def laplacian_matrix_dense(self, affinity_matrix):
-        raise NotImplementedError()
+    def _compute_laplacian(self, lap):
+        w = np.sqrt(self._degrees(lap, remove_zeros=True))
+        self._divide_along_cols(lap, w)
+        self._divide_along_rows(lap, w)
+        self._subtract_from_diagonal(lap, 1)
+        return lap, lap.copy(), w
 
 
 class RenormalizedLaplacian(Laplacian):
     name = 'renormalized'
 
-    def laplacian_matrix_sparse(self, affinity_matrix):
-        raise NotImplementedError()
+    def __init__(self, symmetrize=True, renormalization_exponent=1):
+        self.symmetrize = symmetrize
+        self.renormalization_exponent = renormalization_exponent
 
-    def laplacian_matrix_dense(self, affinity_matrix):
-        raise NotImplementedError()
+    def _compute_laplacian(self, lap):
+        w = self._degrees(lap, remove_zeros=True)
+        w **= self.renormalization_exponent
 
-    """
-    lap = csgraph.copy()
-    if symmetrize:
-        if lap.format is not 'csr':
-            lap.tocsr()
-        lap = (lap + lap.T)/2.
-    if lap.format is not 'coo':
-        lap = lap.tocoo()
-    diag_mask = (lap.row == lap.col)  # True/False
-    degrees = np.asarray(lap.sum(axis=1)).squeeze()
+        # same as GeometricLaplacian from here on
+        self._divide_along_cols(lap, w)
+        self._divide_along_rows(lap, w)
 
-    if normed == 'symmetricnormalized':
-        w = np.sqrt(degrees)
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap.data /= w[lap.row]
-        lap.data /= w[lap.col]
-        lap.data[diag_mask] -= 1.
-        if return_lapsym:
-            lapsym = lap.copy()
+        lapsym = lap.copy()
 
-    elif normed == 'geometric':
-        w = degrees.copy()     # normzlize one symmetrically by d
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap.data /= w[lap.row]
-        lap.data /= w[lap.col]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap.data /= w[lap.row]
-        lap.data[diag_mask] -= 1.
+        #normalize again asymmetrically
+        w = self._degrees(lap, remove_zeros=True)
+        self._divide_along_rows(lap, w)
+        self._subtract_from_diagonal(lap, 1)  # XXX check for w=0
 
-    elif normed == 'renormalized':
-        w = degrees**renormalization_exponent;
-        # same as 'geometric' from here on
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap.data /= w[lap.row]
-        lap.data /= w[lap.col]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap.data /= w[lap.row]
-        lap.data[diag_mask] -= 1.
-
-    elif normed == 'unnormalized':
-        lap.data[diag_mask] -= degrees
-        if return_lapsym:
-            lapsym = lap.copy()
-
-    elif normed == 'randomwalk':
-        w = degrees.copy()
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap.data /= w[lap.row]
-        lap.data[diag_mask] -= 1.
-
-    if scaling_epps > 0.:
-        lap.data *= 4/(scaling_epps**2)
-
-    if return_diag:
-        if return_lapsym:
-            return lap, lap.data[diag_mask], lapsym, w
-        else:
-            return lap, lap.data[diag_mask]
-
-    elif return_lapsym:
         return lap, lapsym, w
-    else:
-        return lap
-
-
-def _laplacian_dense(csgraph, normed='geometric', symmetrize=True,
-                     scaling_epps=0., renormalization_exponent=1,
-                     return_diag=False, return_lapsym=False):
-    n_nodes = csgraph.shape[0]
-    if symmetrize:
-        lap = (csgraph + csgraph.T)/2.
-    else:
-        lap = csgraph.copy()
-    degrees = np.asarray(lap.sum(axis=1)).squeeze()
-    di = np.diag_indices( lap.shape[0] )  # diagonal indices
-
-    if normed == 'symmetricnormalized':
-        w = np.sqrt(degrees)
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap /= w
-        lap /= w[:, np.newaxis]
-        di = np.diag_indices( lap.shape[0] )
-        lap[di] -= (1 - w_zeros).astype(lap.dtype)
-        if return_lapsym:
-            lapsym = lap.copy()
-    elif normed == 'geometric':
-        w = degrees.copy()     # normalize once symmetrically by d
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap /= w
-        lap /= w[:, np.newaxis]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap /= w[:, np.newaxis]
-        lap[di] -= (1 - w_zeros).astype(lap.dtype)
-    elif normed == 'renormalized':
-        w = degrees**renormalization_exponent;
-        # same as 'geometric' from here on
-        w_zeros = (w == 0)
-        w[w_zeros] = 1
-        lap /= w
-        lap /= w[:, np.newaxis]
-        w = np.asarray(lap.sum(axis=1)).squeeze() #normalize again asymmetricall
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap /= w[:, np.newaxis]
-        lap[di] -= (1 - w_zeros).astype(lap.dtype)
-    elif normed == 'unnormalized':
-        dum = lap[di]-degrees[np.newaxis,:]
-        lap[di] = dum[0,:]
-        if return_lapsym:
-            lapsym = lap.copy()
-    elif normed == 'randomwalk':
-        w = degrees.copy()
-        if return_lapsym:
-            lapsym = lap.copy()
-        lap /= w[:,np.newaxis]
-        lap -= np.eye(lap.shape[0])
-
-    if scaling_epps > 0.:
-        lap *= 4/(scaling_epps**2)
-
-    if return_diag:
-        diag = np.array( lap[di] )
-        if return_lapsym:
-            return lap, diag, lapsym, w
-        else:
-            return lap, diag
-    elif return_lapsym:
-        return lap, lapsym, w
-    else:
-        return lap
-    """
