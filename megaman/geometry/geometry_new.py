@@ -39,6 +39,7 @@ from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
 adjacency_methods = ['auto', 'brute', 'cyflann', 'pyflann', 'cython']
+affinity_methods = ['auto']
 affintity_methods = ['auto', 'gaussian']
 laplacian_types = ['symmetricnormalized', 'geometric', 'renormalized', 'unnormalized', 'randomwalk']
 distance_error_msg = ("No data matrix exists. "
@@ -60,15 +61,21 @@ class Geometry(object):
     adjacency_method : string, one of 'auto', 'brute', 'pyflann', 'cyflann'.
         method for computing pairwise radius neighbors graph.
     adjacency_kwds : dictionary containing keyword arguments for adjacency matrix.
-        see distance.py docmuentation for arguments for each method.
+        see distance.py docmuentation for arguments for each method. 
+        If new kwargs are passed to compute_adjacency_matrix then this dictionary will
+        be updated.
     affinity_method : string, one of 'auto', 'gaussian'.
     affinity_kwds : dictionary containing keyword arguments for affinity matrix.
         see affinity.py docmuentation for arguments for each method.
+        If new kwargs are passed to compute_affinity_matrix then this dictionary will
+        be updated.
     laplacian_method : string, one of: 'symmetricnormalized', 'geometric', 'renormalized',
         'unnormalized', 'randomwalk' type of laplacian to be computed. 
         see laplacian.py for more information.
     laplacian_kwds : dictionary containing keyword arguments for Laplacian matrix.
         see laplacian.py docmuentation for arguments for each method.  
+        If new kwargs are passed to compute_laplacian_matrix then this dictionary will
+        be updated.
     """
     def __init__(self, adjacency_method = 'auto', adjacency_kwds=None,
                  affinity_method = 'auto', affinity_kwds=None,
@@ -105,11 +112,11 @@ class Geometry(object):
             raise ValueError(distance_error_msg)
         
         if self.adjacency_kwds is not None:
-            kwds = self.adjacency_kwds.copy()
-            kwds.update(kwargs)
+            self.adjacency_kwds.update(kwargs)
         else:
-            kwds = kwargs
-        self.adjacency_matrix = compute_adjacency_matrix(self.X, self.adjacency_method, **kwds)
+            self.adjacency_kwds = kwargs
+        self.adjacency_matrix = compute_adjacency_matrix(self.X, self.adjacency_method, 
+                                                         **self.adjacency_kwds)
         if copy:
             return self.adjacency_matrix.copy()
         else:
@@ -136,14 +143,13 @@ class Geometry(object):
             raise ValueError(affinity_error_msg)
             
         if self.affinity_kwds is not None:
-            kwds = self.affinity_kwds.copy()
-            kwds.update(kwargs)
+            self.affinity_kwds.update(kwargs)
         else:
-            kwds = kwargs
+            self.affinity_kwds = kwargs
         if self.adjacency_matrix is None: # first check to see if we have the distance matrix                
-                self.adjacency_matrix = self.compute_adjacency_matrix()
+                self.compute_adjacency_matrix()
         self.affinity_matrix = compute_affinity_matrix(self.adjacency_matrix, 
-                                                       self.affinity_method, **kwds)
+                                                       self.affinity_method, **self.affinity_kwds)
         if copy:
             return self.affinity_matrix.copy()
         else:
@@ -170,25 +176,24 @@ class Geometry(object):
             laplacian_matrix from laplacian_symmetric
         """
         if self.laplacian_kwds is not None:
-            kwds = self.laplacian_kwds.copy()
-            kwds.update(kwargs)
+            self.laplacian_kwds.update(kwargs)
         else:
-            kwds = kwargs
+            self.laplacian_kwds
         
-        if 'return_lapsym' not in kwds.keys():
-            kwds['return_lapsym'] = return_lapsym
+        if 'return_lapsym' not in self.laplacian_kwds.keys():
+            self.laplacian_kwds['return_lapsym'] = return_lapsym
         
         if self.affinity_matrix is None: # first check to see if we have an affinity matrix
-            self.affinity_matrix = self.get_affinity_matrix(copy=False)
+            self.affinity_matrix = self.compute_affinity_matrix()
 
         if return_lapsym:
             (self.laplacian_matrix,
             self.laplacian_symmetric,
             self.w) = compute_laplacian_matrix(self.affinity_matrix, 
-                                               self.laplacian_method,**kwds)
+                                               self.laplacian_method,**self.laplacian_kwds)
         else:
             self.laplacian_matrix = compute_laplacian_matrix(self.affinity_matrix,
-                                                    self.laplacian_method,**kwds)
+                                                    self.laplacian_method,**self.laplacian_kwds)
         if copy:
             return self.laplacian_matrix.copy()
         else:
@@ -241,3 +246,16 @@ class Geometry(object):
             raise ValueError("Laplacian matrix is not square")
         else:
             self.laplacian_matrix = laplacian_mat
+            
+    def delete_data_matrix(self):
+        self.X = None
+    
+    def delete_adjacency_matrix(self):
+        self.adjacency_matrix = None
+    
+    def delete_affinity_matrix(self):
+        self.affinity_matrix = None
+    
+    def delete_laplacian_matrix(self):
+        self.laplacian_matrix = None
+    
