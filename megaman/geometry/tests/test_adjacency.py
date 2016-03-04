@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from scipy.sparse import isspmatrix
 from scipy.spatial.distance import cdist, pdist, squareform
 
-from megaman.geometry.distance import compute_adjacency_matrix, Adjacency
+from megaman.geometry.adjacency import compute_adjacency_matrix, Adjacency
 
 
 try:

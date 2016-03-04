@@ -8,7 +8,7 @@ from scipy.spatial.distance import pdist
 import subprocess, os, sys, warnings
 
 from .cyflann.index import Index
-from .distance_new import compute_adjacency_matrix, Adjacency
+from .adjacency import compute_adjacency_matrix, Adjacency
 
 
 def _row_col_from_condensed_index(N,compr_ind):

@@ -3,7 +3,7 @@ from numpy.testing import assert_allclose, assert_equal
 
 from scipy.spatial.distance import cdist
 
-from megaman.geometry.distance import compute_adjacency_matrix
+from megaman.geometry.adjacency import compute_adjacency_matrix
 from megaman.geometry.affinity import compute_affinity_matrix, Affinity
 
 
@@ -31,8 +31,6 @@ def test_affinity():
 def test_custom_affinity():
     class CustomAffinity(Affinity):
         name = "custom"
-        def __init__(self, radius=None):
-            self.radius = radius
         def affinity_matrix(self, adjacency_matrix):
             return np.exp(-abs(adjacency_matrix.toarray()))
 
