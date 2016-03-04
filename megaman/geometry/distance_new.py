@@ -3,6 +3,7 @@ from sklearn import neighbors
 from scipy import sparse
 
 from .cyflann.index import Index as CyIndex
+from .utils import RegisterSubclasses
 
 try:
     import pyflann as pyf
@@ -10,43 +11,19 @@ try:
 except ImportError:
     PYFLANN_LOADED = False
 
-# from six.py
-def with_metaclass(meta, *bases):
-    """Create a base class with a metaclass."""
-    return meta("NewBase", bases, {})
 
-
-class AdjacencyMeta(type):
-    """Metaclass for Adjacency object which registers subclasses"""
-    def __init__(cls, name, bases, dct):
-        if name == 'NewBase':
-            # class created as part of six.with_metaclas
-            pass
-        elif not hasattr(cls, '_method_registry'):
-            # this is the base class.  Create an empty registry
-            cls._method_registry = {}
+def compute_adjacency_matrix(X, method='auto', **kwargs):
+    """Compute an adjacency matrix with the given method"""
+    if method == 'auto':
+        if X.shape[0] > 10000:
+            method = 'cyflann'
         else:
-            # this is a derived class.  Add cls to the registry
-            interface_id = name.lower()
-            cls._method_registry[getattr(cls, 'name', name.lower())] = cls
-
-        super(AdjacencyMeta, cls).__init__(name, bases, dct)
+            method = 'kd_tree'
+    return Adjacency.init(method, **kwargs).adjacency_graph(X)
 
 
-class Adjacency(with_metaclass(AdjacencyMeta)):
-    """Base class for adjacency methods"""
-    @classmethod
-    def init(cls, method, *args, **kwargs):
-        if method not in cls._method_registry:
-            raise ValueError("method={0} not valid. Must be one of "
-                             "{1}".format(method, list(cls.methods())))
-        Adj = cls._method_registry[method]
-        return Adj(*args, **kwargs)
-
-    @classmethod
-    def methods(cls):
-        return cls._method_registry.keys()
-
+class Adjacency(RegisterSubclasses):
+    """Base class for computing adjacency matrices"""
     def __init__(self, radius=None, n_neighbors=None, mode='distance'):
         self.radius = radius
         self.n_neighbors = n_neighbors
@@ -177,13 +154,3 @@ class PyFLANNAdjacency(Adjacency):
         A_indptr = self.n_neighbors * np.arange(n_samples + 1)
         return sparse.csr_matrix((A_data, A_ind, A_indptr),
                                  shape=(n_samples, n_samples))
-
-
-def adjacency_graph(X, method='auto', **kwargs):
-    """Compute an adjacency graph with the given method"""
-    if method == 'auto':
-        if X.shape[0] > 10000:
-            method = 'cyflann'
-        else:
-            method = 'kd_tree'
-    return Adjacency.init(method, **kwargs).adjacency_graph(X)

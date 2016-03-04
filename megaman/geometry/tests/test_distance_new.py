@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from scipy.sparse import isspmatrix
 from scipy.spatial.distance import cdist, pdist, squareform
 
-from megaman.geometry.distance_new import adjacency_graph, Adjacency
+from megaman.geometry.distance import compute_adjacency_matrix, Adjacency
 
 
 try:
@@ -26,7 +26,7 @@ def test_adjacency():
         if method == 'pyflann' and NO_PYFLANN:
             raise SkipTest("pyflann not installed")
 
-        G = adjacency_graph(X, method=method,
+        G = compute_adjacency_matrix(X, method=method,
                             n_neighbors=n_neighbors)
         assert isspmatrix(G)
         assert G.shape == (X.shape[0], X.shape[0])
@@ -37,7 +37,7 @@ def test_adjacency():
         if method == 'pyflann' and NO_PYFLANN:
             raise SkipTest("pyflann not installed")
 
-        G = adjacency_graph(X, method=method,
+        G = compute_adjacency_matrix(X, method=method,
                             radius=radius)
         assert isspmatrix(G)
         assert G.shape == (X.shape[0], X.shape[0])
@@ -45,13 +45,13 @@ def test_adjacency():
             assert_allclose(G.toarray(), Gtrue[radius].toarray())
 
     for n_neighbors in [5, 10, 15]:
-        Gtrue[n_neighbors] = adjacency_graph(X, method='brute',
+        Gtrue[n_neighbors] = compute_adjacency_matrix(X, method='brute',
                                              n_neighbors=n_neighbors)
         for method in Adjacency.methods():
             yield check_kneighbors, n_neighbors, method
 
     for radius in [0.1, 0.5, 1.0]:
-        Gtrue[radius] = adjacency_graph(X, method='brute',
+        Gtrue[radius] = compute_adjacency_matrix(X, method='brute',
                                         radius=radius)
         for method in Adjacency.methods():
             yield check_radius, radius, method
@@ -65,5 +65,5 @@ def test_new_adjacency():
 
     rand = np.random.RandomState(42)
     X = rand.rand(10, 2)
-    D = adjacency_graph(X, method='_test', radius=1)
+    D = compute_adjacency_matrix(X, method='_test', radius=1)
     assert_allclose(D, cdist(X, X))
