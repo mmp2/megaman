@@ -11,7 +11,8 @@ from .cyflann.index import Index
 
 
 def compute_adjacency_matrix(X, method='auto', **kwargs):
-    pass
+    graph = distance_matrix(X, method = 'auto', **kwargs)
+    return graph
 
 
 def _row_col_from_condensed_index(N,compr_ind):
