@@ -3,8 +3,8 @@ from numpy.testing import assert_allclose, assert_equal
 
 from scipy.spatial.distance import cdist
 
-from megaman.geometry.adjacency import compute_adjacency_matrix
-from megaman.geometry.affinity import compute_affinity_matrix, Affinity
+from megaman.geometry.adjacency_new import compute_adjacency_matrix
+from megaman.geometry.affinity_new import compute_affinity_matrix, Affinity
 
 
 def test_affinity():

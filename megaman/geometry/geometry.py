@@ -37,8 +37,8 @@ import subprocess, os, sys, warnings
 
 
 from .distance import distance_matrix, compute_adjacency_matrix
-from .affinity import compute_affinity_matrix
-from .laplacian import compute_laplacian_matrix
+from .affinity_new import compute_affinity_matrix
+from .laplacian_new import compute_laplacian_matrix
 
 from ..utils.validation import check_array
 

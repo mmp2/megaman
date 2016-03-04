@@ -3,9 +3,9 @@ from numpy.testing import assert_allclose, assert_equal
 
 from scipy.sparse import isspmatrix
 
-from megaman.geometry.adjacency import compute_adjacency_matrix
-from megaman.geometry.affinity import compute_affinity_matrix
-from megaman.geometry.laplacian import Laplacian, compute_laplacian_matrix
+from megaman.geometry.adjacency_new import compute_adjacency_matrix
+from megaman.geometry.affinity_new import compute_affinity_matrix
+from megaman.geometry.laplacian_new import Laplacian, compute_laplacian_matrix
 
 
 def test_laplacian_smoketest():
