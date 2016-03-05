@@ -6,18 +6,19 @@ from numpy.testing import assert_raises, assert_allclose
 
 from megaman.embedding import (Isomap, LocallyLinearEmbedding,
                                LTSA, SpectralEmbedding)
-from megaman.geometry import Geometry
+from megaman.geometry.geometry import Geometry 
 
 EMBEDDINGS = [Isomap, LocallyLinearEmbedding, LTSA, SpectralEmbedding]
 
 def test_embeddings_fit_vs_transform():
     rand = np.random.RandomState(42)
     X = rand.rand(100, 5)
-    geom = Geometry(X, neighborhood_radius=1.0)
+    geom = Geometry(adjacency_kwds = {'radius':1.0}, 
+                    affinity_kwds = {'radius':1.0})
 
     def check_embedding(Embedding, n_components):
         model = Embedding(n_components=n_components,
-                          Geometry=geom, random_state=rand)
+                          geom=geom, random_state=rand)
         embedding = model.fit_transform(X)
         assert model.embedding_.shape == (X.shape[0], n_components)
         assert_allclose(embedding, model.embedding_)
@@ -32,8 +33,7 @@ def test_embeddings_bad_arguments():
     X = rand.rand(100, 3)
 
     def check_bad_args(Embedding):
-        model = Embedding(n_components=2, Geometry='blah')
-        assert_raises(ValueError, model.fit, X)
+        assert_raises(ValueError, Embedding, n_components=2, geom='blah')
 
     for Embedding in EMBEDDINGS:
         yield check_bad_args, Embedding

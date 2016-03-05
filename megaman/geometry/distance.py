@@ -11,9 +11,8 @@ from .cyflann.index import Index
 
 
 def compute_adjacency_matrix(X, method='auto', **kwargs):
-    graph = distance_matrix(X, method = 'auto', **kwargs)
+    graph = distance_matrix(X, method = method, **kwargs)
     return graph
-
 
 def _row_col_from_condensed_index(N,compr_ind):
     # convert from pdist compressed index format to (I, J) (upper triangular) pairs.
@@ -56,10 +55,14 @@ def distance_matrix(X, method='auto', flindex=None, radius=None, cyindex=None):
         method = 'brute'
 
     if method == 'pyflann':
+        try:
+            import pyflann as pyf
+        except ImportError:
+            raise ValueError("pyflann not installed.")
         if flindex is None:
-            raise ValueError('must pass a flindex when using pyflann')
-        else:
-            graph = fl_radius_neighbors_graph(X, radius, flindex)
+            flindex = pyf.FLANN()
+            flindex.build_index(X, algorithm='kmeans',target_precision=0.9)
+        graph = fl_radius_neighbors_graph(X, radius, flindex)
     elif method == 'cyflann':
         if cyindex is None:
             cyindex = Index(X)

@@ -6,10 +6,6 @@ import subprocess, os, sys, warnings
 
 
 def compute_affinity_matrix(adjacency_matrix, method, **kwargs):
-    if kwargs is None:
-        kwargs = {'radius':1./adjacency_matrix.shape[0]}
-    elif 'radius' not in kwargs.keys():
-        kwargs['radius'] = 1./adjacency_matrix.shape[0]
     return affinity_matrix(adjacency_matrix, **kwargs)
     
 def symmetrize_sparse(A):
@@ -24,7 +20,9 @@ def symmetrize_sparse(A):
     A = (A + A.transpose(copy = True))/2
     return A
 
-def affinity_matrix(distances, radius, symmetrize = True):
+def affinity_matrix(distances, radius=None, symmetrize = True):
+    if radius is None:
+        radius = 1./distances.shape[0]
     if radius <= 0.:
         raise ValueError('radius must be >0.')
     A = distances.copy()

@@ -12,8 +12,7 @@ import warnings
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
-
-from ..geometry import geometry as geom
+from ..embedding.base import BaseEmbedding
 from ..utils.validation import check_random_state
 from ..utils.eigendecomp import eigen_decomposition, check_eigen_solver
 
@@ -72,7 +71,7 @@ def _graph_is_connected(graph):
         # dense graph, find all connected components start from node 0
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
 
-def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
+def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                        random_state=None, eigen_tol=0.0, drop_first=True,
                        diffusion_maps = False):
     """
@@ -94,8 +93,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
 
     Parameters
     ----------
-    Geometry : a Geometry object from megaman.embedding.geometry
-
+    geom : a Geometry object from megaman.embedding.geometry
     n_components : integer, optional
         The dimension of the projection subspace.
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
@@ -152,23 +150,19 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
     random_state = check_random_state(random_state)
-
-    if not isinstance(Geometry, geom.Geometry):
-        raise ValueError("Geometry object not megaman.embedding.geometry ",
-                         "Geometry class")
-
-    affinity_matrix = Geometry.get_affinity_matrix()
-    if not _graph_is_connected(affinity_matrix):
+    if geom.affinity_matrix is None:
+        geom.compute_affinity_matrix()
+    if not _graph_is_connected(geom.affinity_matrix):
         warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
-
-    laplacian = Geometry.get_laplacian_matrix(return_lapsym = True, symmetrize = True, copy = False)
+    if geom.laplacian_matrix is None:
+        laplacian = geom.compute_laplacian_matrix(copy = False, return_lapsym = True)
+    else:
+        laplacian = geom.laplacian_matrix
     n_nodes = laplacian.shape[0]
-    lapl_type = Geometry.laplacian_type
-
+    lapl_type = geom.laplacian_method
     eigen_solver = check_eigen_solver(eigen_solver,
                                       size=laplacian.shape[0],
                                       nvec=n_components + 1)
-
     re_normalize = False
     if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
         if lapl_type not in ['symmetricnormalized', 'unnormalized']:
@@ -191,8 +185,10 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
             # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I
             # instead of I to make the smallest eigenvalue epsilon.
             epsilon = 2
-            w = np.array(Geometry.w)
-            symmetrized_laplacian = Geometry.laplacian_symmetric.copy()
+            if geom.w is None: # a laplacian existed but it wasn't called with return_lapsym = True
+                geom.compute_laplacian_matrix(copy = False, return_lapsym = True)				
+            w = np.array(geom.w)
+            symmetrized_laplacian = geom.laplacian_symmetric.copy()
             if sparse.isspmatrix(symmetrized_laplacian):
                 symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.row])
                 symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.col])
@@ -224,8 +220,7 @@ def spectral_embedding(Geometry, n_components=8, eigen_solver='auto',
         embedding = diffusion_map[:, :n_components]
     return embedding
 
-
-class SpectralEmbedding(object):
+class SpectralEmbedding(BaseEmbedding):
     """
     Spectral embedding for non-linear dimensionality reduction.
 
@@ -281,7 +276,10 @@ class SpectralEmbedding(object):
     path_to_flann : string. full file path location of FLANN if not installed to
         root or to set FLANN_ROOT set to path location. Used for importing pyflann
         from a different location.
-    Geometry : a Geometry object from megaman.geometry.geometry
+    geom : either a Geometry object from megaman.geometry or a dictionary
+            containing (some or all) geometry parameters: adjacency_method,
+            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+            laplacian_kwds as keys. 
 
     References
     ----------
@@ -299,10 +297,9 @@ class SpectralEmbedding(object):
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  eigen_tol = 1e-12, drop_first = True, diffusion_maps = False,
-                 neighborhood_radius = None, affinity_radius = None,
-                 distance_method = 'auto', input_type = 'data',
-                 laplacian_type = 'geometric', path_to_flann = None,
-                 Geometry = None):
+                 geom = {}):
+        # initializes Geometry 
+        BaseEmbedding.__init__(self, geom)
         # embedding parameters:
         self.n_components = n_components
         self.random_state = random_state
@@ -310,30 +307,15 @@ class SpectralEmbedding(object):
         self.diffusion_maps = diffusion_maps
         self.eigen_tol = eigen_tol
         self.drop_first = drop_first
-
-        # Geometry parameters:
-        self.Geometry = Geometry
-        self.neighborhood_radius = neighborhood_radius
-        self.affinity_radius = affinity_radius
-        self.distance_method = distance_method
-        self.input_type = input_type
-        self.path_to_flann = path_to_flann
-        self.laplacian_type = laplacian_type
-
-    def fit_geometry(self, X):
-        self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
-                                      affinity_radius = self.affinity_radius,
-                                      distance_method = self.distance_method,
-                                      input_type = self.input_type,
-                                      laplacian_type = self.laplacian_type,
-                                      path_to_flann = self.path_to_flann)
-
-    def fit(self, X, y=None):
+        
+    def fit(self, X, input_type = 'data', y=None):
         """
         Fit the model from data in X.
 
         Parameters
         ----------
+        input_type : string, one of: 'data', 'distance' or 'affinity'.
+            The values of input data X. (default = 'data')
         X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
@@ -348,41 +330,24 @@ class SpectralEmbedding(object):
         self : object
             Returns the instance itself.
         """
-        if self.Geometry is None:
-            self.fit_geometry(X)
+        if self.geom.X is None:
+            if input_type == 'data':
+                self.geom.set_data_matrix(X)
+        if self.geom.adjacency_matrix is None:
+            if input_type == 'distance':
+                self.geom.set_adjacency_matrix(X)
+        if self.geom.affinity_matrix is None:
+            if input_type == 'affinity':
+                self.geom.set_affinity_matrix(X)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = spectral_embedding(self.Geometry,
+        self.embedding_ = spectral_embedding(self.geom,
                                              n_components = self.n_components,
                                              eigen_solver = self.eigen_solver,
                                              random_state = random_state,
                                              eigen_tol = self.eigen_tol,
                                              drop_first = self.drop_first,
                                              diffusion_maps = self.diffusion_maps)
-        self.affinity_matrix_ = self.Geometry.affinity_matrix
-        self.laplacian_matrix_ = self.Geometry.laplacian_matrix
-        self.laplacian_matrix_type_ = self.Geometry.laplacian_type
+        self.affinity_matrix_ = self.geom.affinity_matrix
+        self.laplacian_matrix_ = self.geom.laplacian_matrix
+        self.laplacian_matrix_type_ = self.geom.laplacian_method
         return self
-
-    def fit_transform(self, X, y=None):
-        """
-        Fit the model from data in X and transform X.
-
-        Parameters
-        ----------
-        X : array-like, shape (n_samples, n_features)
-            Training vector, where n_samples in the number of samples
-            and n_features is the number of features.
-
-        If self.input_type is distance, or affinity :
-
-        X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed distance or adjacency graph
-            computed from samples.
-
-        Returns
-        -------
-        X_new : array-like, shape (n_samples, n_components)
-
-        """
-        self.fit(X)
-        return self.embedding_
