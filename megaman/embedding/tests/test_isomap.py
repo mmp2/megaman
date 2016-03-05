@@ -51,7 +51,7 @@ def test_isomap_simple_grid():
     G = squareform(pdist(X))
     g = geom.Geometry(adjacency_kwds = {'radius':radius})
     for eigen_solver in eigen_solvers:
-		clf = iso.Isomap(n_components = 2, eigen_solver = eigen_solver, geom=g)
-		clf.fit(X)
-		G_iso = squareform(pdist(clf.embedding_))
-		assert_array_almost_equal(G, G_iso)
+        clf = iso.Isomap(n_components = 2, eigen_solver = eigen_solver, geom=g)
+        clf.fit(X)
+        G_iso = squareform(pdist(clf.embedding_))
+        assert_array_almost_equal(G, G_iso)
