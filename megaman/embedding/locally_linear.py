@@ -17,7 +17,6 @@ from ..embedding.base import BaseEmbedding
 from ..utils.validation import check_array, check_random_state
 from ..utils.eigendecomp import null_space, check_eigen_solver
 
-
 def barycenter_graph(distance_matrix, X, reg=1e-3):
     """
     Computes the barycenter weighted graph for points in X
@@ -54,7 +53,6 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
         w = solve(G, v, sym_pos = True)
         W[i, nbrs_i] = w / np.sum(w)
     return W
-
 
 def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
                             eigen_solver='auto', tol=1e-6,  random_state=None):
@@ -129,7 +127,6 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 
-
 class LocallyLinearEmbedding(BaseEmbedding):
     """
     Locally Linear Embedding
@@ -168,9 +165,9 @@ class LocallyLinearEmbedding(BaseEmbedding):
         regularization constant, multiplies the trace of the local covariance
         matrix of the distances.
     geom : either a Geometry object from megaman.geometry or a dictionary
-			containing (some or all) geometry parameters: adjacency_method,
-			adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-			laplacian_kwds as keys. 
+            containing (some or all) geometry parameters: adjacency_method,
+            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+            laplacian_kwds as keys. 
 
     References
     ----------
@@ -178,52 +175,52 @@ class LocallyLinearEmbedding(BaseEmbedding):
       by locally linear embedding.  Science 290:2323 (2000).
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
-                 affinity_radius = None,  distance_method = 'auto', geom = {}):
-		# initialize geometry
-		BaseEmbedding.__init__(self, geom)
-		# embedding parameters:
-		self.n_components = n_components
-		self.random_state = random_state
-		self.eigen_solver = eigen_solver
-		self.tol = tol
-		self.max_iter = max_iter
-		self.reg = reg
+             tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
+             affinity_radius = None,  distance_method = 'auto', geom = {}):
+        # initialize geometry
+        BaseEmbedding.__init__(self, geom)
+        # embedding parameters:
+        self.n_components = n_components
+        self.random_state = random_state
+        self.eigen_solver = eigen_solver
+        self.tol = tol
+        self.max_iter = max_iter
+        self.reg = reg
 
     def fit(self, X, input_type = 'data'):
-		"""Fit the model from data in X.
+        """Fit the model from data in X.
 
-		Parameters
-		----------
-		input_type : string, one of: 'data', 'distance'.
-			The values of input data X. (default = 'data')
-		X : array-like, shape (n_samples, n_features)
-			Training vector, where n_samples in the number of samples
-			and n_features is the number of features.
+        Parameters
+        ----------
+        input_type : string, one of: 'data', 'distance'.
+            The values of input data X. (default = 'data')
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
 
-		If self.input_type is 'distance':
+        If self.input_type is 'distance':
 
-		X : array-like, shape (n_samples, n_samples),
-			Interpret X as precomputed distance or adjacency graph
-			computed from samples.
+        X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed distance or adjacency graph
+            computed from samples.
 
-		Returns
-		-------
-		self : object
-			Returns the instance itself.
-		"""
-		if self.geom.X is None:
-			if input_type == 'data':
-				self.geom.set_data_matrix(X)
-		if self.geom.adjacency_matrix is None:
-			if input_type == 'distance':
-				self.geom.set_adjacency_matrix(X)
-		random_state = check_random_state(self.random_state)
-		self.embedding_, self.error_ = locally_linear_embedding(self.geom,
-																n_components=self.n_components,
-																eigen_solver=self.eigen_solver,
-																tol=self.tol,
-																random_state=self.random_state,
-																reg=self.reg,
-																max_iter=self.max_iter)
-		return self
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+        """
+        if self.geom.X is None:
+            if input_type == 'data':
+                self.geom.set_data_matrix(X)
+        if self.geom.adjacency_matrix is None:
+            if input_type == 'distance':
+                self.geom.set_adjacency_matrix(X)
+        random_state = check_random_state(self.random_state)
+        self.embedding_, self.error_ = locally_linear_embedding(self.geom,
+                                                                n_components=self.n_components,
+                                                                eigen_solver=self.eigen_solver,
+                                                                tol=self.tol,
+                                                                random_state=self.random_state,
+                                                                reg=self.reg,
+                                                                max_iter=self.max_iter)
+        return self
