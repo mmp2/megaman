@@ -178,10 +178,11 @@ class Geometry(object):
         if self.laplacian_kwds is not None:
             self.laplacian_kwds.update(kwargs)
         else:
-            self.laplacian_kwds
+            self.laplacian_kwds = kwargs
         
-        if 'return_lapsym' not in self.laplacian_kwds.keys():
-            self.laplacian_kwds['return_lapsym'] = return_lapsym
+        if isinstance(self.laplacian_kwds, dict):
+            if 'return_lapsym' not in self.laplacian_kwds.keys():
+                self.laplacian_kwds['return_lapsym'] = return_lapsym
         
         if self.affinity_matrix is None: # first check to see if we have an affinity matrix
             self.affinity_matrix = self.compute_affinity_matrix()

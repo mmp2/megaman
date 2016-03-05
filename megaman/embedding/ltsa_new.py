@@ -187,11 +187,13 @@ class LTSA(BaseEmbedding):
 		self.tol = tol
 		self.max_iter = max_iter
 		
-    def fit(self, X, y=None):
+    def fit(self, X, input_type='data', y=None):
 		"""Fit the model from data in X.
 
 		Parameters
 		----------
+		input_type : string, one of: 'data', 'distance'.
+			The values of input data X. (default = 'data')
 		X : array-like, shape (n_samples, n_features)
 			Training vector, where n_samples in the number of samples
 			and n_features is the number of features.

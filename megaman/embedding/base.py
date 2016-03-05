@@ -88,5 +88,5 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
 		-------
 		X_new: array-like, shape (n_samples, n_components)
 		"""
-		self.fit(X, input_type)
+		self.fit(X, input_type=input_type)
 		return self.embedding_

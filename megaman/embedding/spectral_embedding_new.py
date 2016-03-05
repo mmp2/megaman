@@ -156,7 +156,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
 		warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
 
 	if geom.laplacian_matrix is None:
-		laplacian = geom.compute_laplacian_matrix(return_lapsym = True, copy = False)
+		laplacian = geom.compute_laplacian_matrix(copy = False, return_lapsym = True)
 	else:
 		laplacian = geom.laplacian_matrix
 	n_nodes = laplacian.shape[0]
@@ -188,7 +188,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
 			# instead of I to make the smallest eigenvalue epsilon.
 			epsilon = 2
 			if geom.w is None: # a laplacian existed but it wasn't called with return_lapsym = True
-				geom.compute_laplacian_matrix(return_lapsym = True, copy = False)				
+				geom.compute_laplacian_matrix(copy = False, return_lapsym = True)				
 			w = np.array(geom.w)
 			symmetrized_laplacian = geom.laplacian_symmetric.copy()
 			if sparse.isspmatrix(symmetrized_laplacian):

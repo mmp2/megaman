@@ -177,7 +177,7 @@ class Isomap(BaseEmbedding):
 		self.graph_distance_matrix = None
 		self.centered_matrix = None
 
-    def fit(self, X=None, eigen_solver=None, input_type='data', n_components=None):
+    def fit(self, X=None, eigen_solver='auto', input_type='data', n_components=None):
 		"""Fit the model from data in X.
 
 		Parameters
