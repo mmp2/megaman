@@ -96,7 +96,7 @@ def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5
 		almost_equal_decimals)
 	assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
 
-def test_spectral_embedding_amg_solver(seed=36):
+def test_spectral_embedding_amg_solver(seed=20):
 	"""Test spectral embedding with amg solver vs arpack using symmetric laplacian"""
 	radius = 4.0
 	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
