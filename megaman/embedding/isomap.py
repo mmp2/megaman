@@ -10,20 +10,19 @@ from scipy.sparse.csgraph import shortest_path as graph_shortest_path
 from ..utils.eigendecomp import eigen_decomposition
 from ..embedding.base import BaseEmbedding
 
-
 def center_matrix(G):
     # Let S = -1/2* D_g^2 and  N_1 = np.ones([N, N])/N
     # Compute centred version: K = S - N_1*S - S*N_1  + N_1*S*N_1
-	S = G.copy()
-	S = S ** 2
-	S *= -0.5
-	N = S.shape[0]
-	K = S.copy()
-	row_sums = np.sum(S, axis=0)/N
-	K -= row_sums
-	K -= (np.sum(S, axis = 1)/N)[:, np.newaxis]
-	K += np.sum(row_sums)/N
-	return(K)
+    S = G.copy()
+    S = S ** 2
+    S *= -0.5
+    N = S.shape[0]
+    K = S.copy()
+    row_sums = np.sum(S, axis=0)/N
+    K -= row_sums
+    K -= (np.sum(S, axis = 1)/N)[:, np.newaxis]
+    K += np.sum(row_sums)/N
+    return(K)
 
 def isomap(geom, n_components=8, eigen_solver='auto',
            random_state=None, eigen_tol=1e-12, path_method='auto',
@@ -80,10 +79,10 @@ def isomap(geom, n_components=8, eigen_solver='auto',
     """
     # Step 1: use geometry to calculate the distance matrix
     if ((distance_matrix is None) and (centered_matrix is None)):
-		if geom.adjacency_matrix is None:
-			distance_matrix = geom.compute_adjacency_matrix()
-		else:
-			distance_matrix = geom.adjacency_matrix
+        if geom.adjacency_matrix is None:
+            distance_matrix = geom.compute_adjacency_matrix()
+        else:
+            distance_matrix = geom.adjacency_matrix
 
     # Step 2: use graph_shortest_path to construct D_G
     ## WARNING: D_G is an (NxN) DENSE matrix!!
@@ -147,9 +146,9 @@ class Isomap(BaseEmbedding):
         'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path
         for more information.
     geom : either a Geometry object from megaman.geometry or a dictionary
-			containing (some or all) geometry parameters: adjacency_method,
-			adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-			laplacian_kwds as keys. 
+            containing (some or all) geometry parameters: adjacency_method,
+            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+            laplacian_kwds as keys. 
 
     Returns
     ----------
@@ -164,83 +163,83 @@ class Isomap(BaseEmbedding):
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  eigen_tol=1e-12, path_method='auto', geom = {}):
-		# initializes Geometry 
-		BaseEmbedding.__init__(self, geom)
-		# embedding parameters:
-		self.n_components = n_components
-		self.random_state = random_state
-		self.eigen_solver = eigen_solver
-		self.eigen_tol = eigen_tol
-		self.path_method = path_method	
-		# intermediary steps for storage
-		self.distance_matrix = None
-		self.graph_distance_matrix = None
-		self.centered_matrix = None
-
+        # initializes Geometry 
+        BaseEmbedding.__init__(self, geom)
+        # embedding parameters:
+        self.n_components = n_components
+        self.random_state = random_state
+        self.eigen_solver = eigen_solver
+        self.eigen_tol = eigen_tol
+        self.path_method = path_method	
+        # intermediary steps for storage
+        self.distance_matrix = None
+        self.graph_distance_matrix = None
+        self.centered_matrix = None
+    
     def fit(self, X=None, eigen_solver='auto', input_type='data', n_components=None):
-		"""Fit the model from data in X.
+        """Fit the model from data in X.
 
-		Parameters
-		----------
-		input_type : string, one of: 'data', 'distance'.
-			The values of input data X. (default = 'data')
-			
-		X : array-like, shape (n_samples, n_features)
-			Training vector, where n_samples in the number of samples
-			and n_features is the number of features.
+        Parameters
+        ----------
+        input_type : string, one of: 'data', 'distance'.
+            The values of input data X. (default = 'data')
+            
+        X : array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
 
-		If self.input_type is 'distance':
+        If self.input_type is 'distance':
 
-		X : array-like, shape (n_samples, n_samples),
-			Interpret X as precomputed distance or adjacency graph
-			computed from samples.
+        X : array-like, shape (n_samples, n_samples),
+            Interpret X as precomputed distance or adjacency graph
+            computed from samples.
 
 
-		eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
-			The eigenvalue decomposition strategy to use. AMG requires pyamg
-			to be installed. It can be faster on very large, sparse problems,
-			but may also lead to instabilities.
+        eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
+            The eigenvalue decomposition strategy to use. AMG requires pyamg
+            to be installed. It can be faster on very large, sparse problems,
+            but may also lead to instabilities.
 
-		Returns
-		-------
-		self : object
-			Returns the instance itself.
-		"""
-		if ((self.geom.X is None) and (self.geom.adjacency_matrix is None)):
-			# then we need to assign the passed X to the geometry object
-			if input_type == 'data':
-				self.geom.set_data_matrix(X)
-			elif input_type == 'adjacency':
-				self.geom.set_adjacency_matrix(X)
-			else:
-				raise ValueError("unkonwn input type")
-			
-		# might want to change the eigen solver
-		if (eigen_solver is not None) and (eigen_solver != self.eigen_solver):
-			self.eigen_solver = eigen_solver
-		# we also might want to change the # of components:
-		if (n_components is not None) and (n_components != self.n_components):
-			self.n_components = n_components
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+        """
+        if ((self.geom.X is None) and (self.geom.adjacency_matrix is None)):
+            # then we need to assign the passed X to the geometry object
+            if input_type == 'data':
+                self.geom.set_data_matrix(X)
+            elif input_type == 'adjacency':
+                self.geom.set_adjacency_matrix(X)
+            else:
+                raise ValueError("unkonwn input type")
+            
+        # might want to change the eigen solver
+        if (eigen_solver is not None) and (eigen_solver != self.eigen_solver):
+            self.eigen_solver = eigen_solver
+        # we also might want to change the # of components:
+        if (n_components is not None) and (n_components != self.n_components):
+            self.n_components = n_components
 
-		# don't re-compute these if it's already been done.
-		# This might be the case if an eigendecompostion fails and a different sovler is selected
-		if (self.distance_matrix is None and self.geom.adjacency_matrix is None):
-			self.distance_matrix = self.geom.compute_adjacency_matrix()
-		elif self.distance_matrix is None:
-			self.distance_matrix = self.geom.adjacency_matrix
-		if self.graph_distance_matrix is None:
-			self.graph_distance_matrix = graph_shortest_path(self.distance_matrix,
-															 method = self.path_method,
-															 directed = False)
-		if self.centered_matrix is None:
-			self.centered_matrix = center_matrix(self.graph_distance_matrix)
+        # don't re-compute these if it's already been done.
+        # This might be the case if an eigendecompostion fails and a different sovler is selected
+        if (self.distance_matrix is None and self.geom.adjacency_matrix is None):
+            self.distance_matrix = self.geom.compute_adjacency_matrix()
+        elif self.distance_matrix is None:
+            self.distance_matrix = self.geom.adjacency_matrix
+        if self.graph_distance_matrix is None:
+            self.graph_distance_matrix = graph_shortest_path(self.distance_matrix,
+                                                             method = self.path_method,
+                                                             directed = False)
+        if self.centered_matrix is None:
+            self.centered_matrix = center_matrix(self.graph_distance_matrix)
 
-		self.embedding_ = isomap(self.geom, n_components=self.n_components,
-								 eigen_solver=self.eigen_solver,
-								 random_state=self.random_state,
-								 eigen_tol = self.eigen_tol,
-								 path_method = self.path_method,
-								 distance_matrix = self.distance_matrix,
-								 graph_distance_matrix = self.graph_distance_matrix,
-								 centered_matrix = self.centered_matrix)
-		return self
+        self.embedding_ = isomap(self.geom, n_components=self.n_components,
+                                 eigen_solver=self.eigen_solver,
+                                 random_state=self.random_state,
+                                 eigen_tol = self.eigen_tol,
+                                 path_method = self.path_method,
+                                 distance_matrix = self.distance_matrix,
+                                 graph_distance_matrix = self.graph_distance_matrix,
+                                 centered_matrix = self.centered_matrix)
+        return self
