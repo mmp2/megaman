@@ -112,8 +112,8 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
     """
     if geom.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
-	if geom.adjacency_matrix is None:
-		geom.compute_adjacency_matrix()
+    if geom.adjacency_matrix is None:
+        geom.compute_adjacency_matrix()
     W = barycenter_graph(geom.adjacency_matrix, geom.X, reg=reg)
     # we'll compute M = (I-W)'(I-W)
     # depending on the solver, we'll do this differently
