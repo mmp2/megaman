@@ -1,4 +1,5 @@
 import numpy as np
+from megaman.utils.testing import assert_raise_message
 from megaman.geometry.geometry_new import Geometry
 from megaman.embedding.base import BaseEmbedding
 
@@ -35,10 +36,6 @@ def test_geometry_object():
 				  laplacian_method=laplacian_method, laplacian_kwds=laplacian_kwds)
 	base_embedding = BaseEmbedding(g1)
 	assert(g1.__dict__ == base_embedding.geom.__dict__)
-
-def test_pass_non_object_or_dictionary():
-	""" Test estimator raises error when not passed geometry object or dictionary """
-	pass
 
 def test_geometry_update():
 	""" Test passing geometry object then independently update a parameter and confirm that the embedding

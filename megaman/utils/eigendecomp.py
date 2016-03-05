@@ -36,7 +36,7 @@ def check_eigen_solver(eigen_solver, size=None, nvec=None):
     if eigen_solver not in EIGEN_SOLVERS:
         raise ValueError("Unrecognized eigen_solver: '{0}'."
                          "Should be one of: {1}".format(eigen_solver,
-                                                        eigen_solvers))
+                                                        EIGEN_SOLVERS))
 
     elif eigen_solver == 'amg' and not PYAMG_LOADED:
         raise ValueError("The eigen_solver was set to 'amg', but pyamg is "

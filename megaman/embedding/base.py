@@ -67,6 +67,26 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
 			raise ValueError("must pass either Geometry object or dictionary of parameters")
 		return self.geom
 		
-	def fit_transform(self, X):
-		self.fit(X)
+	def fit_transform(self, X, input_type='data'):
+		"""Fit the model from data in X and transform X.
+
+		Parameters
+		----------
+		input_type : string, one of: 'data', 'distance' or 'affinity'.
+			The values of input data X. (default = 'data')
+		X: array-like, shape (n_samples, n_features)
+			Training vector, where n_samples in the number of samples
+			and n_features is the number of features.
+
+		If self.input_type is 'distance':
+
+		X : array-like, shape (n_samples, n_samples),
+			Interpret X as precomputed distance or adjacency graph
+			computed from samples.
+
+		Returns
+		-------
+		X_new: array-like, shape (n_samples, n_components)
+		"""
+		self.fit(X, input_type)
 		return self.embedding_
