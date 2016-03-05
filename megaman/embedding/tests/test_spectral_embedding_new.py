@@ -98,7 +98,7 @@ def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5
 
 def test_spectral_embedding_amg_solver(seed=36):
 	"""Test spectral embedding with amg solver vs arpack using symmetric laplacian"""
-	radius = 1.0
+	radius = 4.0
 	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
 				   'laplacian_method':'symmetricnormalized'}
 	try:

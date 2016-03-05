@@ -47,16 +47,12 @@ def _load_test_data():
     A = xdict[ 'A' ]
     return rad, test_dist_matrix, A, Lsymnorm, Lunnorm, Lgeom, Lreno1_5, Lrw
 
-def test_Geometry_distance(almost_equal_decimals = 5):
-    geom = Geometry(X)
-    D1 = geom.get_distance_matrix()
-    D2 = distance_matrix(X)
-    assert_array_almost_equal(D1.todense(), D2.todense(), almost_equal_decimals)
 
 def test_laplacian_unknown_normalization():
     """Test that laplacian fails with an unknown normalization type"""
     A = np.array([[ 5, 2, 1 ], [ 2, 3, 2 ],[1,2,5]])
     assert_raises(ValueError, graph_laplacian, A, normed='<unknown>')
+
 
 def test_laplacian_create_A_sparse():
     """
@@ -128,6 +124,11 @@ def test_distance_types(almost_equal_decimals = 5):
     assert_array_almost_equal(d1.todense(), d2.todense(), almost_equal_decimals)
     #assert_array_almost_equal(d1.todense(), d3.todense(), almost_equal_decimals)
 
+def test_Geometry_distance(almost_equal_decimals = 5):
+    geom = Geometry(X)
+    D1 = geom.get_distance_matrix()
+    D2 = distance_matrix(X)
+    assert_array_almost_equal(D1.todense(), D2.todense(), almost_equal_decimals)
 def test_get_distance_matrix(almost_equal_decimals = 5):
     """ test different ways to call get_distance_matrix """
     # 1. (Input type = Affinity)
