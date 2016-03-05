@@ -1,10 +1,35 @@
+import os
+
 import numpy as np
 from numpy.testing import assert_allclose, assert_equal
 
 from scipy.spatial.distance import cdist
+from scipy.sparse import csr_matrix
+from scipy import io
 
 from megaman.geometry.adjacency_new import compute_adjacency_matrix
 from megaman.geometry.affinity_new import compute_affinity_matrix, Affinity
+
+
+TEST_DATA = os.path.join(os.path.dirname(__file__),
+                        'testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+
+
+def test_affinity_vs_matlab():
+    """Test that the affinity calculation matches the matlab result"""
+    matlab = io.loadmat(TEST_DATA)
+
+    D = np.sqrt(matlab['S'])  # matlab outputs squared distances
+    A_matlab = matlab['A']
+    radius = matlab['rad'][0]
+
+    # check dense affinity computation
+    A_dense = compute_affinity_matrix(D, radius=radius)
+    assert_allclose(A_dense, A_matlab)
+
+    # check sparse affinity computation
+    A_sparse = compute_affinity_matrix(csr_matrix(D), radius=radius)
+    assert_allclose(A_sparse.toarray(), A_matlab)
 
 
 def test_affinity():
