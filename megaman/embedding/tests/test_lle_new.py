@@ -10,7 +10,7 @@ from sklearn import manifold, datasets
 from sklearn.neighbors import NearestNeighbors
 
 import megaman.embedding.locally_linear_new as lle
-import megaman.geometry.geometry_new as geom
+import megaman.geometry.geometry as geom
 
 eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 

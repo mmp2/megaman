@@ -4,7 +4,7 @@
 # License: BSD 3 clause (C) 2016
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from ..geometry.geometry_new import Geometry
+from ..geometry.geometry import Geometry
 
 class BaseEmbedding(BaseEstimator, TransformerMixin):
 	""" Base Class for all megaman embeddings.

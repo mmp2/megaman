@@ -13,9 +13,8 @@ import numpy as np
 import scipy.sparse as sparse
 from scipy.linalg import eigh, svd, qr, solve
 from scipy.sparse import eye, csr_matrix
-
-from ..geometry import geometry as geom
-from ..utils.validation import check_array
+from ..embedding.base import BaseEmbedding
+from ..utils.validation import check_array, check_random_state
 from ..utils.eigendecomp import null_space, check_eigen_solver
 
 
@@ -57,13 +56,14 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
     return W
 
 
-def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
+def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
                             eigen_solver='auto', tol=1e-6,  random_state=None):
     """
     Perform a Locally Linear Embedding analysis on the data.
 
     Parameters
     ----------
+    geom : a Geometry object from megaman.geometry.geometry
     n_components : integer
         number of coordinates for the manifold.
     reg : float
@@ -95,7 +95,6 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
-    Geometry : a Geometry object from megaman.geometry.geometry
 
     Returns
     -------
@@ -111,34 +110,27 @@ def locally_linear_embedding(Geometry, n_components, reg=1e-3, max_iter=100,
     .. [1] Roweis, S. & Saul, L. Nonlinear dimensionality reduction
         by locally linear embedding.  Science 290:2323 (2000).
     """
-    if not isinstance(Geometry, geom.Geometry):
-        raise ValueError("Geometry object not megaman.embedding.geometry ",
-                         "Geometry class")
-
-    if Geometry.X is None:
+    if geom.X is None:
         raise ValueError("Must pass data matrix X to Geometry")
-    X = Geometry.X
-
-    W = barycenter_graph(Geometry.get_distance_matrix(), X, reg=reg)
+	if geom.adjacency_matrix is None:
+		geom.compute_adjacency_matrix()
+    W = barycenter_graph(geom.adjacency_matrix, geom.X, reg=reg)
     # we'll compute M = (I-W)'(I-W)
     # depending on the solver, we'll do this differently
-
     eigen_solver = check_eigen_solver(eigen_solver,
                                       size=W.shape[0],
                                       nvec=n_components + 1)
-
     if eigen_solver != 'dense':
         M = eye(*W.shape, format=W.format) - W
         M = (M.T * M).tocsr()
     else:
         M = (W.T * W - W.T - W).toarray()
-        M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I
-        
+        M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I        
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
 
 
-class LocallyLinearEmbedding(object):
+class LocallyLinearEmbedding(BaseEmbedding):
     """
     Locally Linear Embedding
 
@@ -175,18 +167,10 @@ class LocallyLinearEmbedding(object):
     reg : float
         regularization constant, multiplies the trace of the local covariance
         matrix of the distances.
-    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
-        distances beyond neighborhood_radius are considered infinite.
-    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
-        used in Guassian kernel for affinity matrix
-    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.
-        method for computing pairwise radius neighbors graph.
-    input_type : string, one of: 'data', 'distance', 'affinity'.
-        The values of input data X.
-    path_to_flann : string. full file path location of FLANN if not installed to
-        root or to set FLANN_ROOT set to path location. Used for importing pyflann
-        from a different location.
-    Geometry : a Geometry object from megaman.geometry.geometry
+    geom : either a Geometry object from megaman.geometry or a dictionary
+			containing (some or all) geometry parameters: adjacency_method,
+			adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+			laplacian_kwds as keys. 
 
     References
     ----------
@@ -195,80 +179,51 @@ class LocallyLinearEmbedding(object):
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
-                 affinity_radius = None,  distance_method = 'auto',
-                 input_type = 'data', path_to_flann = None, Geometry = None):
-        # embedding parameters:
-        self.n_components = n_components
-        self.random_state = random_state
-        self.eigen_solver = eigen_solver
-        self.tol = tol
-        self.max_iter = max_iter
-        self.reg = reg
+                 affinity_radius = None,  distance_method = 'auto', geom = {}):
+		# initialize geometry
+		BaseEmbedding.__init__(self, geom)
+		# embedding parameters:
+		self.n_components = n_components
+		self.random_state = random_state
+		self.eigen_solver = eigen_solver
+		self.tol = tol
+		self.max_iter = max_iter
+		self.reg = reg
 
-        # Geometry parameters:
-        self.Geometry = Geometry
-        self.neighborhood_radius = neighborhood_radius
-        self.affinity_radius = affinity_radius
-        self.distance_method = distance_method
-        self.input_type = input_type
-        self.path_to_flann = path_to_flann
+    def fit(self, X, input_type = 'data'):
+		"""Fit the model from data in X.
 
-    def fit_geometry(self, X):
-        self.Geometry = geom.Geometry(X, neighborhood_radius = self.neighborhood_radius,
-                                      affinity_radius = self.affinity_radius,
-                                      distance_method = self.distance_method,
-                                      input_type = self.input_type,
-                                      path_to_flann = self.path_to_flann)
+		Parameters
+		----------
+		input_type : string, one of: 'data', 'distance'.
+			The values of input data X. (default = 'data')
+		X : array-like, shape (n_samples, n_features)
+			Training vector, where n_samples in the number of samples
+			and n_features is the number of features.
 
-    def fit(self, X):
-        """Fit the model from data in X.
+		If self.input_type is 'distance':
 
-        Parameters
-        ----------
-        X : array-like, shape (n_samples, n_features)
-            Training vector, where n_samples in the number of samples
-            and n_features is the number of features.
+		X : array-like, shape (n_samples, n_samples),
+			Interpret X as precomputed distance or adjacency graph
+			computed from samples.
 
-        If self.input_type is 'distance', or 'affinity':
-
-        X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed distance or adjacency graph
-            computed from samples.
-
-        Returns
-        -------
-        self : object
-            Returns the instance itself.
-        """
-        if self.Geometry is None:
-            self.fit_geometry(X)
-        self.embedding_, self.error_ = locally_linear_embedding(self.Geometry,
-                                                                n_components=self.n_components,
-                                                                eigen_solver=self.eigen_solver,
-                                                                tol=self.tol,
-                                                                random_state=self.random_state,
-                                                                reg=self.reg,
-                                                                max_iter=self.max_iter)
-        return self
-
-    def fit_transform(self, X):
-        """Fit the model from data in X and transform X.
-
-        Parameters
-        ----------
-        X: array-like, shape (n_samples, n_features)
-            Training vector, where n_samples in the number of samples
-            and n_features is the number of features.
-
-        If self.input_type is 'distance', or 'affinity':
-
-        X : array-like, shape (n_samples, n_samples),
-            Interpret X as precomputed distance or adjacency graph
-            computed from samples.
-
-        Returns
-        -------
-        X_new: array-like, shape (n_samples, n_components)
-        """
-        self.fit(X)
-        return self.embedding_
+		Returns
+		-------
+		self : object
+			Returns the instance itself.
+		"""
+		if self.geom.X is None:
+			if input_type == 'data':
+				self.geom.set_data_matrix(X)
+		if self.geom.adjacency_matrix is None:
+			if input_type == 'distance':
+				self.geom.set_adjacency_matrix(X)
+		random_state = check_random_state(self.random_state)
+		self.embedding_, self.error_ = locally_linear_embedding(self.geom,
+																n_components=self.n_components,
+																eigen_solver=self.eigen_solver,
+																tol=self.tol,
+																random_state=self.random_state,
+																reg=self.reg,
+																max_iter=self.max_iter)
+		return self

@@ -10,7 +10,7 @@ from sklearn.neighbors import NearestNeighbors
 from numpy.testing import assert_array_almost_equal
 import megaman.embedding.ltsa_new as ltsa
 from megaman.embedding.locally_linear_new import barycenter_graph
-import megaman.geometry.geometry_new as geom
+import megaman.geometry.geometry as geom
 
 eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 

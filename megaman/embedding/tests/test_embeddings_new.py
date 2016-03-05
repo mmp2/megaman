@@ -10,7 +10,7 @@ from megaman.embedding.isomap_new import Isomap
 from megaman.embedding.locally_linear_new import LocallyLinearEmbedding
 from megaman.embedding.ltsa_new import LTSA
 from megaman.embedding.spectral_embedding_new import SpectralEmbedding
-from megaman.geometry.geometry_new import Geometry 
+from megaman.geometry.geometry import Geometry 
 
 EMBEDDINGS = [Isomap, LocallyLinearEmbedding, LTSA, SpectralEmbedding]
 
@@ -31,15 +31,13 @@ def test_embeddings_fit_vs_transform():
         for n_components in [1, 2, 3]:
             yield check_embedding, Embedding, n_components
 
-'''
+
 def test_embeddings_bad_arguments():
     rand = np.random.RandomState(32)
     X = rand.rand(100, 3)
 
     def check_bad_args(Embedding):
-        model = Embedding(n_components=2, geom='blah')
-        assert_raises(ValueError, model.fit, X)
+        assert_raises(ValueError, Embedding, n_components=2, geom='blah')
 
     for Embedding in EMBEDDINGS:
         yield check_bad_args, Embedding
-'''

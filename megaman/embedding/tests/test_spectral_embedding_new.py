@@ -13,7 +13,7 @@ from nose.tools import assert_raises
 from nose.plugins.skip import SkipTest
 
 from megaman.embedding.spectral_embedding_new import SpectralEmbedding, spectral_embedding, _graph_is_connected
-import megaman.geometry.geometry_new as geom
+import megaman.geometry.geometry as geom
 
 from sklearn.metrics import normalized_mutual_info_score
 from sklearn.datasets.samples_generator import make_blobs
@@ -78,7 +78,7 @@ def test_spectral_embedding_two_components(seed=36):
 
 def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
 	"""Test spectral embedding with precomputed kernel"""
-	radius = 1.0
+	radius = 4.0
 	se_precomp = SpectralEmbedding(n_components=2,
 								   random_state=np.random.RandomState(seed))
 	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 
@@ -115,7 +115,7 @@ def test_spectral_embedding_amg_solver(seed=36):
 
 def test_spectral_embedding_symmetrzation(seed=36):
 	"""Test spectral embedding with amg solver vs arpack using non symmetric laplacian"""
-	radius = 1.0
+	radius = 4.0
 	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
 				   'laplacian_method':'geometric'}
 	try:

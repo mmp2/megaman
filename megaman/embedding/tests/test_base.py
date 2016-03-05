@@ -1,6 +1,6 @@
 import numpy as np
 from megaman.utils.testing import assert_raise_message
-from megaman.geometry.geometry_new import Geometry
+from megaman.geometry.geometry import Geometry
 from megaman.embedding.base import BaseEmbedding
 
 def test_geometry_dict():

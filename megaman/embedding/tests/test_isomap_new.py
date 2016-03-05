@@ -10,7 +10,7 @@ from sklearn.neighbors import NearestNeighbors
 from numpy.testing import assert_array_almost_equal
 
 import megaman.embedding.isomap_new as iso
-import megaman.geometry.geometry_new as geom
+import megaman.geometry.geometry as geom
 
 eigen_solvers = ['auto', 'dense', 'arpack', 'amg', 'lobpcg']
 
