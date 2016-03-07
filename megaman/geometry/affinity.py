@@ -19,7 +19,9 @@ def affinity_methods():
 
 class Affinity(RegisterSubclasses):
     """Base class for computing affinity matrices"""
-    def __init__(self, radius, symmetrize=True):
+    def __init__(self, radius=None, symmetrize=True):
+        if radius is None:
+            raise ValueError("must specify radius for affinity matrix")
         self.radius = radius
         self.symmetrize = symmetrize
 

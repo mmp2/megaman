@@ -22,6 +22,15 @@ def test_adjacency_methods():
                   'cyflann', 'brute', 'kd_tree'})
 
 
+def test_adjacency_input_validation():
+    X = np.random.rand(20, 3)
+    # need to specify radius or n_neighbors
+    assert_raises(ValueError, compute_adjacency_matrix, X)
+    # cannot specify both radius and n_neighbors
+    assert_raises(ValueError, compute_adjacency_matrix, X,
+                  radius=1, n_neighbors=10)
+
+
 def test_adjacency():
     X = np.random.rand(100, 3)
     Gtrue = {}

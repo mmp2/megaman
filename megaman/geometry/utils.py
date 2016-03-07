@@ -37,8 +37,8 @@ class RegisterSubclasses(with_metaclass(RegistryMeta)):
 
     @classmethod
     def init(cls, method, *args, **kwargs):
-        Adj = cls.get_method(method)
-        return Adj(*args, **kwargs)
+        Method = cls.get_method(method)
+        return Method(*args, **kwargs)
 
     @classmethod
     def _remove_from_registry(cls, method):

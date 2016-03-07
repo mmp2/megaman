@@ -4,7 +4,7 @@ from __future__ import division ## removes integer division
 import os
 
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_equal, assert_equal
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.sparse import csr_matrix
@@ -31,6 +31,12 @@ def test_affinity_methods():
     assert_equal(set(affinity_methods()), {'auto', 'gaussian'})
 
 
+def test_affinity_input_validation():
+    X = np.random.rand(20, 3)
+    D = compute_adjacency_matrix(X, radius=1)
+    assert_raises(ValueError, compute_affinity_matrix, X)
+
+
 def test_affinity_sparse_vs_dense():
     """
     Test that A_sparse is the same as A_dense for a small A matrix
@@ -48,7 +54,7 @@ def test_affinity_sparse_vs_dense():
                                        method = 'auto', radius = rad, symmetrize = False)
     A_spdense = A_sparse.toarray()
     A_spdense[ A_spdense == 0 ] = 1.
-    assert_array_equal( A_dense, A_spdense )
+    assert_allclose(A_dense, A_spdense)
 
 
 def test_affinity_vs_matlab():

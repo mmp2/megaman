@@ -2,7 +2,7 @@ from __future__ import division ## removes integer division
 
 import numpy as np
 from nose import SkipTest
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_allclose
 from scipy.spatial.distance import pdist, squareform
 from megaman.utils.testing import assert_raise_message
 from megaman.geometry import (compute_adjacency_matrix, adjacency_methods,
@@ -35,8 +35,8 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                     if input in ['data']:
                         G.set_data_matrix(X)
                         adjacency_queried = G.compute_adjacency_matrix(**kwarg_params)
-                        assert_array_almost_equal(adjacency_true.todense(), adjacency_queried.todense(),
-                                                  almost_equal_decimals)
+                        assert_allclose(adjacency_true.toarray(),
+                                        adjacency_queried.toarray(), rtol=1E-5)
                     else:
                         if input in ['adjacency']:
                             G.set_adjacency_matrix(D)
