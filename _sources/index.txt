@@ -1,11 +1,11 @@
 .. image:: images/spectra_D4000.png
-   :scale: 50 %
+   :scale: 20 %
    :align: left
 .. image:: images/word2vec_rmetric_plot_no_digits.png
-   :scale: 50 %
+   :scale: 20 %
    :align: right
 .. image:: images/circle_to_ellipse_embedding.png
-   :scale: 50 %
+   :scale: 20 %
    :align: center
 
 megaman: Scalable manifold learning
