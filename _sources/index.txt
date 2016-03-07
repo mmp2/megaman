@@ -4,9 +4,6 @@
 .. image:: images/word2vec_rmetric_plot_no_digits.png
    :scale: 20 %
    :align: right
-.. image:: images/circle_to_ellipse_embedding.png
-   :scale: 20 %
-   :align: center
 
 megaman: Scalable manifold learning
 =================================
