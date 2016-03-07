@@ -45,6 +45,7 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                         msg = distance_error_msg
                         assert_raise_message(ValueError, msg, G.compute_adjacency_matrix)
 
+
 def test_compute_affinity_matrix_args(almost_equal_decimals=5):
     """ test the compute_affinity_matrix parameter arguments """
     input_types = ['data', 'adjacency', 'affinity']
@@ -76,6 +77,7 @@ def test_compute_affinity_matrix_args(almost_equal_decimals=5):
                         G.set_affinity_matrix(A)
                         msg = affinity_error_msg
                         assert_raise_message(ValueError, msg, G.compute_affinity_matrix)
+
 
 def test_compute_laplacian_matrix_args(almost_equal_decimals=5):
     input_types = ['data', 'adjacency', 'affinity']
