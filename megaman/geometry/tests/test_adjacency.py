@@ -1,11 +1,12 @@
 from nose import SkipTest
 
 import numpy as np
-from numpy.testing import assert_allclose, assert_raises
+from numpy.testing import assert_allclose, assert_raises, assert_equal
 from scipy.sparse import isspmatrix
 from scipy.spatial.distance import cdist, pdist, squareform
 
-from megaman.geometry.adjacency import compute_adjacency_matrix, Adjacency
+from megaman.geometry.adjacency import (compute_adjacency_matrix, Adjacency,
+                                        adjacency_methods)
 
 
 try:
@@ -13,6 +14,12 @@ try:
     NO_PYFLANN = False
 except ImportError:
     NO_PYFLANN = True
+
+
+def test_adjacency_methods():
+    assert_equal(set(adjacency_methods()),
+                 {'auto', 'pyflann', 'ball_tree',
+                  'cyflann', 'brute', 'kd_tree'})
 
 
 def test_adjacency():

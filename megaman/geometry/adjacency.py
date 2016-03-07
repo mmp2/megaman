@@ -22,6 +22,11 @@ def compute_adjacency_matrix(X, method='auto', **kwargs):
     return Adjacency.init(method, **kwargs).adjacency_graph(X)
 
 
+def adjacency_methods():
+    """Return the list of valid adjacency methods"""
+    return ['auto'] + list(Adjacency.methods())
+
+
 class Adjacency(RegisterSubclasses):
     """Base class for computing adjacency matrices"""
     def __init__(self, radius=None, n_neighbors=None, mode='distance'):

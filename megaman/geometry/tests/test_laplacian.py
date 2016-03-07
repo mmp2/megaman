@@ -8,11 +8,18 @@ from scipy import io
 
 from megaman.geometry.adjacency import compute_adjacency_matrix
 from megaman.geometry.affinity import compute_affinity_matrix
-from megaman.geometry.laplacian import Laplacian, compute_laplacian_matrix
+from megaman.geometry.laplacian import (Laplacian, compute_laplacian_matrix,
+                                        laplacian_methods)
 
 
 TEST_DATA = os.path.join(os.path.dirname(__file__),
                         'testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+
+
+def test_laplacian_methods():
+    assert_equal(set(laplacian_methods()),
+                 {'auto', 'renormalized', 'symmetricnormalized',
+                  'geometric', 'randomwalk', 'unnormalized'})
 
 
 def test_laplacian_vs_matlab():

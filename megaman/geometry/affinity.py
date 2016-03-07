@@ -12,6 +12,11 @@ def compute_affinity_matrix(adjacency_matrix, method='auto', **kwargs):
     return Affinity.init(method, **kwargs).affinity_matrix(adjacency_matrix)
 
 
+def affinity_methods():
+    """Return the list of valid affinity methods"""
+    return ['auto'] + list(Affinity.methods())
+
+
 class Affinity(RegisterSubclasses):
     """Base class for computing affinity matrices"""
     def __init__(self, radius, symmetrize=True):

@@ -11,7 +11,8 @@ from scipy.sparse import csr_matrix
 from scipy import io
 
 from megaman.geometry.adjacency import compute_adjacency_matrix
-from megaman.geometry.affinity import compute_affinity_matrix, Affinity
+from megaman.geometry.affinity import (compute_affinity_matrix, Affinity,
+                                       affinity_methods)
 
 random_state = np.random.RandomState(36)
 n_sample = 10
@@ -19,11 +20,15 @@ d = 2
 X = random_state.randn(n_sample, d)
 D = squareform(pdist(X))
 D[D > 1/d] = 0
-# =======
 
 
 TEST_DATA = os.path.join(os.path.dirname(__file__),
                         'testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+
+
+
+def test_affinity_methods():
+    assert_equal(set(affinity_methods()), {'auto', 'gaussian'})
 
 
 def test_affinity_sparse_vs_dense():

@@ -12,6 +12,11 @@ def compute_laplacian_matrix(affinity_matrix, method='auto', **kwargs):
     return Laplacian.init(method, **kwargs).laplacian_matrix(affinity_matrix)
 
 
+def laplacian_methods():
+    """Return the list of valid laplacian methods"""
+    return ['auto'] + list(Laplacian.methods())
+
+
 class Laplacian(RegisterSubclasses):
     """Base class for computing laplacian matrices
 
