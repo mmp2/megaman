@@ -38,7 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for megaman.geometry.rmetric</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Riemannian Metric learning utilities and algorithms. </span>
+<span class="sd">&quot;&quot;&quot;Riemannian Metric learning utilities and algorithms.</span>
 
 <span class="sd">   To use the &quot;geometric&quot; Laplacian from geometry.py for statistically</span>
 <span class="sd">   consistent results.</span>
@@ -54,6 +54,7 @@
 
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">eigh</span><span class="p">,</span> <span class="n">svd</span><span class="p">,</span> <span class="n">inv</span>
+
 
 <div class="viewcode-block" id="riemann_metric"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.rmetric.riemann_metric">[docs]</a><span class="k">def</span> <span class="nf">riemann_metric</span><span class="p">(</span> <span class="n">Y</span><span class="p">,</span> <span class="n">laplacian</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">invert_h</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -113,6 +114,7 @@
 
     <span class="k">return</span> <span class="n">h_dual_metric</span><span class="p">,</span> <span class="n">riemann_metric</span><span class="p">,</span> <span class="n">Hvv</span><span class="p">,</span> <span class="n">Hsvals</span><span class="p">,</span> <span class="n">Gsvals</span></div>
 
+
 <div class="viewcode-block" id="compute_G_from_H"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.rmetric.compute_G_from_H">[docs]</a><span class="k">def</span> <span class="nf">compute_G_from_H</span><span class="p">(</span> <span class="n">H</span><span class="p">,</span> <span class="n">mdimG</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s2">&quot;svd&quot;</span> <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Parameters</span>
@@ -155,7 +157,8 @@
         <span class="n">riemann_metric</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">h_dual_metric</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">riemann_metric</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span></div>
 
-<div class="viewcode-block" id="RiemannMetric"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.rmetric.RiemannMetric">[docs]</a><span class="k">class</span> <span class="nc">RiemannMetric</span><span class="p">:</span>
+
+<div class="viewcode-block" id="RiemannMetric"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.rmetric.RiemannMetric">[docs]</a><span class="k">class</span> <span class="nc">RiemannMetric</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    RiemannMetric computes and stores the Riemannian metric and its dual</span>
 <span class="sd">    associated with an embedding Y. The Riemannian metric is currently denoted</span>
@@ -204,8 +207,7 @@
 <span class="sd">    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">laplacian</span><span class="p">,</span> <span class="n">n_dim</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">mode_inv</span> <span class="o">=</span> <span class="s1">&#39;svd&#39;</span> <span class="p">):</span>
-
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">laplacian</span><span class="p">,</span> <span class="n">n_dim</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mode_inv</span><span class="o">=</span><span class="s1">&#39;svd&#39;</span><span class="p">):</span>
         <span class="c1"># input data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimY</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
@@ -257,6 +259,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hvv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hsvals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Gsvals</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span></div>
+
     <span class="k">def</span> <span class="nf">get_mdimG</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdimG</span>
 

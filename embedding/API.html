@@ -44,7 +44,7 @@
 <p>Spectral Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>laplacian_type='geometric'</em>, <em>path_to_flann=None</em>, <em>Geometry=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spectral embedding for non-linear dimensionality reduction.</p>
 <p>Forms an affinity matrix given by the specified function and
 applies spectral decomposition to the corresponding graph laplacian.
@@ -128,7 +128,12 @@ False to retain the first eigenvector.</p>
 <div><p>root or to set FLANN_ROOT set to path location. Used for importing pyflann
 from a different location.</p>
 </div></blockquote>
-<p class="last"><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
+<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
+<blockquote class="last">
+<div><p>containing (some or all) geometry parameters: adjacency_method,
+adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+laplacian_kwds as keys.</p>
+</div></blockquote>
 </td>
 </tr>
 </tbody>
@@ -147,13 +152,17 @@ Jianbo Shi, Jitendra Malik
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217; or &#8216;affinity&#8217;.</p>
+<blockquote>
+<div><p>The values of input data X. (default = &#8216;data&#8217;)</p>
+</div></blockquote>
+<p><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
 <blockquote>
 <div><p>Training vector, where n_samples in the number of samples
 and n_features is the number of features.</p>
@@ -176,39 +185,11 @@ computed from samples.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="megaman.embedding.spectral_embedding.SpectralEmbedding.fit_transform">
-<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the model from data in X and transform X.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
-<blockquote>
-<div><p>Training vector, where n_samples in the number of samples
-and n_features is the number of features.</p>
-</div></blockquote>
-<p><strong>If self.input_type is distance, or affinity :</strong></p>
-<p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
-<blockquote>
-<div><p>Interpret X as precomputed distance or adjacency graph
-computed from samples.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>X_new</strong> : array-like, shape (n_samples, n_components)</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">
 <dt id="megaman.embedding.spectral_embedding.spectral_embedding">
-<code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">spectral_embedding</code><span class="sig-paren">(</span><em>Geometry</em>, <em>n_components=8</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>eigen_tol=0.0</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#spectral_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.spectral_embedding" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">spectral_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=0.0</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#spectral_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.spectral_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Project the sample on the first eigen vectors of the graph Laplacian.</p>
 <p>The adjacency matrix is used to compute a normalized graph Laplacian
 whose spectrum (especially the eigen vectors associated to the
@@ -225,7 +206,7 @@ so that the eigen vector decomposition works as expected.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Geometry</strong> : a Geometry object from megaman.embedding.geometry</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>geom</strong> : a Geometry object from megaman.embedding.geometry</p>
 <p><strong>n_components</strong> : integer, optional</p>
 <blockquote>
 <div><p>The dimension of the projection subspace.</p>
@@ -306,8 +287,10 @@ Andrew V. Knyazev
 <span class="target" id="module-megaman.embedding.isomap"></span><p>ISOMAP</p>
 <dl class="class">
 <dt id="megaman.embedding.isomap.Isomap">
-<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>path_to_flann=None</em>, <em>Geometry=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
-<dd><table class="docutils field-list" frame="void" rules="none">
+<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Isomap Embedding</p>
+<p>Non-linear dimensionality reduction through Isometric Mapping</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
@@ -354,28 +337,12 @@ lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.</p>
 &#8216;auto&#8217;, &#8216;D&#8217;, &#8216;FW&#8217;, &#8216;BF&#8217;, &#8216;J&#8217;. See scipy.sparse.csgraph.shortest_path
 for more information.</p>
 </div></blockquote>
-<p><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
+<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
 <blockquote>
-<div><p>distances beyond neighborhood_radius are considered infinite.</p>
+<div><p>containing (some or all) geometry parameters: adjacency_method,
+adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+laplacian_kwds as keys.</p>
 </div></blockquote>
-<p><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
-<blockquote>
-<div><p>used in Guassian kernel for affinity matrix</p>
-</div></blockquote>
-<p><strong>distance_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;cython&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
-<blockquote>
-<div><p>method for computing pairwise radius neighbors graph.</p>
-</div></blockquote>
-<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;.</p>
-<blockquote>
-<div><p>The values of input data X.</p>
-</div></blockquote>
-<p><strong>path_to_flann</strong> : string. full file path location of FLANN if not installed to root or</p>
-<blockquote>
-<div><p>FLANN_ROOT set to path location. Used for importing pyflann from a
-different location.</p>
-</div></blockquote>
-<p><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>embedding_</strong> : array, shape = (n_samples, n_components)</p>
@@ -387,33 +354,35 @@ different location.</p>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<ul class="simple">
-<li>Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C.
-A global geometric framework for nonlinear dimensionality reduction.
-Science 290 (5500)</li>
-</ul>
+<table class="docutils citation" frame="void" id="r1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[R1]</a></td><td>Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C. A global geometric
+framework for nonlinear dimensionality reduction. Science 290 (5500)</td></tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="megaman.embedding.isomap.Isomap.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>eigen_solver=None</em>, <em>input_type='data'</em>, <em>n_components=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X=None</em>, <em>eigen_solver='auto'</em>, <em>input_type='data'</em>, <em>n_components=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;.</p>
+<blockquote>
+<div><p>The values of input data X. (default = &#8216;data&#8217;)</p>
+</div></blockquote>
+<p><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
 <blockquote>
 <div><p>Training vector, where n_samples in the number of samples
 and n_features is the number of features.</p>
 </div></blockquote>
-<p><strong>If self.input_type is &#8216;distance&#8217;, or &#8216;affinity&#8217;:</strong></p>
+<p><strong>If self.input_type is &#8216;distance&#8217;:</strong></p>
 <p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
 <blockquote>
 <div><p>Interpret X as precomputed distance or adjacency graph
 computed from samples.</p>
-</div></blockquote>
-<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;.</p>
-<blockquote>
-<div><p>The values of input data X. (default = &#8216;data&#8217;)</p>
 </div></blockquote>
 <p><strong>eigen_solver</strong> : {None, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
 <blockquote>
@@ -433,44 +402,16 @@ but may also lead to instabilities.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="megaman.embedding.isomap.Isomap.fit_transform">
-<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap.fit_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the model from data in X and transform X.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: array-like, shape (n_samples, n_features)</strong></p>
-<blockquote>
-<div><p>Training vector, where n_samples in the number of samples
-and n_features is the number of features.</p>
-</div></blockquote>
-<p><strong>If self.input_type is &#8216;distance&#8217;, or &#8216;affinity&#8217;:</strong></p>
-<p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
-<blockquote>
-<div><p>Interpret X as precomputed distance or adjacency graph
-computed from samples.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">X_new: array-like, shape (n_samples, n_components)</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">
 <dt id="megaman.embedding.isomap.isomap">
-<code class="descclassname">megaman.embedding.isomap.</code><code class="descname">isomap</code><span class="sig-paren">(</span><em>Geometry</em>, <em>n_components=8</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>distance_matrix=None</em>, <em>graph_distance_matrix=None</em>, <em>centered_matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.isomap" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.isomap.</code><code class="descname">isomap</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>distance_matrix=None</em>, <em>graph_distance_matrix=None</em>, <em>centered_matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.isomap" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>geom</strong> : a Geometry object from megaman.geometry.geometry</p>
 <p><strong>n_components</strong> : integer, optional</p>
 <blockquote>
 <div><p>The dimension of the projection subspace.</p>
@@ -545,7 +486,7 @@ for more information.</p>
 <span class="target" id="module-megaman.embedding.locally_linear"></span><p>Locally Linear Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>path_to_flann=None</em>, <em>Geometry=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Locally Linear Embedding</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -601,28 +542,12 @@ iterations.  Defaults to numpy.random.</p>
 <div><p>regularization constant, multiplies the trace of the local covariance
 matrix of the distances.</p>
 </div></blockquote>
-<p><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
-<blockquote>
-<div><p>distances beyond neighborhood_radius are considered infinite.</p>
+<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
+<blockquote class="last">
+<div><p>containing (some or all) geometry parameters: adjacency_method,
+adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+laplacian_kwds as keys.</p>
 </div></blockquote>
-<p><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
-<blockquote>
-<div><p>used in Guassian kernel for affinity matrix</p>
-</div></blockquote>
-<p><strong>distance_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;cython&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
-<blockquote>
-<div><p>method for computing pairwise radius neighbors graph.</p>
-</div></blockquote>
-<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;.</p>
-<blockquote>
-<div><p>The values of input data X.</p>
-</div></blockquote>
-<p><strong>path_to_flann</strong> : string. full file path location of FLANN if not installed to</p>
-<blockquote>
-<div><p>root or to set FLANN_ROOT set to path location. Used for importing pyflann
-from a different location.</p>
-</div></blockquote>
-<p class="last"><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
 </td>
 </tr>
 </tbody>
@@ -634,18 +559,22 @@ by locally linear embedding.  Science 290:2323 (2000).</li>
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;.</p>
+<blockquote>
+<div><p>The values of input data X. (default = &#8216;data&#8217;)</p>
+</div></blockquote>
+<p><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
 <blockquote>
 <div><p>Training vector, where n_samples in the number of samples
 and n_features is the number of features.</p>
 </div></blockquote>
-<p><strong>If self.input_type is &#8216;distance&#8217;, or &#8216;affinity&#8217;:</strong></p>
+<p><strong>If self.input_type is &#8216;distance&#8217;:</strong></p>
 <p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
 <blockquote>
 <div><p>Interpret X as precomputed distance or adjacency graph
@@ -657,34 +586,6 @@ computed from samples.</p>
 <blockquote class="last">
 <div><p>Returns the instance itself.</p>
 </div></blockquote>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding.fit_transform">
-<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the model from data in X and transform X.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: array-like, shape (n_samples, n_features)</strong></p>
-<blockquote>
-<div><p>Training vector, where n_samples in the number of samples
-and n_features is the number of features.</p>
-</div></blockquote>
-<p><strong>If self.input_type is &#8216;distance&#8217;, or &#8216;affinity&#8217;:</strong></p>
-<p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
-<blockquote>
-<div><p>Interpret X as precomputed distance or adjacency graph
-computed from samples.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">X_new: array-like, shape (n_samples, n_components)</p>
 </td>
 </tr>
 </tbody>
@@ -723,13 +624,14 @@ default.</p>
 
 <dl class="function">
 <dt id="megaman.embedding.locally_linear.locally_linear_embedding">
-<code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">locally_linear_embedding</code><span class="sig-paren">(</span><em>Geometry</em>, <em>n_components</em>, <em>reg=0.001</em>, <em>max_iter=100</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#locally_linear_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.locally_linear_embedding" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">locally_linear_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>reg=0.001</em>, <em>max_iter=100</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#locally_linear_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.locally_linear_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform a Locally Linear Embedding analysis on the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>geom</strong> : a Geometry object from megaman.geometry.geometry</p>
+<p><strong>n_components</strong> : integer</p>
 <blockquote>
 <div><p>number of coordinates for the manifold.</p>
 </div></blockquote>
@@ -779,7 +681,6 @@ Not used if eigen_solver==&#8217;dense&#8217;.</p>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.</p>
 </div></blockquote>
-<p><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Y</strong> : array-like, shape [n_samples, n_components]</p>
@@ -796,16 +697,19 @@ iterations.  Defaults to numpy.random.</p>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<ul class="simple">
-<li>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
-by locally linear embedding.  Science 290:2323 (2000).</li>
-</ul>
+<table class="docutils citation" frame="void" id="r2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[R2]</a></td><td>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
+by locally linear embedding.  Science 290:2323 (2000).</td></tr>
+</tbody>
+</table>
 </dd></dl>
 
 <span class="target" id="module-megaman.embedding.ltsa"></span><p>Local Tangent Space Alignment</p>
 <dl class="class">
 <dt id="megaman.embedding.ltsa.LTSA">
-<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver=None</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>input_type='data'</em>, <em>path_to_flann=None</em>, <em>Geometry=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>geom=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Local Tangent Space Alignment</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -877,7 +781,12 @@ iterations.  Defaults to numpy.random.</p>
 <div><p>root or to set FLANN_ROOT set to path location. Used for importing pyflann
 from a different location.</p>
 </div></blockquote>
-<p class="last"><strong>Geometry</strong> : a Geometry object from megaman.geometry.geometry</p>
+<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
+<blockquote class="last">
+<div><p>containing (some or all) geometry parameters: adjacency_method,
+adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
+laplacian_kwds as keys.</p>
+</div></blockquote>
 </td>
 </tr>
 </tbody>
@@ -890,13 +799,17 @@ Journal of Shanghai Univ.  8:406 (2004)</li>
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.ltsa.LTSA.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;.</p>
+<blockquote>
+<div><p>The values of input data X. (default = &#8216;data&#8217;)</p>
+</div></blockquote>
+<p><strong>X</strong> : array-like, shape (n_samples, n_features)</p>
 <blockquote>
 <div><p>Training vector, where n_samples in the number of samples
 and n_features is the number of features.</p>
@@ -919,45 +832,18 @@ computed from samples.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="megaman.embedding.ltsa.LTSA.fit_transform">
-<code class="descname">fit_transform</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the model from data in X and transform X.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X: array-like, shape (n_samples, n_features)</strong></p>
-<blockquote>
-<div><p>Training vector, where n_samples in the number of samples
-and n_features is the number of features.</p>
-</div></blockquote>
-<p><strong>If self.input_type is &#8216;distance&#8217;, or &#8216;affinity&#8217;:</strong></p>
-<p><strong>X</strong> : array-like, shape (n_samples, n_samples),</p>
-<blockquote>
-<div><p>Interpret X as precomputed distance or adjacency graph
-computed from samples.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">X_new: array-like, shape (n_samples, n_components)</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="function">
 <dt id="megaman.embedding.ltsa.ltsa">
-<code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">ltsa</code><span class="sig-paren">(</span><em>Geometry</em>, <em>n_components</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#ltsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.ltsa" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform a Locally Linear Embedding analysis on the data.</p>
+<code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">ltsa</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#ltsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.ltsa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform a Local Tangent Space Alignment analysis on the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>geom</strong> : a Geometry object from megaman.geometry.geometry</p>
+<p><strong>n_components</strong> : integer</p>
 <blockquote>
 <div><p>number of coordinates for the manifold.</p>
 </div></blockquote>

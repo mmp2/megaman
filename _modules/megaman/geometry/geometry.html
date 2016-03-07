@@ -38,7 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for megaman.geometry.geometry</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Scalable Manifold learning utilities and algorithms.</span>
 
 <span class="sd">Graphs are represented with their weighted adjacency matrices, preferably using</span>
@@ -48,21 +48,21 @@
 <span class="sd">------------------------------------------------------------</span>
 
 <span class="sd">For performance, this code uses the FLANN library to compute</span>
-<span class="sd">approximate neighborhoods efficiently. The down side of approximation</span>
-<span class="sd">is that (1) the distance matrix (or adjacency matrix) produced is NOT</span>
-<span class="sd">GUARANTEED to be symmetric. We also use sparse representations, and</span>
-<span class="sd">(2) fl_radius_neighbors_graph returns a sparse matrix called distance_matrix.</span>
-
-<span class="sd">distance_matrix has 0.0 on the diagonal, as it should. Implicitly, the</span>
-<span class="sd">missing entries are infinity not 0 for this matrix. But (1) and (2)</span>
-<span class="sd">mean that if one tries to symmetrize distance_matrix, the scipy.sparse</span>
-<span class="sd">code eliminates the 0.0 entries from distance_matrix. In the Affinity</span>
+<span class="sd">approximate neighborhoods efficiently. This means that (1) the</span>
+<span class="sd">adjacency matrix produced is NOT GUARANTEED to be symmetric and</span>
+<span class="sd">(2) compute_adjacency_matrix returns a sparse matrix called</span>
+<span class="sd">adjacency_matrix. adjacency_matrix has 0.0 on the diagonal,</span>
+<span class="sd">as it should. Implicitly, the missing entries are infinity not</span>
+<span class="sd">0 for this matrix. But (1) and (2) mean that if one tries to</span>
+<span class="sd">symmetrize adjacency_matrix, the scipy.sparse code eliminates</span>
+<span class="sd">the 0.0 entries from adjacency_matrix hence in the affinity</span>
 <span class="sd">matrix we explicitly set the diagonal to 1.0 for sparse matrices.</span>
 
-<span class="sd">Hence, I adopted the following convention:</span>
-<span class="sd">   * distance_matrix will NOT BE GUARANTEED symmetric</span>
+<span class="sd">We adopted the following convention:</span>
+<span class="sd">   * affinity_matrix will NOT BE GUARANTEED symmetric</span>
 <span class="sd">   * affinity_matrix will perform a symmetrization by default</span>
-<span class="sd">   * laplacian does NOT perform symmetrization by default, only if symmetrize=True, and DOES NOT check symmetry</span>
+<span class="sd">   * laplacian does NOT perform symmetrization by default,</span>
+<span class="sd">     only if symmetrize=True, and DOES NOT check symmetry</span>
 <span class="sd">   * these conventions are the same for dense matrices, for consistency</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -72,481 +72,102 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span> <span class="c1">## removes integer division</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
-<span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">pdist</span>
-<span class="kn">import</span> <span class="nn">subprocess</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">warnings</span>
-<span class="kn">from</span> <span class="nn">megaman.geometry.distance</span> <span class="kn">import</span> <span class="n">distance_matrix</span>
-<span class="kn">from</span> <span class="nn">megaman.utils.validation</span> <span class="kn">import</span> <span class="n">check_array</span>
+<span class="kn">from</span> <span class="nn">.adjacency</span> <span class="kn">import</span> <span class="n">compute_adjacency_matrix</span>
+<span class="kn">from</span> <span class="nn">.affinity</span> <span class="kn">import</span> <span class="n">compute_affinity_matrix</span>
+<span class="kn">from</span> <span class="nn">.laplacian</span> <span class="kn">import</span> <span class="n">compute_laplacian_matrix</span>
+<span class="kn">from</span> <span class="nn">..utils.validation</span> <span class="kn">import</span> <span class="n">check_array</span>
 
 <span class="n">sparse_formats</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;csr&#39;</span><span class="p">,</span> <span class="s1">&#39;coo&#39;</span><span class="p">,</span> <span class="s1">&#39;lil&#39;</span><span class="p">,</span> <span class="s1">&#39;bsr&#39;</span><span class="p">,</span> <span class="s1">&#39;dok&#39;</span><span class="p">,</span> <span class="s1">&#39;dia&#39;</span><span class="p">]</span>
-<span class="n">distance_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;brute&#39;</span><span class="p">,</span> <span class="s1">&#39;cyflann&#39;</span><span class="p">,</span> <span class="s1">&#39;pyflann&#39;</span><span class="p">,</span> <span class="s1">&#39;cython&#39;</span><span class="p">]</span>
-<span class="n">laplacian_types</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;symmetricnormalized&#39;</span><span class="p">,</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="s1">&#39;renormalized&#39;</span><span class="p">,</span> <span class="s1">&#39;unnormalized&#39;</span><span class="p">,</span> <span class="s1">&#39;randomwalk&#39;</span><span class="p">]</span>
+<span class="n">distance_error_msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;No data matrix exists. &quot;</span>
+                      <span class="s2">&quot;Adjacency matrix cannot be computed.&quot;</span><span class="p">)</span>
+<span class="n">affinity_error_msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;No data or adjacency matrix exists.&quot;</span>
+                      <span class="s2">&quot;Affinity matrix cannot be calculated.&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="symmetrize_sparse"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.symmetrize_sparse">[docs]</a><span class="k">def</span> <span class="nf">symmetrize_sparse</span><span class="p">(</span><span class="n">A</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Symmetrizes a sparse matrix in place (coo and csr formats only)</span>
-
-<span class="sd">    NOTES:</span>
-<span class="sd">    1. if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">A</span><span class="o">.</span><span class="n">getformat</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s2">&quot;csr&quot;</span><span class="p">:</span>
-        <span class="n">A</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">copy</span> <span class="o">=</span> <span class="bp">True</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
-    <span class="k">return</span> <span class="n">A</span></div>
-
-<span class="k">def</span> <span class="nf">affinity_matrix</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">neighbors_radius</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">neighbors_radius</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;neighbors_radius must be &gt;0.&#39;</span><span class="p">)</span>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">distances</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span> <span class="n">A</span> <span class="p">):</span>
-        <span class="n">A</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span><span class="o">**</span><span class="mi">2</span>
-        <span class="n">A</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span><span class="o">/</span><span class="p">(</span><span class="o">-</span><span class="n">neighbors_radius</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">A</span><span class="o">.</span><span class="n">data</span> <span class="p">)</span>
-        <span class="k">if</span> <span class="n">symmetrize</span><span class="p">:</span>
-            <span class="n">A</span> <span class="o">=</span> <span class="n">symmetrize_sparse</span><span class="p">(</span> <span class="n">A</span> <span class="p">)</span>  <span class="c1"># converts to CSR; deletes 0&#39;s</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">pass</span>
-        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-            <span class="c1"># sparse will complain that this is faster with lil_matrix</span>
-            <span class="n">A</span><span class="o">.</span><span class="n">setdiag</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># the 0 on the diagonal is a true zero</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">A</span> <span class="o">**=</span> <span class="mi">2</span>
-        <span class="n">A</span> <span class="o">/=</span> <span class="p">(</span><span class="o">-</span><span class="n">neighbors_radius</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">symmetrize</span><span class="p">:</span>
-            <span class="n">A</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span><span class="o">+</span><span class="n">A</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
-            <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span> <span class="n">A</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;C&quot;</span> <span class="p">)</span>  <span class="c1"># is this necessary??</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">pass</span>
-    <span class="k">return</span> <span class="n">A</span>
-
-<span class="c1">###############################################################################</span>
-<span class="c1"># Graph laplacian</span>
-<span class="c1"># Code adapted from the Matlab function laplacian.m of Dominique Perrault-Joncas</span>
-<div class="viewcode-block" id="graph_laplacian"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.graph_laplacian">[docs]</a><span class="k">def</span> <span class="nf">graph_laplacian</span><span class="p">(</span><span class="n">csgraph</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
-                    <span class="n">scaling_epps</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">renormalization_exponent</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                    <span class="n">return_diag</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Return the Laplacian matrix of an undirected graph.</span>
-
-<span class="sd">    Computes a consistent estimate of the Laplace-Beltrami operator L</span>
-<span class="sd">    from the similarity matrix A . See &quot;Diffusion Maps&quot; (Coifman and</span>
-<span class="sd">    Lafon, 2006) and &quot;Graph Laplacians and their Convergence on Random</span>
-<span class="sd">    Neighborhood Graphs&quot; (Hein, Audibert, Luxburg, 2007) for more</span>
-<span class="sd">    details.</span>
-
-<span class="sd">    A is the similarity matrix from the sampled data on the manifold M.</span>
-<span class="sd">    Typically A is obtained from the data X by applying the heat kernel</span>
-<span class="sd">    A_ij = exp(-||X_i-X_j||^2/EPPS). The bandwidth EPPS of the kernel is</span>
-<span class="sd">    need to obtained the properly scaled version of L. Following the usual</span>
-<span class="sd">    convention, the laplacian (Laplace-Beltrami operator) is defined as</span>
-<span class="sd">    div(grad(f)) (that is the laplacian is taken to be negative</span>
-<span class="sd">    semi-definite).</span>
-
-<span class="sd">    Note that the Laplacians defined here are the negative of what is</span>
-<span class="sd">    commonly used in the machine learning literature. This convention is used</span>
-<span class="sd">    so that the Laplacians converge to the standard definition of the</span>
-<span class="sd">    differential operator.</span>
-
-<span class="sd">    notation: A = csgraph, D=diag(A1) the diagonal matrix of degrees</span>
-<span class="sd">    L = lap = returned object, EPPS = scaling_epps**2</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    csgraph : array_like or sparse matrix, 2 dimensions</span>
-<span class="sd">        compressed-sparse graph, with shape (N, N).</span>
-<span class="sd">    normed : string, optional</span>
-<span class="sd">        if &#39;renormalized&#39;:</span>
-<span class="sd">            compute renormalized Laplacian of Coifman &amp; Lafon</span>
-<span class="sd">            L = D**-alpha A D**-alpha</span>
-<span class="sd">            T = diag(L1)</span>
-<span class="sd">            L = T**-1 L - eye()</span>
-<span class="sd">        if &#39;symmetricnormalized&#39;:</span>
-<span class="sd">           compute normalized Laplacian</span>
-<span class="sd">            L = D**-0.5 A D**-0.5 - eye()</span>
-<span class="sd">        if &#39;unnormalized&#39;: compute unnormalized Laplacian.</span>
-<span class="sd">            L = A-D</span>
-<span class="sd">        if &#39;randomwalks&#39;: compute stochastic transition matrix</span>
-<span class="sd">            L = D**-1 A</span>
-<span class="sd">    symmetrize: bool, optional</span>
-<span class="sd">        if True symmetrize adjacency matrix (internally) before computing lap</span>
-<span class="sd">    scaling_epps: float, optional</span>
-<span class="sd">        if &gt;0., it should be the same neighbors_radius that was used as kernel</span>
-<span class="sd">        width for computing the affinity. The Laplacian gets the scaled by</span>
-<span class="sd">        4/np.sqrt(scaling_epps) in order to ensure consistency in the limit</span>
-<span class="sd">        of large N</span>
-<span class="sd">    return_diag : bool, optional (kept for compatibility)</span>
-<span class="sd">        If True, then return diagonal as well as laplacian.</span>
-<span class="sd">    return_lapsym : bool, optional</span>
-<span class="sd">        If normed in { &#39;geometric&#39;, &#39;renormalized&#39; } then a symmetric matrix</span>
-<span class="sd">        lapsym, and a row normalization vector w are also returned. Having</span>
-<span class="sd">        these allows us to compute the laplacian spectral decomposition</span>
-<span class="sd">        as a symmetric matrix, which has much better numerical properties.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    lap : ndarray</span>
-<span class="sd">        The N x N laplacian matrix of graph.</span>
-<span class="sd">    diag : ndarray (obsolete, for compatibiility)</span>
-<span class="sd">        The length-N diagonal of the laplacian matrix.</span>
-<span class="sd">        diag is returned only if return_diag is True.</span>
-
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    There are a few differences from the sklearn.spectral_embedding laplacian</span>
-<span class="sd">    function.</span>
-
-<span class="sd">    1. normed=&#39;unnormalized&#39; and &#39;symmetricnormalized&#39; correspond respectively</span>
-<span class="sd">       to normed=False and True in the latter. (Note also that normed was changed</span>
-<span class="sd">       from bool to string.</span>
-<span class="sd">    2. the signs of this laplacians are changed w.r.t the original</span>
-<span class="sd">    3. the diagonal of lap is no longer set to 0; also there is no checking if</span>
-<span class="sd">       the matrix has zeros on the diagonal. If the degree of a node is 0, this</span>
-<span class="sd">       is handled graciuously (by not dividing by 0).</span>
-<span class="sd">    4. if csgraph is not symmetric the out-degree is used in the</span>
-<span class="sd">       computation and no warning is raised. However, it is not recommended to</span>
-<span class="sd">       use this function for directed graphs.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;csgraph must be a square matrix or array&#39;</span><span class="p">)</span>
-
-    <span class="n">normed</span> <span class="o">=</span> <span class="n">normed</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">normed</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;unnormalized&#39;</span><span class="p">,</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="s1">&#39;randomwalk&#39;</span><span class="p">,</span> <span class="s1">&#39;symmetricnormalized&#39;</span><span class="p">,</span><span class="s1">&#39;renormalized&#39;</span> <span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;normed must be one of unnormalized, geometric, randomwalk, symmetricnormalized, renormalized&#39;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">csgraph</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">csgraph</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint</span><span class="p">)):</span>
-        <span class="n">csgraph</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">csgraph</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">_laplacian_sparse</span><span class="p">(</span><span class="n">csgraph</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="n">normed</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="n">symmetrize</span><span class="p">,</span>
-                                    <span class="n">scaling_epps</span> <span class="o">=</span> <span class="n">scaling_epps</span><span class="p">,</span>
-                                    <span class="n">renormalization_exponent</span> <span class="o">=</span> <span class="n">renormalization_exponent</span><span class="p">,</span>
-                                    <span class="n">return_diag</span> <span class="o">=</span> <span class="n">return_diag</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="n">return_lapsym</span><span class="p">)</span>
-
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">_laplacian_dense</span><span class="p">(</span><span class="n">csgraph</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="n">normed</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="n">symmetrize</span><span class="p">,</span>
-                                <span class="n">scaling_epps</span> <span class="o">=</span> <span class="n">scaling_epps</span><span class="p">,</span>
-                                <span class="n">renormalization_exponent</span> <span class="o">=</span> <span class="n">renormalization_exponent</span><span class="p">,</span>
-                                <span class="n">return_diag</span> <span class="o">=</span> <span class="n">return_diag</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="n">return_lapsym</span><span class="p">)</span></div>
-
-<span class="k">def</span> <span class="nf">_laplacian_sparse</span><span class="p">(</span><span class="n">csgraph</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
-                        <span class="n">scaling_epps</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">renormalization_exponent</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                        <span class="n">return_diag</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
-    <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">lap</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">symmetrize</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">lap</span><span class="o">.</span><span class="n">format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;csr&#39;</span><span class="p">:</span>
-            <span class="n">lap</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
-        <span class="n">lap</span> <span class="o">=</span> <span class="p">(</span><span class="n">lap</span> <span class="o">+</span> <span class="n">lap</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
-    <span class="k">if</span> <span class="n">lap</span><span class="o">.</span><span class="n">format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;coo&#39;</span><span class="p">:</span>
-        <span class="n">lap</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">tocoo</span><span class="p">()</span>
-    <span class="n">diag_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span> <span class="o">==</span> <span class="n">lap</span><span class="o">.</span><span class="n">col</span><span class="p">)</span>  <span class="c1"># True/False</span>
-    <span class="n">degrees</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;symmetricnormalized&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">degrees</span><span class="p">)</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">col</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1.</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;geometric&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>     <span class="c1"># normzlize one symmetrically by d</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">col</span><span class="p">]</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span> <span class="c1">#normalize again asymmetricall</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1.</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;renormalized&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">**</span><span class="n">renormalization_exponent</span><span class="p">;</span>
-        <span class="c1"># same as &#39;geometric&#39; from here on</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">col</span><span class="p">]</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span> <span class="c1">#normalize again asymmetricall</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1.</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;unnormalized&#39;</span><span class="p">:</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span> <span class="o">-=</span> <span class="n">degrees</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;randomwalk&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[</span><span class="n">lap</span><span class="o">.</span><span class="n">row</span><span class="p">]</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">1.</span>
-    <span class="k">if</span> <span class="n">scaling_epps</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
-        <span class="n">lap</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">scaling_epps</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">return_diag</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">],</span> <span class="n">lapsym</span><span class="p">,</span> <span class="n">w</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">lap</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">diag_mask</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="n">return_lapsym</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">lapsym</span><span class="p">,</span> <span class="n">w</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">lap</span>
-
-<span class="k">def</span> <span class="nf">_laplacian_dense</span><span class="p">(</span><span class="n">csgraph</span><span class="p">,</span> <span class="n">normed</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
-                        <span class="n">scaling_epps</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">renormalization_exponent</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                        <span class="n">return_diag</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
-    <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">symmetrize</span><span class="p">:</span>
-        <span class="n">lap</span> <span class="o">=</span> <span class="p">(</span><span class="n">csgraph</span> <span class="o">+</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">lap</span> <span class="o">=</span> <span class="n">csgraph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">degrees</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-    <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag_indices</span><span class="p">(</span> <span class="n">lap</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>  <span class="c1"># diagonal indices</span>
-
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;symmetricnormalized&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">degrees</span><span class="p">)</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag_indices</span><span class="p">(</span> <span class="n">lap</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>
-        <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w_zeros</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;geometric&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>     <span class="c1"># normalize once symmetrically by d</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span> <span class="c1">#normalize again asymmetricall</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w_zeros</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;renormalized&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">**</span><span class="n">renormalization_exponent</span><span class="p">;</span>
-        <span class="c1"># same as &#39;geometric&#39; from here on</span>
-        <span class="n">w_zeros</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">w</span><span class="p">[</span><span class="n">w_zeros</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span> <span class="c1">#normalize again asymmetricall</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">w_zeros</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;unnormalized&#39;</span><span class="p">:</span>
-        <span class="n">dum</span> <span class="o">=</span> <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span><span class="o">-</span><span class="n">degrees</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,:]</span>
-        <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span> <span class="o">=</span> <span class="n">dum</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">normed</span> <span class="o">==</span> <span class="s1">&#39;randomwalk&#39;</span><span class="p">:</span>
-        <span class="n">w</span> <span class="o">=</span> <span class="n">degrees</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="n">lapsym</span> <span class="o">=</span> <span class="n">lap</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">lap</span> <span class="o">/=</span> <span class="n">w</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="n">lap</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">lap</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
-    <span class="k">if</span> <span class="n">scaling_epps</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
-        <span class="n">lap</span> <span class="o">*=</span> <span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">scaling_epps</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">return_diag</span><span class="p">:</span>
-        <span class="n">diag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">lap</span><span class="p">[</span><span class="n">di</span><span class="p">]</span> <span class="p">)</span>
-        <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">diag</span><span class="p">,</span> <span class="n">lapsym</span><span class="p">,</span> <span class="n">w</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">diag</span>
-    <span class="k">elif</span> <span class="n">return_lapsym</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">lap</span><span class="p">,</span> <span class="n">lapsym</span><span class="p">,</span> <span class="n">w</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">lap</span>
-
-<div class="viewcode-block" id="Geometry"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry">[docs]</a><span class="k">class</span> <span class="nc">Geometry</span><span class="p">:</span>
+<div class="viewcode-block" id="Geometry"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry">[docs]</a><span class="k">class</span> <span class="nc">Geometry</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The Geometry class stores the data, distance, affinity and laplacian</span>
 <span class="sd">    matrices used by the various embedding methods and is the primary</span>
 <span class="sd">    object passed to embedding functions.</span>
 
-<span class="sd">    The Geometry class contains functions to build the aforementioned</span>
+<span class="sd">    The Geometry class contains functions to compute the aforementioned</span>
 <span class="sd">    matrices and allows for re-computation whenever necessary.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    X : array_like or sparse array. 2 dimensional. Value depends on input_type.</span>
-<span class="sd">        size: (N_obs, N_dim) if &#39;data&#39;, (N_obs, N_obs) otherwise.</span>
-<span class="sd">    input_type : string, one of: &#39;data&#39;, &#39;distance&#39;, &#39;affinity&#39;. The values of X.</span>
-<span class="sd">    neighborhood_radius : scalar, passed to distance_matrix. Value such that all</span>
-<span class="sd">        distances beyond neighborhood_radius are considered infinite.</span>
-<span class="sd">    affinity_radius : scalar, passed to affinity_matrix. &#39;bandwidth&#39; parameter</span>
-<span class="sd">        used in Guassian kernel for affinity matrix</span>
-<span class="sd">    distance_method : string, one of &#39;auto&#39;, &#39;brute&#39;, &#39;cython&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;.</span>
+<span class="sd">    adjacency_method : string, one of &#39;auto&#39;, &#39;brute&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;.</span>
 <span class="sd">        method for computing pairwise radius neighbors graph.</span>
-<span class="sd">    laplacian_type : string, one of: &#39;symmetricnormalized&#39;, &#39;geometric&#39;, &#39;renormalized&#39;,</span>
-<span class="sd">        &#39;unnormalized&#39;, &#39;randomwalk&#39;</span>
-<span class="sd">        type of laplacian to be computed. See graph_laplacian for more information.</span>
-<span class="sd">    path_to_flann : string. full file path location of FLANN if not installed to root or</span>
-<span class="sd">        FLANN_ROOT set to path location. Used for importing pyflann from a different location.</span>
-
+<span class="sd">    adjacency_kwds : dictionary containing keyword arguments for adjacency matrix.</span>
+<span class="sd">        see distance.py docmuentation for arguments for each method.</span>
+<span class="sd">        If new kwargs are passed to compute_adjacency_matrix then this dictionary will</span>
+<span class="sd">        be updated.</span>
+<span class="sd">    affinity_method : string, one of &#39;auto&#39;, &#39;gaussian&#39;.</span>
+<span class="sd">    affinity_kwds : dictionary containing keyword arguments for affinity matrix.</span>
+<span class="sd">        see affinity.py docmuentation for arguments for each method.</span>
+<span class="sd">        If new kwargs are passed to compute_affinity_matrix then this dictionary will</span>
+<span class="sd">        be updated.</span>
+<span class="sd">    laplacian_method : string, one of: &#39;symmetricnormalized&#39;, &#39;geometric&#39;, &#39;renormalized&#39;,</span>
+<span class="sd">        &#39;unnormalized&#39;, &#39;randomwalk&#39; type of laplacian to be computed.</span>
+<span class="sd">        see laplacian.py for more information.</span>
+<span class="sd">    laplacian_kwds : dictionary containing keyword arguments for Laplacian matrix.</span>
+<span class="sd">        see laplacian.py docmuentation for arguments for each method.</span>
+<span class="sd">        If new kwargs are passed to compute_laplacian_matrix then this dictionary will</span>
+<span class="sd">        be updated.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">adjacency_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">affinity_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">affinity_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">laplacian_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span><span class="n">laplacian_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_method</span> <span class="o">=</span> <span class="n">adjacency_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="n">adjacency_kwds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_method</span> <span class="o">=</span> <span class="n">affinity_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="o">=</span> <span class="n">affinity_kwds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span> <span class="o">=</span> <span class="n">laplacian_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="n">laplacian_kwds</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-                 <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
-                 <span class="n">laplacian_type</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="o">=</span> <span class="n">distance_method</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="o">=</span> <span class="n">path_to_flann</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">distance_methods</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid distance method.&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">neighborhood_radius</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="n">neighborhood_radius</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
-            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;neighborhood_radius must be convertable to float&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">affinity_radius</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span> <span class="o">=</span> <span class="bp">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="n">affinity_radius</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span> <span class="o">=</span> <span class="bp">False</span>
-            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;affinity_radius must be convertable to float&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;distance&#39;</span><span class="p">:</span>
-            <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
-            <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;input_type is distance but input matrix is not square&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">X</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;affinity&#39;</span><span class="p">:</span>
-            <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
-            <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;input_type is affinity but input matrix is not square&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">X</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
-            <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;input_type must be one of: data, distance, affinity.&#39;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">distance_method</span> <span class="o">==</span> <span class="s1">&#39;cython&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="kn">from</span> <span class="nn">megaman.geometry.cyflann.index</span> <span class="kn">import</span> <span class="n">Index</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cyindex</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-                <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;distance_method set to cython but cyflann_index cannot be imported.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cyindex</span> <span class="o">=</span> <span class="bp">None</span>
-
-        <span class="k">if</span> <span class="n">distance_method</span> <span class="o">==</span> <span class="s1">&#39;pyflann&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="c1"># FLANN is installed in specific location</span>
-                <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="kn">import</span> <span class="nn">pyflann</span> <span class="kn">as</span> <span class="nn">pyf</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span> <span class="o">=</span> <span class="n">pyf</span><span class="o">.</span><span class="n">FLANN</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flparams</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span><span class="o">.</span><span class="n">build_index</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">algorithm</span> <span class="o">=</span> <span class="s1">&#39;kmeans&#39;</span><span class="p">,</span>
-                                                         <span class="n">target_precision</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;distance_method is set to pyflann but pyflann is &quot;</span>
-                                <span class="s2">&quot;not available.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span> <span class="o">=</span> <span class="bp">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flparams</span> <span class="o">=</span> <span class="bp">None</span>
-
-<div class="viewcode-block" id="Geometry.get_distance_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.get_distance_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_distance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Geometry.compute_adjacency_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.compute_adjacency_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">compute_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note: this function will compute the adjacency matrix. In order to acquire</span>
+<span class="sd">            the existing adjacency matrix use self.adjacency_matrix as</span>
+<span class="sd">            comptute_adjacency_matrix() will re-compute the adjacency matrix.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        neighborhood_radius : scalar, passed to distance_matrix. Value such that all</span>
-<span class="sd">            distances beyond neighborhood_radius are considered infinite.</span>
-<span class="sd">            if this value is not passed the value of self.neighborhood_radius is used</span>
-
-<span class="sd">        copy : boolean, whether to return a copied version of the distance matrix</span>
+<span class="sd">        copy : boolean, whether to return a copied version of the adjacency matrix</span>
+<span class="sd">        **kwargs : see distance.py docmuentation for arguments for each method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        self.distance_matrix : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values</span>
+<span class="sd">        self.adjacency_matrix : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values</span>
 <span class="sd">            (e.g. diagonal) should be considered Infinite.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;affinity&#39;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;input_method was passed as affinity. &quot;</span>
-                            <span class="s2">&quot;Distance matrix cannot be computed.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">distance_error_msg</span><span class="p">)</span>
 
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="c1"># if there&#39;s no existing distance matrix we make one</span>
-            <span class="k">if</span> <span class="p">((</span><span class="n">neighborhood_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">neighborhood_radius</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">)):</span>
-                <span class="c1"># a different radius was passed than self.neighborhood_radius</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span><span class="p">,</span>
-                                                    <span class="n">flindex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span><span class="p">,</span>
-                                                    <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">,</span>
-                                                    <span class="n">cyindex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cyindex</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># if there is an existing matrix we have to see if we need to overwrite</span>
-            <span class="k">if</span> <span class="p">((</span><span class="n">neighborhood_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">neighborhood_radius</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">)):</span>
-                <span class="c1"># if there&#39;s a new radius we need to re-calculate</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;distance&#39;</span><span class="p">:</span>
-                    <span class="c1"># but if we were passed distance this is impossible</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;input_method was passed as distance.&quot;</span>
-                                    <span class="s2">&quot;requested radius not equal to self.neighborhood_radius.&quot;</span>
-                                    <span class="s2">&quot;distance matrix cannot be re-calculated.&quot;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># if we were passed data then we need to re-calculate</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span><span class="p">,</span>
-                                                            <span class="n">flindex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span><span class="p">,</span>
-                                                            <span class="n">radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">,</span>
-                                                            <span class="n">cyindex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cyindex</span><span class="p">)</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">compute_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_method</span><span class="p">,</span>
+                                                         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span></div>
 
-<div class="viewcode-block" id="Geometry.get_affinity_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.get_affinity_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span>
-                            <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+<div class="viewcode-block" id="Geometry.compute_affinity_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.compute_affinity_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">compute_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note: this function will compute the affinity matrix. In order to acquire</span>
+<span class="sd">            the existing affinity matrix use self.affinity_matrix as</span>
+<span class="sd">            comptute_affinity_matrix() will re-compute the affinity matrix.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        affinity_radius : scalar, passed to affinity_matrix. &#39;bandwidth&#39; parameter</span>
-<span class="sd">            used in Guassian kernel for affinity matrix</span>
-<span class="sd">            If this value is not passed then the self.affinity_radius value is used.</span>
-
 <span class="sd">        copy : boolean, whether to return a copied version of the affinity matrix</span>
-
-<span class="sd">        symmetrize : boolean, whether to explicitly symmetrize the affinity matrix.</span>
-<span class="sd">            if distance_method = &#39;cython&#39;, &#39;cyflann&#39;, or &#39;pyflann&#39; it is recommended</span>
-<span class="sd">            to set this to True.</span>
+<span class="sd">        **kwargs : see affinity.py docmuentation for arguments for each method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -554,59 +175,34 @@
 <span class="sd">            affinity values using the Guassian kernel and bandwidth equal to the</span>
 <span class="sd">            affinity_radius</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="c1"># if there&#39;s no existing affinity matrix we make one</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="c1"># first check to see if we have the distance matrix</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">(</span><span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">affinity_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">affinity_radius</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span> <span class="o">=</span> <span class="bp">False</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">,</span>
-                                                    <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">,</span> <span class="n">symmetrize</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># if there is an existing matrix we have to see if we need to overrwite</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">affinity_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">affinity_radius</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-                <span class="n">affinity_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span><span class="p">):</span>
-                <span class="c1"># if there&#39;s a new radius we need to re-calculate</span>
-                <span class="c1"># or there&#39;s a passed radius and the current radius was set to default</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;affinity&#39;</span><span class="p">:</span>
-                    <span class="c1"># but if we were passed affinity this is impossible</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Input_method was passed as affinity.&quot;</span>
-                                     <span class="s2">&quot;Requested radius was not equal to self.affinity_radius.&quot;</span>
-                                     <span class="s2">&quot;Affinity Matrix cannot be recalculated.&quot;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># if we were passed distance or data we can recalculate:</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                        <span class="c1"># first check to see if we have the distance matrix</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">(</span><span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span> <span class="o">=</span> <span class="bp">False</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">,</span>
-                                                            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">,</span> <span class="n">symmetrize</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">affinity_error_msg</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># first check to see if we have the distance matrix</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">compute_adjacency_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">compute_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="p">,</span>
+                                                       <span class="bp">self</span><span class="o">.</span><span class="n">affinity_method</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span></div>
 
-<div class="viewcode-block" id="Geometry.get_laplacian_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.get_laplacian_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">laplacian_type</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">symmetrize</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                            <span class="n">scaling_epps</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">renormalization_exponent</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                            <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_lapsym</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="Geometry.compute_laplacian_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.compute_laplacian_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">compute_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_lapsym</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note: this function will compute the laplacian matrix. In order to acquire</span>
+<span class="sd">            the existing laplacian matrix use self.laplacian_matrix as</span>
+<span class="sd">            comptute_laplacian_matrix() will re-compute the laplacian matrix.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        laplacian_type : string, the type of graph laplacian to compute.</span>
-<span class="sd">            see &#39;normed&#39; in graph_laplacian for more information</span>
-<span class="sd">        symmetrize : boolean, whether to pre-symmetrize the affinity matrix before</span>
-<span class="sd">            computing the laplacian_matrix</span>
-<span class="sd">        scaling_epps : scalar, the bandwidth/radius parameter used in the affinity matrix</span>
-<span class="sd">            see graph_laplacian for more information</span>
-<span class="sd">        renormalization_exponent : scalar, renormalization exponent for computing Laplacian</span>
-<span class="sd">            see graph_laplacian for more information</span>
 <span class="sd">        copy : boolean, whether to return copied version of the self.laplacian_matrix</span>
 <span class="sd">        return_lapsym : boolean, if True returns additionally the symmetrized version of</span>
 <span class="sd">            the requested laplacian and the re-normalization weights.</span>
+<span class="sd">        **kwargs : see laplacian.py docmuentation for arguments for each method.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -615,141 +211,90 @@
 <span class="sd">        self.w : Ndarray (N_obs). The renormalization weights used to make</span>
 <span class="sd">            laplacian_matrix from laplacian_symmetric</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># if scaling_epps is None:</span>
-            <span class="c1"># scaling_epps = self.affinity_radius</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="n">kwargs</span>
 
-        <span class="c1"># First check if there&#39;s an existing Laplacian:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">laplacian_type</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">laplacian_type</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;current Laplacian matrix is of type &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span><span class="p">)</span> <span class="o">+</span>
-                              <span class="s2">&quot; but type &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">laplacian_type</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; was requested. &quot;</span>
-                              <span class="s2">&quot;Existing Laplacian matrix will be overwritten.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s1">&#39;return_lapsym&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">[</span><span class="s1">&#39;full_output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">return_lapsym</span>
 
-        <span class="c1"># Next, either there is no Laplacian or we&#39;re replacing. Check type:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">laplacian_type</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span> <span class="c1"># default value</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span>
-        <span class="k">elif</span> <span class="n">laplacian_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">!=</span> <span class="n">laplacian_type</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># first check to see if we have an affinity matrix</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_affinity_matrix</span><span class="p">()</span>
 
-        <span class="c1"># next check if we have an affinity matrix:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_affinity_matrix</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-
-        <span class="c1"># results depend on symmetric or not:</span>
         <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_symmetric</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="n">graph_laplacian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span><span class="p">,</span>
-                                      <span class="n">symmetrize</span><span class="p">,</span> <span class="n">scaling_epps</span><span class="p">,</span> <span class="n">renormalization_exponent</span><span class="p">,</span>
-                                      <span class="n">return_diag</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">)</span> <span class="o">=</span> <span class="n">compute_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span><span class="p">,</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="n">graph_laplacian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">,</span>
-                                                    <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span><span class="p">,</span>
-                                                    <span class="n">symmetrize</span><span class="p">,</span> <span class="n">scaling_epps</span><span class="p">,</span>
-                                                    <span class="n">renormalization_exponent</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="n">compute_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span><span class="p">,</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span></div>
 
-    <span class="k">def</span> <span class="nf">assign_data_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+<div class="viewcode-block" id="Geometry.set_data_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_data_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_data_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : ndarray (N_obs, N_features). The original data set to input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span></div>
 
-    <span class="k">def</span> <span class="nf">assign_distance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance_mat</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-        <span class="n">distance_mat</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">distance_mat</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">distance_mat</span><span class="o">.</span><span class="n">shape</span>
+<div class="viewcode-block" id="Geometry.set_adjacency_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_adjacency_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_mat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        adjacency_mat : sparse Ndarray (N_obs, N_obs). The adjacency matrix to input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">adjacency_mat</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">adjacency_mat</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">adjacency_mat</span><span class="o">.</span><span class="n">shape</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;distance matrix is not square&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;adjacency matrix is not square&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">distance_mat</span>
-            <span class="k">if</span> <span class="n">neighborhood_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">adjacency_mat</span></div>
 
-    <span class="k">def</span> <span class="nf">assign_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">affinity_matrix</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-        <span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">affinity_matrix</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">affinity_matrix</span><span class="o">.</span><span class="n">shape</span>
+<div class="viewcode-block" id="Geometry.set_affinity_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_affinity_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">affinity_mat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        affinity_mat : sparse Ndarray (N_obs, N_obs). The adjacency matrix to input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">affinity_mat</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">affinity_mat</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">affinity_mat</span><span class="o">.</span><span class="n">shape</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;affinity matrix is not square&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">affinity_matrix</span>
-            <span class="k">if</span> <span class="n">affinity_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">default_affinity</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">affinity_mat</span></div>
 
-    <span class="k">def</span> <span class="nf">assign_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">laplacian_matrix</span><span class="p">,</span> <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span><span class="p">):</span>
-        <span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">laplacian_matrix</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
-        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">laplacian_matrix</span><span class="o">.</span><span class="n">shape</span>
+<div class="viewcode-block" id="Geometry.set_laplacian_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_laplacian_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">laplacian_mat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        laplacian_mat : sparse Ndarray (N_obs, N_obs). The Laplacian matrix to input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">laplacian_mat</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span><span class="n">laplacian_mat</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="n">sparse_formats</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">=</span> <span class="n">laplacian_mat</span><span class="o">.</span><span class="n">shape</span>
         <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="n">b</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Laplacian matrix is not square&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="n">laplacian_matrix</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span><span class="p">;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="n">laplacian_mat</span></div>
 
-<div class="viewcode-block" id="Geometry.assign_parameters"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.assign_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">assign_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborhood_radius</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">affinity_radius</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                          <span class="n">distance_method</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">laplacian_type</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                          <span class="n">path_to_flann</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Note: self.neighborhood_radius, self.affinity_radius,</span>
-<span class="sd">        and self.laplacian_type refer to the CURRENT</span>
-<span class="sd">        version of these matrices.</span>
+    <span class="k">def</span> <span class="nf">delete_data_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
 
-<span class="sd">        If you want to re-calculate with a new parameter DO NOT</span>
-<span class="sd">        update these with assign_parameters, instead use</span>
-<span class="sd">        get_distance_matrix(), get_affinity_matrix(), or get_laplacian_matrix()</span>
-<span class="sd">        and pass the desired new parameter. This will automatically update</span>
-<span class="sd">        the self.parameter version.</span>
+    <span class="k">def</span> <span class="nf">delete_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="bp">None</span>
 
-<span class="sd">        If you change these values with assign_parameters Geometry will assume</span>
-<span class="sd">        that the existing matrix follows that parameter and so, for example,</span>
-<span class="sd">        calling get_distance_matrix() with a passed radius will *not*</span>
-<span class="sd">        recalculate if the passed radius is equal to self.neighborhood_radius</span>
-<span class="sd">        and there already exists a distance matrix.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">neighborhood_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="n">neighborhood_radius</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
-            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;neighborhood_radius must convertable to float&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">delete_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="bp">None</span>
 
-        <span class="k">if</span> <span class="n">affinity_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">(</span><span class="n">affinity_radius</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;neighborhood_radius must convertable to float&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">distance_method</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">distance_method</span> <span class="ow">in</span> <span class="n">distance_methods</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="o">=</span> <span class="n">distance_method</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;distance_method must be one of: &quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">laplacian_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">laplacian_type</span> <span class="ow">in</span> <span class="n">laplacian_types</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;laplacian_type method must be one of: &quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">path_to_flann</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="o">=</span> <span class="n">path_to_flann</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="kn">import</span> <span class="nn">pyflann</span> <span class="kn">as</span> <span class="nn">pyf</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span> <span class="o">=</span> <span class="n">pyf</span><span class="o">.</span><span class="n">FLANN</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flparams</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flindex</span><span class="o">.</span><span class="n">build_index</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">algorithm</span> <span class="o">=</span> <span class="s1">&#39;kmeans&#39;</span><span class="p">,</span>
-                                                         <span class="n">target_precision</span> <span class="o">=</span> <span class="mf">0.9</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;distance_method is set to pyflann but pyflann is &quot;</span>
-                                <span class="s2">&quot;not available.&quot;</span><span class="p">)</span></div></div>
+    <span class="k">def</span> <span class="nf">delete_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span></div>
 </pre></div>
 
           </div>

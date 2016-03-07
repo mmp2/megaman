@@ -88,17 +88,26 @@ the embedding. It does not allow for changing parameters.</li>
 <div class="section" id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>Here is an example using the function on a random data set:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
-<span class="kn">import</span> <span class="nn">megaman.embedding.spectral_embedding</span> <span class="kn">as</span> <span class="nn">se</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">megaman.geometry</span> <span class="kn">import</span> <span class="n">Geometry</span>
+<span class="kn">from</span> <span class="nn">megaman.embedding</span> <span class="kn">import</span> <span class="n">SpectralEmbedding</span>
 
 <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;cython&#39;</span><span class="p">,</span>
-                        <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span>
-                        <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">)</span>
-<span class="n">Spectral</span> <span class="o">=</span> <span class="n">se</span><span class="o">.</span><span class="n">SpectralEmbedding</span><span class="p">(</span><span class="n">n_components</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;pyamg&#39;</span><span class="p">,</span>
-                                <span class="n">Geometry</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">)</span>
-<span class="n">embedding</span> <span class="o">=</span> <span class="n">Spectral</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+<span class="n">radius</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">adjacency_method</span> <span class="o">=</span> <span class="s1">&#39;cyflann&#39;</span>
+<span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;radius&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># ignore distances above this radius</span>
+<span class="n">affinity_method</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
+<span class="n">affinity_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;radius&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># A = exp(-||x - y||/radius^2)</span>
+<span class="n">laplacian_method</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span>
+<span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scaling_epps&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># scaling ensures convergence to Laplace-Beltrami operator</span>
+
+<span class="n">geom</span>  <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">adjacency_method</span><span class="o">=</span><span class="n">adjacency_method</span><span class="p">,</span> <span class="n">adjacency_kwds</span><span class="o">=</span><span class="n">adjacency_kwds</span><span class="p">,</span>
+                 <span class="n">affinity_method</span><span class="o">=</span><span class="n">affinity_method</span><span class="p">,</span> <span class="n">affinity_kwds</span><span class="o">=</span><span class="n">affinity_kwds</span><span class="p">,</span>
+                 <span class="n">laplacian_method</span><span class="o">=</span><span class="n">laplacian_method</span><span class="p">,</span> <span class="n">laplacian_kwds</span><span class="o">=</span><span class="n">laplacian_kwds</span><span class="p">)</span>
+
+<span class="n">spectral</span> <span class="o">=</span> <span class="n">SpectralEmbedding</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;arpack&#39;</span><span class="p">,</span>
+                             <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
+<span class="n">embed_spectral</span> <span class="o">=</span> <span class="n">spectral</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

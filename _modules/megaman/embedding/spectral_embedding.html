@@ -38,7 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for megaman.embedding.spectral_embedding</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Spectral Embedding&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;Spectral Embedding&quot;&quot;&quot;</span>
 
 <span class="c1"># Author: Marina Meila &lt;mmp@stat.washington.edu&gt;</span>
 <span class="c1">#         James McQueen &lt;jmcq@u.washington.edu&gt;</span>
@@ -50,11 +50,11 @@
 
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
-<span class="kn">from</span> <span class="nn">megaman.utils.eigendecomp</span> <span class="kn">import</span> <span class="n">eigen_decomposition</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">scipy.sparse.csgraph</span> <span class="kn">import</span> <span class="n">connected_components</span>
-<span class="kn">from</span> <span class="nn">megaman.utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">..embedding.base</span> <span class="kn">import</span> <span class="n">BaseEmbedding</span>
+<span class="kn">from</span> <span class="nn">..utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">..utils.eigendecomp</span> <span class="kn">import</span> <span class="n">eigen_decomposition</span><span class="p">,</span> <span class="n">check_eigen_solver</span>
 
 <span class="k">def</span> <span class="nf">_graph_connected_component</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">node_id</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -111,7 +111,7 @@
         <span class="c1"># dense graph, find all connected components start from node 0</span>
         <span class="k">return</span> <span class="n">_graph_connected_component</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="n">graph</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-<div class="viewcode-block" id="spectral_embedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.spectral_embedding">[docs]</a><span class="k">def</span> <span class="nf">spectral_embedding</span><span class="p">(</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+<div class="viewcode-block" id="spectral_embedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.spectral_embedding">[docs]</a><span class="k">def</span> <span class="nf">spectral_embedding</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
                        <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                        <span class="n">diffusion_maps</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -133,8 +133,7 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    Geometry : a Geometry object from megaman.embedding.geometry</span>
-
+<span class="sd">    geom : a Geometry object from megaman.embedding.geometry</span>
 <span class="sd">    n_components : integer, optional</span>
 <span class="sd">        The dimension of the projection subspace.</span>
 <span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
@@ -191,17 +190,19 @@
 <span class="sd">      http://dx.doi.org/10.1137%2FS1064827500366124</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Geometry object not megaman.embedding.geometry Geometry class&quot;</span><span class="p">)</span>
-    <span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_affinity_matrix</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_graph_is_connected</span><span class="p">(</span><span class="n">affinity_matrix</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">geom</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">geom</span><span class="o">.</span><span class="n">compute_affinity_matrix</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_graph_is_connected</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">):</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Graph is not fully connected, spectral embedding may not work as expected.&quot;</span><span class="p">)</span>
-
-    <span class="n">laplacian</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_laplacian_matrix</span><span class="p">(</span><span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">symmetrize</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">geom</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">laplacian</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">compute_laplacian_matrix</span><span class="p">(</span><span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">laplacian</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">laplacian_matrix</span>
     <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">laplacian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">lapl_type</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">laplacian_type</span>
-
+    <span class="n">lapl_type</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">laplacian_method</span>
+    <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span>
+                                      <span class="n">size</span><span class="o">=</span><span class="n">laplacian</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                      <span class="n">nvec</span><span class="o">=</span><span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">re_normalize</span> <span class="o">=</span> <span class="bp">False</span>
     <span class="k">if</span> <span class="n">eigen_solver</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;amg&#39;</span><span class="p">,</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">]:</span> <span class="c1"># these methods require a symmetric positive definite matrix!</span>
         <span class="k">if</span> <span class="n">lapl_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;symmetricnormalized&#39;</span><span class="p">,</span> <span class="s1">&#39;unnormalized&#39;</span><span class="p">]:</span>
@@ -224,8 +225,10 @@
             <span class="c1"># Finally, since we want positive definite not semi-definite we use (1+epsilon)*I</span>
             <span class="c1"># instead of I to make the smallest eigenvalue epsilon.</span>
             <span class="n">epsilon</span> <span class="o">=</span> <span class="mi">2</span>
-            <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Geometry</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
-            <span class="n">symmetrized_laplacian</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">laplacian_symmetric</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">geom</span><span class="o">.</span><span class="n">w</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="c1"># a laplacian existed but it wasn&#39;t called with return_lapsym = True</span>
+                <span class="n">geom</span><span class="o">.</span><span class="n">compute_laplacian_matrix</span><span class="p">(</span><span class="n">copy</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">return_lapsym</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>				
+            <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">w</span><span class="p">)</span>
+            <span class="n">symmetrized_laplacian</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">laplacian_symmetric</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">symmetrized_laplacian</span><span class="p">):</span>
                 <span class="n">symmetrized_laplacian</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">symmetrized_laplacian</span><span class="o">.</span><span class="n">row</span><span class="p">])</span>
                 <span class="n">symmetrized_laplacian</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">[</span><span class="n">symmetrized_laplacian</span><span class="o">.</span><span class="n">col</span><span class="p">])</span>
@@ -234,6 +237,7 @@
                 <span class="n">symmetrized_laplacian</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
                 <span class="n">symmetrized_laplacian</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
                 <span class="n">symmetrixed_laplacian</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">epsilon</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">)</span> <span class="o">-</span> <span class="n">symmetrized_laplacian</span>
+                
     <span class="k">if</span> <span class="n">re_normalize</span><span class="p">:</span>
         <span class="k">print</span><span class="p">(</span><span class="s1">&#39;using symmetrized laplacian&#39;</span><span class="p">)</span>
         <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">symmetrized_laplacian</span><span class="p">,</span> <span class="n">n_components</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="p">,</span>
@@ -256,8 +260,7 @@
         <span class="n">embedding</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_components</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">embedding</span></div>
 
-
-<div class="viewcode-block" id="SpectralEmbedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.SpectralEmbedding">[docs]</a><span class="k">class</span> <span class="nc">SpectralEmbedding</span><span class="p">():</span>
+<div class="viewcode-block" id="SpectralEmbedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.SpectralEmbedding">[docs]</a><span class="k">class</span> <span class="nc">SpectralEmbedding</span><span class="p">(</span><span class="n">BaseEmbedding</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Spectral embedding for non-linear dimensionality reduction.</span>
 
@@ -313,7 +316,10 @@
 <span class="sd">    path_to_flann : string. full file path location of FLANN if not installed to</span>
 <span class="sd">        root or to set FLANN_ROOT set to path location. Used for importing pyflann</span>
 <span class="sd">        from a different location.</span>
-<span class="sd">    Geometry : a Geometry object from megaman.geometry.geometry</span>
+<span class="sd">    geom : either a Geometry object from megaman.geometry or a dictionary</span>
+<span class="sd">            containing (some or all) geometry parameters: adjacency_method,</span>
+<span class="sd">            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,</span>
+<span class="sd">            laplacian_kwds as keys. </span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -329,12 +335,11 @@
 <span class="sd">      Jianbo Shi, Jitendra Malik</span>
 <span class="sd">      http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">eigen_tol</span> <span class="o">=</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">diffusion_maps</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
-                 <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-                 <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span>
-                 <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">,</span> <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-                 <span class="n">Geometry</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+                 <span class="n">geom</span> <span class="o">=</span> <span class="p">{}):</span>
+        <span class="c1"># initializes Geometry </span>
+        <span class="n">BaseEmbedding</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">)</span>
         <span class="c1"># embedding parameters:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
@@ -342,30 +347,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">diffusion_maps</span> <span class="o">=</span> <span class="n">diffusion_maps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span> <span class="o">=</span> <span class="n">eigen_tol</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">drop_first</span> <span class="o">=</span> <span class="n">drop_first</span>
-
-        <span class="c1"># Geometry parameters:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="n">neighborhood_radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span> <span class="o">=</span> <span class="n">affinity_radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span> <span class="o">=</span> <span class="n">distance_method</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span> <span class="o">=</span> <span class="n">input_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span> <span class="o">=</span> <span class="n">path_to_flann</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span> <span class="o">=</span> <span class="n">laplacian_type</span>
-
-    <span class="k">def</span> <span class="nf">fit_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neighborhood_radius</span><span class="p">,</span>
-                                      <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_radius</span><span class="p">,</span>
-                                      <span class="n">distance_method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_method</span><span class="p">,</span>
-                                      <span class="n">input_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_type</span><span class="p">,</span>
-                                      <span class="n">laplacian_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_type</span><span class="p">,</span>
-                                      <span class="n">path_to_flann</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_to_flann</span><span class="p">)</span>
-
-<div class="viewcode-block" id="SpectralEmbedding.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.SpectralEmbedding.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        
+<div class="viewcode-block" id="SpectralEmbedding.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.SpectralEmbedding.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fit the model from data in X.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        input_type : string, one of: &#39;data&#39;, &#39;distance&#39; or &#39;affinity&#39;.</span>
+<span class="sd">            The values of input data X. (default = &#39;data&#39;)</span>
 <span class="sd">        X : array-like, shape (n_samples, n_features)</span>
 <span class="sd">            Training vector, where n_samples in the number of samples</span>
 <span class="sd">            and n_features is the number of features.</span>
@@ -380,44 +370,27 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns the instance itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_data_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;distance&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;affinity&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_affinity_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
         <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span> <span class="o">=</span> <span class="n">spectral_embedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span> <span class="o">=</span> <span class="n">spectral_embedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
                                              <span class="n">n_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
                                              <span class="n">eigen_solver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
                                              <span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span><span class="p">,</span>
                                              <span class="n">eigen_tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span><span class="p">,</span>
                                              <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drop_first</span><span class="p">,</span>
                                              <span class="n">diffusion_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffusion_maps</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="o">.</span><span class="n">affinity_matrix</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="o">.</span><span class="n">laplacian_matrix</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix_type_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Geometry</span><span class="o">.</span><span class="n">laplacian_type</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
-
-<div class="viewcode-block" id="SpectralEmbedding.fit_transform"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.spectral_embedding.SpectralEmbedding.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Fit the model from data in X and transform X.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        X : array-like, shape (n_samples, n_features)</span>
-<span class="sd">            Training vector, where n_samples in the number of samples</span>
-<span class="sd">            and n_features is the number of features.</span>
-
-<span class="sd">        If self.input_type is distance, or affinity :</span>
-
-<span class="sd">        X : array-like, shape (n_samples, n_samples),</span>
-<span class="sd">            Interpret X as precomputed distance or adjacency graph</span>
-<span class="sd">            computed from samples.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        X_new : array-like, shape (n_samples, n_components)</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">affinity_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">laplacian_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix_type_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">laplacian_method</span>
+        <span class="k">return</span> <span class="bp">self</span></div></div>
 </pre></div>
 
           </div>

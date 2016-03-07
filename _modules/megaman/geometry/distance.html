@@ -38,15 +38,21 @@
           <div class="body" role="main">
             
   <h1>Source code for megaman.geometry.distance</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Authors: Marina Meila &lt;mmp@stat.washington.edu&gt;</span>
+<span class="c1"># Authors: Marina Meila &lt;mmp@stat.washington.edu&gt;</span>
 <span class="c1">#         James McQueen &lt;jmcq@u.washington.edu&gt;</span>
 <span class="c1"># License: BSD 3 clause</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span> <span class="c1">## removes integer division</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">scipy.spatial.distance</span> <span class="kn">import</span> <span class="n">pdist</span>
-<span class="kn">from</span> <span class="nn">megaman.geometry.cyflann.index</span> <span class="kn">import</span> <span class="n">Index</span>
 <span class="kn">import</span> <span class="nn">subprocess</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">.cyflann.index</span> <span class="kn">import</span> <span class="n">Index</span>
+
+
+<span class="k">def</span> <span class="nf">compute_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">graph</span>
 
 <span class="k">def</span> <span class="nf">_row_col_from_condensed_index</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">compr_ind</span><span class="p">):</span>
     <span class="c1"># convert from pdist compressed index format to (I, J) (upper triangular) pairs.</span>
@@ -55,17 +61,17 @@
     <span class="n">j</span> <span class="o">=</span> <span class="n">compr_ind</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span>
 
-<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.distance.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">flindex</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">cyindex</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="distance_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.distance.distance_matrix">[docs]</a><span class="k">def</span> <span class="nf">distance_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">flindex</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">cyindex</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes pairwise distance matrix. Interface function.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    X : data matrix, array_like, shape = (n_samples, n_dimensions)</span>
-<span class="sd">    method : one of &#39;auto&#39;, &#39;brute&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;, or &#39;cython&#39;.</span>
+<span class="sd">    method : {&#39;auto&#39;, &#39;brute&#39;, &#39;pyflann&#39;, &#39;cyflann&#39;}</span>
 <span class="sd">        &#39;pyflann&#39; requires python library pyflann</span>
-<span class="sd">        &#39;cython&#39; requires FLANN and cython</span>
-<span class="sd">        &#39;cyflann&#39; requires a UNIX system</span>
+<span class="sd">        &#39;cyflann&#39; requires FLANN and cython</span>
 <span class="sd">    flindex : a pyflann pre-computed flindex</span>
 <span class="sd">    radius : neighborhood radius, scalar</span>
 <span class="sd">        the neighbors lying approximately within radius of a node will</span>
@@ -82,16 +88,21 @@
 <span class="sd">           Zeros not on the diagonal should be considered infinite</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-        <span class="n">radius</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># TODO: is this a suitable default?</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
-        <span class="c1"># change this based on benchmarking results</span>
+        <span class="c1"># TODO: change this based on benchmarking results</span>
         <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;brute&#39;</span>
+
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;pyflann&#39;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">pyflann</span> <span class="kn">as</span> <span class="nn">pyf</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pyflann not installed.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">flindex</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;must pass a flindex when using pyflann&#39;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">graph</span> <span class="o">=</span> <span class="n">fl_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">flindex</span><span class="p">)</span>
+            <span class="n">flindex</span> <span class="o">=</span> <span class="n">pyf</span><span class="o">.</span><span class="n">FLANN</span><span class="p">()</span>
+            <span class="n">flindex</span><span class="o">.</span><span class="n">build_index</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="s1">&#39;kmeans&#39;</span><span class="p">,</span><span class="n">target_precision</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+        <span class="n">graph</span> <span class="o">=</span> <span class="n">fl_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">flindex</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;cyflann&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">cyindex</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="n">cyindex</span> <span class="o">=</span> <span class="n">Index</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
@@ -100,9 +111,9 @@
     <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;brute&#39;</span><span class="p">:</span>
         <span class="n">graph</span> <span class="o">=</span> <span class="n">radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;method must be one of: (auto, brute, pyflann, cyflann)&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;method must be one of: {auto, brute, pyflann, cyflann}&#39;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">graph</span></div>
+
 
 <div class="viewcode-block" id="radius_neighbors_graph"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.distance.radius_neighbors_graph">[docs]</a><span class="k">def</span> <span class="nf">radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -131,33 +142,30 @@
         <span class="n">graph</span><span class="o">.</span><span class="n">setdiag</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="c1"># diagonal values are true zeros, otherwise they&#39;re infinite</span>
     <span class="k">return</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span></div>
 
+
 <div class="viewcode-block" id="fl_radius_neighbors_graph"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.distance.fl_radius_neighbors_graph">[docs]</a><span class="k">def</span> <span class="nf">fl_radius_neighbors_graph</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">flindex</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Constructs a sparse distance matrix called graph in coo format using pyflann.</span>
+<span class="sd">    Constructs a sparse distance matrix in coo format using pyflann.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    X: data matrix, array_like, shape = (n_samples, n_dimensions )</span>
-<span class="sd">    radius: neighborhood radius, scalar</span>
-<span class="sd">        the neighbors lying approximately within radius of a node will</span>
-<span class="sd">        be returned. Or, in other words, all distances will be less or equal</span>
-<span class="sd">        to radius. There will be entries in the matrix for zero distances.</span>
-
-<span class="sd">        Attention when converting to dense: The rest of the distances</span>
-<span class="sd">        should not be considered 0, but &quot;large&quot;.</span>
-<span class="sd">    flindex: FLANN index of the data X</span>
+<span class="sd">    X: array_like, shape=(n_samples, n_dimensions)</span>
+<span class="sd">        The matrix of data</span>
+<span class="sd">    radius: float</span>
+<span class="sd">        Neighborhood radius. The neighbors lying approximately within this</span>
+<span class="sd">        radius of a node will be used to construct the graph.</span>
+<span class="sd">    flindex: pyflann.FLANN object</span>
+<span class="sd">       The pre-built FLANN index for the data X</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    graph: the distance matrix, array_like, shape = (X.shape[0],X.shape[0])</span>
-<span class="sd">           sparse coo or csr format</span>
+<span class="sd">    graph: sparse matrix, shape=(n_samples, n_samples)</span>
+<span class="sd">        The sparse distance matrix</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 <span class="sd">    With approximate neighborhood search, the matrix is not</span>
 <span class="sd">    necessarily symmetric.</span>
-
-<span class="sd">    mode = &#39;adjacency&#39; not implemented</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;</span> <span class="mf">0.</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;neighbors_radius must be &gt;=0.&#39;</span><span class="p">)</span>

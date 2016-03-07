@@ -57,63 +57,64 @@ quantities and allows for fast re-computation with new parameters.</dd>
 geometric quantities with respect to the original data set. This is the object
 that is passed (or computed) within each embedding function. It is how
 megaman caches important quantities allowing for fast re-computation with
-various new parameters. Geometry class has the following methods:</p>
-<ol class="arabic simple">
-<li>Class instantiation : during class instantiation you input the parameters
-concerning the original data matrix: the distance calculation method,
-neighborhood and affinity radius, laplacian type and optional path
-to FLANN library if not installed to root. Data can be passed
-as raw data, pairwise distance matrix or pairwise affinity matrix.</li>
-<li><cite>get_distance_matrix</cite> : This function interfaces with the distance
-module to calculate the pairwise distance graph. A new (different)
-radius can be passed to this than the neighborhood_radius passed at
-instantiation. If the original data was passed (instead of distance
-or affinity) re-computation with a new radius is performed.</li>
-<li><cite>get_affinity_matrix</cite> : This function takes the distance matrix
-and computes the Gaussian kernel using the affinity radius passed
-during instantiation. A new radius can be passed to this function and
-if the data was passed raw or as a distance the affinity can be
-recomputed.</li>
-<li><cite>get_laplacian_matrix</cite> : This function takes the affinity matrix
-and computes the requested laplacian type. A different type can
-be passed than was instantiated. Furthermore the scaling_epps and
-renormalization_exponent parameters can be adjusted here. If using
-the <cite>geometric</cite> graph laplacian it is suggested that the scaling_epps
-parameter be set to the affinity_radius that was used.</li>
-<li>Assign functions <cite>assign_data_matrix</cite>, <cite>assign_distance_matrix</cite>,
-<cite>assign_laplacian_matrix</cite> : These functions allow you to manually
-assign matrices to be distance, affinity, or laplacian matrices.
-The only checking that is performed is that the matrices are arrays of
-the appropriate dimension otherwise the validity is trusted to the user.</li>
-<li><cite>assign_parameters</cite> : You can use this function to assign parameters to
-the Geometry class if they weren&#8217;t assigned at instantiation (for example
-if you assign your own laplacian). Note: self.neighborhood_radius,
-self.affinity_radius, and self.laplacian_type refer to the CURRENT
-version of these matrices. If you want to re-calculate with a new parameter
-DO NOT update these with assign_parameters, instead use get_distance_matrix(),
-get_affinity_matrix(), or get_laplacian_matrix() and pass the desired new
-parameter. This will automatically update the self.parameter version.
-If you change these values with assign_parameters Geometry will assume
-that the existing matrix follows that parameter and so, for example,
-calling get_distance_matrix() with a passed radius will <em>not</em>
-recalculate if the passed radius is equal to self.neighborhood_radius
-and there already exists a distance matrix.</li>
+various new parameters. Beyond instantiation, the Geometry class offers
+three types of functions: compute, set &amp; delete that work with the four
+primary data matrices: (raw) data, adjacency matrix, affinity matrix,
+and Laplacian Matrix.</p>
+<ol class="arabic">
+<li><p class="first">Class instantiation : during class instantiation you input the parameters
+concerning the original data matrix such as the distance calculation method,
+neighborhood and affinity radius, laplacian type. Each of the three
+computed matrices (adjacency, affinity, laplacian) have their
+own keyword dictionaries which permit these methods to easily be extended.</p>
+</li>
+<li><p class="first"><a href="#id1"><span class="problematic" id="id2">`</span></a>set_[some]_matrix&#8217; : these functions allow you to assign a matrix of data
+to the geometry object. In particular these are used to fit the geometry
+to your input data (which may be of the form data_matrix, adjacency_matrix,
+or affinity_matrix). You can also set a Laplacian matrix.</p>
+</li>
+<li><p class="first"><cite>compute_[some]_matrix</cite> : these functions are designed to compute the
+selected matrix (e.g. adjacency). Additional keyword arguments can be
+passed which override the ones passed at instantiation. NB: this method
+will always re-compute a matrix.</p>
+</li>
+<li><p class="first">Geometry Attributes. Other than the parameters passed at instantiation each
+matrix that is computed is stored as an attribute e.g. geom.adjacency_matrix,
+geom.adjacency_matrix, geom.laplacian_matrix. Raw data is stored as geom.X.
+If you want to query for these matrices without recomputing you should use
+these attributes e.g. my_affinity = geom.affinity_matrix.</p>
+</li>
+<li><dl class="first docutils">
+<dt>&#8216;delete_[some]_matrix&#8217; <span class="classifier-delimiter">:</span> <span class="classifier">if you are working with large data sets and choose</span></dt>
+<dd><dl class="first last docutils">
+<dt>an algorithm (e.g. Isomap or Spectral Embedding) that do not require the</dt>
+<dd><p class="first last">original data_matrix, these methods can be used to clear memory.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
 </ol>
 <p>See the API documentation for further information.</p>
 </div>
 <div class="section" id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
 <p>Here is an example using the function on a random data set:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">megaman.geometry.geometry</span> <span class="kn">as</span> <span class="nn">geom</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">megaman.geometry</span> <span class="kn">import</span> <span class="n">Geometry</span>
 
 <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">Geometry</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;cython&#39;</span><span class="p">,</span>
-                        <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span> <span class="n">affinity_radius</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">,</span>
-                        <span class="n">laplacian_type</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span><span class="p">)</span>
-<span class="n">dist_mat</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_distance_matrix</span><span class="p">()</span> <span class="c1"># default sparse csr</span>
-<span class="n">affi_mat</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_affinity_matrix</span><span class="p">()</span> <span class="c1"># default sparse csr</span>
-<span class="n">lapl_mat</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">get_laplacian_matrix</span><span class="p">(</span><span class="n">scaling_epps</span> <span class="o">=</span> <span class="mf">4.</span><span class="p">)</span> <span class="c1"># default sparse csr</span>
+<span class="n">radius</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">adjacency_method</span> <span class="o">=</span> <span class="s1">&#39;cyflann&#39;</span>
+<span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;radius&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># ignore distances above this radius</span>
+<span class="n">affinity_method</span> <span class="o">=</span> <span class="s1">&#39;gaussian&#39;</span>
+<span class="n">affinity_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;radius&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># A = exp(-||x - y||/radius^2)</span>
+<span class="n">laplacian_method</span> <span class="o">=</span> <span class="s1">&#39;geometric&#39;</span>
+<span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;scaling_epps&#39;</span><span class="p">:</span><span class="n">radius</span><span class="p">}</span> <span class="c1"># scaling ensures convergence to Laplace-Beltrami operator</span>
+
+<span class="n">geom</span>  <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">adjacency_method</span><span class="o">=</span><span class="n">adjacency_method</span><span class="p">,</span> <span class="n">adjacency_kwds</span><span class="o">=</span><span class="n">adjacency_kwds</span><span class="p">,</span>
+                 <span class="n">affinity_method</span><span class="o">=</span><span class="n">affinity_method</span><span class="p">,</span> <span class="n">affinity_kwds</span><span class="o">=</span><span class="n">affinity_kwds</span><span class="p">,</span>
+                 <span class="n">laplacian_method</span><span class="o">=</span><span class="n">laplacian_method</span><span class="p">,</span> <span class="n">laplacian_kwds</span><span class="o">=</span><span class="n">laplacian_kwds</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
