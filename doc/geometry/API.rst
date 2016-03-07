@@ -10,8 +10,5 @@ API Documentation
 .. automodule:: megaman.geometry.geometry
    :members:
 
-.. automodule:: megaman.geometry.distance
-   :members:
-
 .. automodule:: megaman.geometry.rmetric
    :members:
