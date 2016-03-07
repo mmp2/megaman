@@ -8,20 +8,20 @@ A note on symmetrization and internal sparse representations
 ------------------------------------------------------------
 
 For performance, this code uses the FLANN library to compute
-approximate neighborhoods efficiently. This means that (1) the 
-adjacency matrix produced is NOT GUARANTEED to be symmetric and 
-(2) compute_adjacency_matrix returns a sparse matrix called 
-adjacency_matrix. adjacency_matrix has 0.0 on the diagonal, 
-as it should. Implicitly, the missing entries are infinity not 
-0 for this matrix. But (1) and (2) mean that if one tries to 
-symmetrize adjacency_matrix, the scipy.sparse code eliminates 
+approximate neighborhoods efficiently. This means that (1) the
+adjacency matrix produced is NOT GUARANTEED to be symmetric and
+(2) compute_adjacency_matrix returns a sparse matrix called
+adjacency_matrix. adjacency_matrix has 0.0 on the diagonal,
+as it should. Implicitly, the missing entries are infinity not
+0 for this matrix. But (1) and (2) mean that if one tries to
+symmetrize adjacency_matrix, the scipy.sparse code eliminates
 the 0.0 entries from adjacency_matrix hence in the affinity
 matrix we explicitly set the diagonal to 1.0 for sparse matrices.
 
 We adopted the following convention:
    * affinity_matrix will NOT BE GUARANTEED symmetric
    * affinity_matrix will perform a symmetrization by default
-   * laplacian does NOT perform symmetrization by default, 
+   * laplacian does NOT perform symmetrization by default,
      only if symmetrize=True, and DOES NOT check symmetry
    * these conventions are the same for dense matrices, for consistency
 """
@@ -61,7 +61,7 @@ class Geometry(object):
     adjacency_method : string, one of 'auto', 'brute', 'pyflann', 'cyflann'.
         method for computing pairwise radius neighbors graph.
     adjacency_kwds : dictionary containing keyword arguments for adjacency matrix.
-        see distance.py docmuentation for arguments for each method. 
+        see distance.py docmuentation for arguments for each method.
         If new kwargs are passed to compute_adjacency_matrix then this dictionary will
         be updated.
     affinity_method : string, one of 'auto', 'gaussian'.
@@ -70,10 +70,10 @@ class Geometry(object):
         If new kwargs are passed to compute_affinity_matrix then this dictionary will
         be updated.
     laplacian_method : string, one of: 'symmetricnormalized', 'geometric', 'renormalized',
-        'unnormalized', 'randomwalk' type of laplacian to be computed. 
+        'unnormalized', 'randomwalk' type of laplacian to be computed.
         see laplacian.py for more information.
     laplacian_kwds : dictionary containing keyword arguments for Laplacian matrix.
-        see laplacian.py docmuentation for arguments for each method.  
+        see laplacian.py docmuentation for arguments for each method.
         If new kwargs are passed to compute_laplacian_matrix then this dictionary will
         be updated.
     """
@@ -86,23 +86,23 @@ class Geometry(object):
         self.affinity_kwds = affinity_kwds
         self.laplacian_method = laplacian_method
         self.laplacian_kwds = laplacian_kwds
-        
+
         self.X = None
         self.adjacency_matrix = None
         self.affinity_matrix = None
         self.laplacian_matrix = None
-        
+
     def compute_adjacency_matrix(self, copy = False, **kwargs):
         """
         Note: this function will compute the adjacency matrix. In order to acquire
-            the existing adjacency matrix use self.adjacency_matrix as 
+            the existing adjacency matrix use self.adjacency_matrix as
             comptute_adjacency_matrix() will re-compute the adjacency matrix.
-        
+
         Parameters
         ----------
         copy : boolean, whether to return a copied version of the adjacency matrix
         **kwargs : see distance.py docmuentation for arguments for each method.
-        
+
         Returns
         -------
         self.adjacency_matrix : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values
@@ -115,7 +115,7 @@ class Geometry(object):
             self.adjacency_kwds.update(kwargs)
         else:
             self.adjacency_kwds = kwargs
-        self.adjacency_matrix = compute_adjacency_matrix(self.X, self.adjacency_method, 
+        self.adjacency_matrix = compute_adjacency_matrix(self.X, self.adjacency_method,
                                                          **self.adjacency_kwds)
         if copy:
             return self.adjacency_matrix.copy()
@@ -125,9 +125,9 @@ class Geometry(object):
     def compute_affinity_matrix(self, copy = False, **kwargs):
         """
         Note: this function will compute the affinity matrix. In order to acquire
-            the existing affinity matrix use self.affinity_matrix as 
+            the existing affinity matrix use self.affinity_matrix as
             comptute_affinity_matrix() will re-compute the affinity matrix.
-        
+
         Parameters
         ----------
         copy : boolean, whether to return a copied version of the affinity matrix
@@ -141,14 +141,14 @@ class Geometry(object):
         """
         if (self.X is None and self.adjacency_matrix is None):
             raise ValueError(affinity_error_msg)
-            
+
         if self.affinity_kwds is not None:
             self.affinity_kwds.update(kwargs)
         else:
             self.affinity_kwds = kwargs
-        if self.adjacency_matrix is None: # first check to see if we have the distance matrix                
+        if self.adjacency_matrix is None: # first check to see if we have the distance matrix
                 self.compute_adjacency_matrix()
-        self.affinity_matrix = compute_affinity_matrix(self.adjacency_matrix, 
+        self.affinity_matrix = compute_affinity_matrix(self.adjacency_matrix,
                                                        self.affinity_method, **self.affinity_kwds)
         if copy:
             return self.affinity_matrix.copy()
@@ -158,9 +158,9 @@ class Geometry(object):
     def compute_laplacian_matrix(self, copy=True, return_lapsym=False, **kwargs):
         """
         Note: this function will compute the laplacian matrix. In order to acquire
-            the existing laplacian matrix use self.laplacian_matrix as 
+            the existing laplacian matrix use self.laplacian_matrix as
             comptute_laplacian_matrix() will re-compute the laplacian matrix.
-        
+
         Parameters
         ----------
         copy : boolean, whether to return copied version of the self.laplacian_matrix
@@ -179,18 +179,18 @@ class Geometry(object):
             self.laplacian_kwds.update(kwargs)
         else:
             self.laplacian_kwds = kwargs
-        
+
         if isinstance(self.laplacian_kwds, dict):
             if 'return_lapsym' not in self.laplacian_kwds.keys():
                 self.laplacian_kwds['return_lapsym'] = return_lapsym
-        
+
         if self.affinity_matrix is None: # first check to see if we have an affinity matrix
             self.affinity_matrix = self.compute_affinity_matrix()
 
         if return_lapsym:
             (self.laplacian_matrix,
             self.laplacian_symmetric,
-            self.w) = compute_laplacian_matrix(self.affinity_matrix, 
+            self.w) = compute_laplacian_matrix(self.affinity_matrix,
                                                self.laplacian_method,**self.laplacian_kwds)
         else:
             self.laplacian_matrix = compute_laplacian_matrix(self.affinity_matrix,
@@ -247,16 +247,15 @@ class Geometry(object):
             raise ValueError("Laplacian matrix is not square")
         else:
             self.laplacian_matrix = laplacian_mat
-            
+
     def delete_data_matrix(self):
         self.X = None
-    
+
     def delete_adjacency_matrix(self):
         self.adjacency_matrix = None
-    
+
     def delete_affinity_matrix(self):
         self.affinity_matrix = None
-    
+
     def delete_laplacian_matrix(self):
         self.laplacian_matrix = None
-    
