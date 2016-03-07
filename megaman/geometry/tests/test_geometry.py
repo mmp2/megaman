@@ -29,7 +29,7 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                 true_params = init_params.copy()
                 true_params.update(kwarg_params)
                 adjacency_true = compute_adjacency_matrix(X, adjacency_method, **true_params)
-                G = Geometry(adjacency_method = adjacency_method, adjacency_kwds = init_params)
+                G = Geometry(adjacency_method=adjacency_method, adjacency_kwds=init_params)
                 for input in input_types:
                     G = Geometry(adjacency_kwds = init_params)
                     if input in ['data']:

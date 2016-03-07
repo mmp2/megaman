@@ -88,7 +88,7 @@ class Geometry(object):
         self.affinity_matrix = None
         self.laplacian_matrix = None
 
-    def compute_adjacency_matrix(self, copy = False, **kwargs):
+    def compute_adjacency_matrix(self, copy=False, **kwargs):
         """
         Note: this function will compute the adjacency matrix. In order to acquire
             the existing adjacency matrix use self.adjacency_matrix as

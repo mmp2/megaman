@@ -38,7 +38,7 @@ def test_adjacency():
     exact_methods = [m for m in Adjacency.methods()
                      if not m.endswith('flann')]
 
-    def check_kneighbors(n_neighbors, method, exact=True):
+    def check_kneighbors(n_neighbors, method):
         if method == 'pyflann' and NO_PYFLANN:
             raise SkipTest("pyflann not installed")
 
@@ -49,7 +49,7 @@ def test_adjacency():
         if method in exact_methods:
             assert_allclose(G.toarray(), Gtrue[n_neighbors].toarray())
 
-    def check_radius(radius, method, exact=True):
+    def check_radius(radius, method):
         if method == 'pyflann' and NO_PYFLANN:
             raise SkipTest("pyflann not installed")
 
