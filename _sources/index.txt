@@ -1,3 +1,5 @@
+.. image:: images/spectra_D4000.png
+
 megaman: Scalable manifold learning
 =================================
 
