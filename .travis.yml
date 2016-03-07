@@ -14,7 +14,7 @@ env:
     - TEST_DIR=/tmp/megaman
     - CONDA_CHANNEL="https://conda.anaconda.org/jakevdp"
   matrix:
-    - CONDA_DEPS="pip nose coverage cython numpy scipy scikit-learn flann" PIP_DEPS="pyamg pyflann coveralls"
+    - CONDA_DEPS="pip nose coverage cython numpy scipy scikit-learn pyflann" PIP_DEPS="pyamg coveralls"
 
 before_install:
 - export MINICONDA=$HOME/miniconda

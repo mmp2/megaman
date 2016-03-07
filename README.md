@@ -46,8 +46,7 @@ The package uses ``nose`` for unit tests
 The above requirements can be installed on Linux and Mac OSX using [conda](http://conda.pydata.org/miniconda.html):
 
 ```
-$ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage cython numpy scipy scikit-learn flann pyamg gcc
-$ pip install pyflann
+$ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage cython numpy scipy scikit-learn pyflann pyamg gcc
 ```
 
 Finally, install the ``megaman`` package itself:
