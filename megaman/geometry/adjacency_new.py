@@ -74,7 +74,7 @@ class CyFLANNAdjacency(Adjacency):
     name = 'cyflann'
 
     def __init__(self, radius=None, n_neighbors=None, flann_index=None,
-                 target_precision=0.9, cyflann_kwds=None):
+                 target_precision=None, cyflann_kwds=None):
         self.flann_index = flann_index
         self.target_precision = target_precision
         self.cyflann_kwds = cyflann_kwds

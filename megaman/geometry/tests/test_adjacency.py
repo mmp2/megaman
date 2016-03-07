@@ -1,7 +1,7 @@
 from nose import SkipTest
 
 import numpy as np
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_raises
 from scipy.sparse import isspmatrix
 from scipy.spatial.distance import cdist, pdist, squareform
 
@@ -55,6 +55,36 @@ def test_adjacency():
                                         radius=radius)
         for method in Adjacency.methods():
             yield check_radius, radius, method
+
+
+def test_unknown_method():
+    X = np.arange(20).reshape((10, 2))
+    assert_raises(ValueError, compute_adjacency_matrix, X, 'foo')
+
+
+def test_all_methods_close():
+    rand = np.random.RandomState(36)
+    X = rand.randn(10, 2)
+    D_true = squareform(pdist(X))
+    D_true[D_true > 0.5] = 0
+
+    def check_method(method):
+        kwargs = {}
+        if method == 'pyflann':
+            try:
+                import pyflann as pyf
+            except ImportError:
+                raise SkipTest("pyflann not installed.")
+            flindex = pyf.FLANN()
+            flindex.build_index(X, algorithm='kmeans',
+                                target_precision=0.9)
+            kwargs['flann_index'] = flindex
+        this_D = compute_adjacency_matrix(X, method=method, radius=0.5,
+                                          **kwargs)
+        assert_allclose(this_D.toarray(), D_true, rtol=1E-5)
+
+    for method in ['auto', 'cyflann', 'pyflann', 'brute']:
+        yield check_method, method
 
 
 def test_custom_adjacency():

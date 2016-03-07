@@ -28,12 +28,11 @@ from scipy import io
 from megaman.geometry.adjacency_new import compute_adjacency_matrix
 from megaman.geometry.affinity_new import compute_affinity_matrix, Affinity
 
-# >>>>>>> distance_refactor
 
 TEST_DATA = os.path.join(os.path.dirname(__file__),
                         'testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
 
-# <<<<<<< HEAD
+
 def test_affinity_sparse_vs_dense():
     """
     Test that A_sparse is the same as A_dense for a small A matrix
@@ -52,7 +51,7 @@ def test_affinity_sparse_vs_dense():
     A_spdense = A_sparse.toarray()
     A_spdense[ A_spdense == 0 ] = 1.
     assert_array_equal( A_dense, A_spdense )
-# =======
+
 
 def test_affinity_vs_matlab():
     """Test that the affinity calculation matches the matlab result"""
@@ -105,4 +104,3 @@ def test_custom_affinity():
     assert_allclose(A, np.exp(-abs(D.toarray())))
 
     Affinity._remove_from_registry("custom")
-# >>>>>>> distance_refactor

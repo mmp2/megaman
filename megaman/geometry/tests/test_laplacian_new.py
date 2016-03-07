@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from numpy.testing import assert_allclose, assert_equal
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from scipy.sparse import isspmatrix, csr_matrix
 from scipy import io
@@ -59,6 +59,12 @@ def test_laplacian_smoketest():
 
     for method in Laplacian.asymmetric_methods():
         yield check_laplacian, method
+
+
+def test_laplacian_unknown_method():
+    """Test that laplacian fails with an unknown method type"""
+    A = np.array([[ 5, 2, 1 ], [ 2, 3, 2 ],[1,2,5]])
+    assert_raises(ValueError, compute_laplacian_matrix, A, method='<unknown>')
 
 
 def test_laplacian_full_output():
