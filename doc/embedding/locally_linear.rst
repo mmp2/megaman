@@ -54,12 +54,14 @@ Example Usage
 Here is an example using the function on a random data set::
 
    import numpy as np
-   import megaman.geometry.geometry as geom
-   import megaman.embedding.locally_linear as lle
+   from megaman.geometry import Geometry
+   from megaman.embedding import (Isomap, LocallyLinearEmbedding, LTSA, SpectralEmbedding)
 
    X = np.random.randn(100, 10)
-   Geometry = geom.Geometry(X, input_type = 'data', distance_method = 'cython',
-                           neighborhood_radius = 4., affinity_radius = 4.,
-                           laplacian_type = 'geometric')
-   LLE = lle.LocallyLinear(n_components = 2, eigen_solver = 'arpack', Geometry = Geometry)
-   embedding = LLE.fit_transform(X)
+   radius = 5
+   adjacency_method = 'cyflann'
+   adjacency_kwds = {'radius':radius} # ignore distances above this radius
+   
+   geom  = Geometry(adjacency_method=adjacency_method, adjacency_kwds=adjacency_kwds)
+   lle = LocallyLinearEmbedding(n_components=n_components, eigen_solver='arpack', geom=geom)
+   embed_lle = lle.fit_transform(X)

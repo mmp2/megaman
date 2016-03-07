@@ -52,12 +52,15 @@ Example Usage
 Here is an example using the function on a random data set::
 
    import numpy as np
-   import megaman.geometry.geometry as geom
-   import megaman.embedding.isomap as iso
+   from megaman.geometry import Geometry
+   from megaman.embedding import Isomap
 
    X = np.random.randn(100, 10)
-   Geometry = geom.Geometry(X, input_type = 'data', distance_method = 'cython',
-                           neighborhood_radius = 4., affinity_radius = 4.,
-                           laplacian_type = 'geometric')
-   Iso = iso.Isomap(n_components = 2, eigen_solver = 'arpack', Geometry = Geometry)
-   embedding = Iso.fit_transform(X)
+   radius = 5
+   adjacency_method = 'cyflann'
+   adjacency_kwds = {'radius':radius} # ignore distances above this radius
+   
+   geom  = Geometry(adjacency_method=adjacency_method, adjacency_kwds=adjacency_kwds)
+   
+   isomap = Isomap(n_components=n_components, eigen_solver='arpack', geom=geom)
+   embed_isomap = isomap.fit_transform(X)
