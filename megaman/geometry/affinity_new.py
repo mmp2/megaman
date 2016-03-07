@@ -14,10 +14,10 @@ def compute_affinity_matrix(adjacency_matrix, method='auto', **kwargs):
 
 class Affinity(RegisterSubclasses):
     """Base class for computing affinity matrices"""
-    def __init__(self, radius=None, symmetrize=True):
+    def __init__(self, radius, symmetrize=True):
         self.radius = radius
         self.symmetrize = symmetrize
-        
+
     def affinity_matrix(self, adjacency_matrix):
         raise NotImplementedError()
 

@@ -32,9 +32,9 @@ We adopted the following convention:
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
-from .distance import compute_adjacency_matrix
-from .affinity import compute_affinity_matrix
-from .laplacian import compute_laplacian_matrix
+from .adjacency_new import compute_adjacency_matrix
+from .affinity_new import compute_affinity_matrix
+from .laplacian_new import compute_laplacian_matrix
 from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
@@ -182,7 +182,7 @@ class Geometry(object):
 
         if isinstance(self.laplacian_kwds, dict):
             if 'return_lapsym' not in self.laplacian_kwds.keys():
-                self.laplacian_kwds['return_lapsym'] = return_lapsym
+                self.laplacian_kwds['full_output'] = return_lapsym
 
         if self.affinity_matrix is None: # first check to see if we have an affinity matrix
             self.affinity_matrix = self.compute_affinity_matrix()

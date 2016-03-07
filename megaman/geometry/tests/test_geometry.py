@@ -25,7 +25,7 @@ def test_compare_adjacency_methods(almost_equal_decimals=5):
 def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
     """ test the compute_adjacency_matrix parameter arguments """
     input_types = ['data', 'adjacency', 'affinity']
-    params = [{}, {'radius':1}, {'radius':2}]    
+    params = [{'radius':1}, {'radius':2}]
     for adjacency_method in adjacency_methods:
         if adjacency_method == 'pyflann':
             try:
@@ -34,7 +34,7 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                 raise SkipTest("pyflann not installed.")
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
-        A = compute_affinity_matrix(D, method = 'auto')
+        A = compute_affinity_matrix(D, radius=1)
         for init_params in params:
             for kwarg_params in params:
                 true_params = init_params.copy()
@@ -43,10 +43,10 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                 G = Geometry(adjacency_method = adjacency_method, adjacency_kwds = init_params)
                 for input in input_types:
                     G = Geometry(adjacency_kwds = init_params)
-                    if input in ['data']:  
+                    if input in ['data']:
                         G.set_data_matrix(X)
                         adjacency_queried = G.compute_adjacency_matrix(**kwarg_params)
-                        assert_array_almost_equal(adjacency_true.todense(), adjacency_queried.todense(), 
+                        assert_array_almost_equal(adjacency_true.todense(), adjacency_queried.todense(),
                                                   almost_equal_decimals)
                     else:
                         if input in ['adjacency']:
@@ -57,10 +57,10 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
                         assert_raise_message(ValueError, msg, G.compute_adjacency_matrix)
 
 def test_compute_affinity_matrix_args(almost_equal_decimals=5):
-    """ test the compute_adjacency_matrix parameter arguments """
+    """ test the compute_affinity_matrix parameter arguments """
     input_types = ['data', 'adjacency', 'affinity']
-    params = [{}, {'radius':4}, {'radius':5}]
-    adjacency_method = 'auto'    
+    params = [{'radius':4}, {'radius':5}]
+    adjacency_method = 'auto'
     for affinity_method in affinity_methods:
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
@@ -69,13 +69,14 @@ def test_compute_affinity_matrix_args(almost_equal_decimals=5):
             for kwarg_params in params:
                 true_params = init_params.copy()
                 true_params.update(kwarg_params)
-                affinity_true = compute_affinity_matrix(D, adjacency_method, **true_params)
+                affinity_true = compute_affinity_matrix(D, adjacency_method,
+                                                        **true_params)
                 for input in input_types:
                     G = Geometry(adjacency_method = adjacency_method,
-                                 adjacency_kwds = params[1], 
+                                 adjacency_kwds = params[1],
                                  affinity_method = affinity_method,
                                  affinity_kwds = init_params)
-                    if input in ['data', 'adjacency']:  
+                    if input in ['data', 'adjacency']:
                         if input in ['data']:
                             G.set_data_matrix(X)
                         else:
@@ -93,7 +94,7 @@ def test_compute_laplacian_matrix_args(almost_equal_decimals=5):
     lapl_params = [{}, {'scaling_epps':4}, {'scaling_epps':10}]
     adjacency_method = 'auto'
     affinity_method = 'auto'
-    
+
     for laplacian_method in laplacian_types:
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
@@ -105,7 +106,7 @@ def test_compute_laplacian_matrix_args(almost_equal_decimals=5):
                     laplacian_true = compute_laplacian_matrix(A, laplacian_method, **true_params)
             for input in input_types:
                 G = Geometry(adjacency_method = adjacency_method,
-                             adjacency_kwds = params[1], 
+                             adjacency_kwds = params[1],
                              affinity_method = affinity_method,
                              affinity_kwds = params[1],
                              laplacian_method = laplacian_method,
