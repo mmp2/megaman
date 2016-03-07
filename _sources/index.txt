@@ -1,7 +1,9 @@
 .. image:: images/spectra_D4000.png
+   :height: 100 px
    :scale: 30 %
    :align: left
 .. image:: images/word2vec_rmetric_plot_no_digits.png
+   :height: 100 px
    :scale: 30 %
    :align: right
 
