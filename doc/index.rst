@@ -1,3 +1,12 @@
+.. image:: images/spectra_D4000.png
+   :height: 100px
+   :scale: 10 %
+   :align: left
+.. image:: images/word2vec_rmetric_plot_no_digits.png
+   :height: 100px
+   :scale: 10 %
+   :align: right
+
 megaman: Scalable manifold learning
 =================================
 
