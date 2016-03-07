@@ -55,13 +55,22 @@ Example Usage
 Here is an example using the function on a random data set::
 
    import numpy as np
-   import megaman.geometry.geometry as geom
-   import megaman.embedding.spectral_embedding as se
+   from megaman.geometry import Geometry
+   from megaman.embedding import SpectralEmbedding
 
    X = np.random.randn(100, 10)
-   Geometry = geom.Geometry(X, input_type = 'data', distance_method = 'cython',
-                           neighborhood_radius = 4., affinity_radius = 4.,
-                           laplacian_type = 'geometric')
-   Spectral = se.SpectralEmbedding(n_components = 2, eigen_solver = 'pyamg',
-                                   Geometry = Geometry)
-   embedding = Spectral.fit_transform(X)
+   radius = 5
+   adjacency_method = 'cyflann'
+   adjacency_kwds = {'radius':radius} # ignore distances above this radius
+   affinity_method = 'gaussian'
+   affinity_kwds = {'radius':radius} # A = exp(-||x - y||/radius^2) 
+   laplacian_method = 'geometric'
+   laplacian_kwds = {'scaling_epps':radius} # scaling ensures convergence to Laplace-Beltrami operator
+   
+   geom  = Geometry(adjacency_method=adjacency_method, adjacency_kwds=adjacency_kwds,
+                    affinity_method=affinity_method, affinity_kwds=affinity_kwds,
+                    laplacian_method=laplacian_method, laplacian_kwds=laplacian_kwds)
+   
+   spectral = SpectralEmbedding(n_components=n_components, eigen_solver='arpack',
+                                geom=geom)
+   embed_spectral = spectral.fit_transform(X)
