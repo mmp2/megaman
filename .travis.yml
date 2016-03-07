@@ -1,6 +1,6 @@
 language: python
 
-# sudo false implies containerized builds, so we can use cacheing
+# sudo false implies containerized builds
 sudo: false
 
 python:
@@ -30,7 +30,7 @@ before_install:
 - travis_retry pip install $PIP_DEPS
 
 install:
-- python setup.py install --record installed_files.txt
+- python setup.py install
 
 script:
 - mkdir -p $TEST_DIR
@@ -38,14 +38,3 @@ script:
 
 after_success:
 - coveralls
-
-before_cache:
-# clean unused packages & installed files from conda cache
-# this makes the cache rebuilt less frequently
-- conda clean --tarballs --packages --index-cache
-- rm -rf $HOME/miniconda/pkgs/cache
-- xargs rm <installed_files.txt
-
-cache:
-  directories:
-    - $HOME/miniconda
