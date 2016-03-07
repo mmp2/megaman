@@ -5,6 +5,9 @@ PKG = megaman
 install:
 	python setup.py install
 
+clean:
+	rm -r build/
+
 test-dir:
 	mkdir -p $(TEST_DIR)
 
