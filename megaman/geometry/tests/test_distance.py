@@ -33,8 +33,8 @@ def test_all_methods_close():
         yield check_method, method
 
 
-def test_flindex_passed():
-    assert_raises(ValueError, compute_adjacency_matrix, X, 'pyflann')
+#def test_flindex_passed():
+#    assert_raises(ValueError, compute_adjacency_matrix, X, 'pyflann')
 
 
 def test_unknown_method():

@@ -38,7 +38,7 @@ from .laplacian import compute_laplacian_matrix
 from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
-adjacency_methods = ['auto', 'brute', 'cyflann', 'pyflann', 'cython']
+adjacency_methods = ['auto', 'brute', 'cyflann', 'pyflann']
 affinity_methods = ['auto']
 affintity_methods = ['auto', 'gaussian']
 laplacian_types = ['symmetricnormalized', 'geometric', 'renormalized', 'unnormalized', 'randomwalk']
@@ -110,7 +110,7 @@ class Geometry(object):
         """
         if (self.X is None):
             raise ValueError(distance_error_msg)
-        
+
         if self.adjacency_kwds is not None:
             self.adjacency_kwds.update(kwargs)
         else:
