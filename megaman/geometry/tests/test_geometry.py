@@ -5,7 +5,7 @@ from nose import SkipTest
 from numpy.testing import assert_array_almost_equal
 from scipy.spatial.distance import pdist, squareform
 from megaman.utils.testing import assert_raise_message
-from megaman.geometry.distance import compute_adjacency_matrix
+from megaman.geometry.adjacency import compute_adjacency_matrix
 from megaman.geometry.laplacian import compute_laplacian_matrix
 from megaman.geometry.affinity import compute_affinity_matrix
 from megaman.geometry.geometry import *

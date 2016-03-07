@@ -1,50 +1,57 @@
-from __future__ import division ## removes integer division
 import numpy as np
-from scipy import sparse
-from scipy.spatial.distance import pdist
-import subprocess, os, sys, warnings
+from scipy.sparse import isspmatrix
+from sklearn.utils.validation import check_array
+
+from .utils import RegisterSubclasses
 
 
-def compute_affinity_matrix(adjacency_matrix, method, **kwargs):
-    return affinity_matrix(adjacency_matrix, **kwargs)
-    
-def symmetrize_sparse(A):
-    """
-    Symmetrizes a sparse matrix in place (coo and csr formats only)
+def compute_affinity_matrix(adjacency_matrix, method='auto', **kwargs):
+    """Compute the affinity matrix with the given method"""
+    if method == 'auto':
+        method = 'gaussian'
+    return Affinity.init(method, **kwargs).affinity_matrix(adjacency_matrix)
 
-    NOTES:
-    1. if there are values of 0 or 0.0 in the sparse matrix, this operation will DELETE them.
-    """
-    if A.getformat() is not "csr":
-        A = A.tocsr()
-    A = (A + A.transpose(copy = True))/2
-    return A
 
-def affinity_matrix(distances, radius=None, symmetrize = True):
-    if radius is None:
-        radius = 1./distances.shape[0]
-    if radius <= 0.:
-        raise ValueError('radius must be >0.')
-    A = distances.copy()
-    if sparse.isspmatrix( A ):
-        A.data = A.data**2
-        A.data = A.data/(-radius**2)
-        np.exp( A.data, A.data )
-        if symmetrize:
-            A = symmetrize_sparse( A )  # converts to CSR; deletes 0's
+class Affinity(RegisterSubclasses):
+    """Base class for computing affinity matrices"""
+    def __init__(self, radius, symmetrize=True):
+        self.radius = radius
+        self.symmetrize = symmetrize
+
+    def affinity_matrix(self, adjacency_matrix):
+        raise NotImplementedError()
+
+
+class GaussianAffinity(Affinity):
+    name = "gaussian"
+
+    @staticmethod
+    def _symmetrize(A):
+        # TODO: make this more efficient?
+        # Also, need to maintain explicit zeros!
+        return 0.5 * (A + A.T)
+
+    def affinity_matrix(self, adjacency_matrix):
+        A = check_array(adjacency_matrix, dtype=float, copy=True,
+                        accept_sparse=['csr', 'csc', 'coo'])
+
+        if isspmatrix(A):
+            data = A.data
         else:
-            pass
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            # sparse will complain that this is faster with lil_matrix
-            A.setdiag(1) # the 0 on the diagonal is a true zero
-    else:
-        A **= 2
-        A /= (-radius**2)
-        np.exp(A, A)
-        if symmetrize:
-            A = (A+A.T)/2
-            A = np.asarray( A, order="C" )  # is this necessary??
-        else:
-            pass
-    return A
+            data = A
+
+        # in-place computation of
+        # data = np.exp(-(data / radius) ** 2)
+        data **= 2
+        data /= -self.radius ** 2
+        np.exp(data, out=data)
+
+        if self.symmetrize:
+            A = self._symmetrize(A)
+
+        # for sparse, need a true zero on the diagonal
+        # TODO: make this more efficient?
+        if isspmatrix(A):
+            A.setdiag(1)
+
+        return A

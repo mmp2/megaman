@@ -2,12 +2,16 @@
 from __future__ import division ## removes integer division
 
 import os
+
 import numpy as np
-from scipy import sparse
-from numpy.testing import assert_array_equal
-from scipy.spatial.distance import pdist, squareform
-from megaman.geometry.distance import compute_adjacency_matrix
-from megaman.geometry.affinity import compute_affinity_matrix
+from numpy.testing import assert_allclose, assert_array_equal, assert_equal
+
+from scipy.spatial.distance import cdist, pdist, squareform
+from scipy.sparse import csr_matrix
+from scipy import io
+
+from megaman.geometry.adjacency import compute_adjacency_matrix
+from megaman.geometry.affinity import compute_affinity_matrix, Affinity
 
 random_state = np.random.RandomState(36)
 n_sample = 10
@@ -16,17 +20,6 @@ X = random_state.randn(n_sample, d)
 D = squareform(pdist(X))
 D[D > 1/d] = 0
 # =======
-import os
-
-import numpy as np
-from numpy.testing import assert_allclose, assert_equal
-
-from scipy.spatial.distance import cdist
-from scipy.sparse import csr_matrix
-from scipy import io
-
-from megaman.geometry.adjacency_new import compute_adjacency_matrix
-from megaman.geometry.affinity_new import compute_affinity_matrix, Affinity
 
 
 TEST_DATA = os.path.join(os.path.dirname(__file__),
@@ -46,7 +39,7 @@ def test_affinity_sparse_vs_dense():
     test_dist_matrix = compute_adjacency_matrix( X, method = 'auto', radius = rad )
     A_dense = compute_affinity_matrix(test_dist_matrix.toarray(), method = 'auto',
                                       radius = rad, symmetrize = False )
-    A_sparse = compute_affinity_matrix(sparse.csr_matrix(test_dist_matrix),
+    A_sparse = compute_affinity_matrix(csr_matrix(test_dist_matrix),
                                        method = 'auto', radius = rad, symmetrize = False)
     A_spdense = A_sparse.toarray()
     A_spdense[ A_spdense == 0 ] = 1.

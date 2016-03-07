@@ -32,9 +32,9 @@ We adopted the following convention:
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
-from .adjacency_new import compute_adjacency_matrix
-from .affinity_new import compute_affinity_matrix
-from .laplacian_new import compute_laplacian_matrix
+from .adjacency import compute_adjacency_matrix
+from .affinity import compute_affinity_matrix
+from .laplacian import compute_laplacian_matrix
 from ..utils.validation import check_array
 
 sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
