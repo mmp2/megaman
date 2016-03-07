@@ -5,28 +5,17 @@ from nose import SkipTest
 from numpy.testing import assert_array_almost_equal
 from scipy.spatial.distance import pdist, squareform
 from megaman.utils.testing import assert_raise_message
-from megaman.geometry.adjacency import compute_adjacency_matrix
-from megaman.geometry.laplacian import compute_laplacian_matrix
-from megaman.geometry.affinity import compute_affinity_matrix
-from megaman.geometry.geometry import *
+from megaman.geometry import (compute_adjacency_matrix, adjacency_methods,
+                              compute_affinity_matrix, affinity_methods,
+                              compute_laplacian_matrix, laplacian_methods)
+from megaman.geometry.geometry import Geometry, affinity_error_msg, distance_error_msg
 
-def test_compare_adjacency_methods(almost_equal_decimals=5):
-    """ compare the different adjacency methods """
-    X = np.random.uniform(size=(20,2))
-    D = squareform(pdist(X))
-    radius = 1.
-    D[D>radius]=0
-    for adjacency_method in adjacency_methods:
-        G = Geometry(adjacency_method = 'brute')
-        G.set_data_matrix(X)
-        d = G.compute_adjacency_matrix(radius=radius)
-        assert_array_almost_equal(D, d.todense(), almost_equal_decimals)
 
 def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
     """ test the compute_adjacency_matrix parameter arguments """
     input_types = ['data', 'adjacency', 'affinity']
     params = [{'radius':1}, {'radius':2}]
-    for adjacency_method in adjacency_methods:
+    for adjacency_method in adjacency_methods():
         if adjacency_method == 'pyflann':
             try:
                 import pyflann as pyf
@@ -61,7 +50,7 @@ def test_compute_affinity_matrix_args(almost_equal_decimals=5):
     input_types = ['data', 'adjacency', 'affinity']
     params = [{'radius':4}, {'radius':5}]
     adjacency_method = 'auto'
-    for affinity_method in affinity_methods:
+    for affinity_method in affinity_methods():
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
         A = compute_affinity_matrix(D, affinity_method, **params[1])
@@ -95,7 +84,7 @@ def test_compute_laplacian_matrix_args(almost_equal_decimals=5):
     adjacency_method = 'auto'
     affinity_method = 'auto'
 
-    for laplacian_method in laplacian_types:
+    for laplacian_method in laplacian_methods():
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
         A = compute_affinity_matrix(D, affinity_method, **params[1])

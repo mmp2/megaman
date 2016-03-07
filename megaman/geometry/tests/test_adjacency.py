@@ -5,8 +5,8 @@ from numpy.testing import assert_allclose, assert_raises, assert_equal
 from scipy.sparse import isspmatrix
 from scipy.spatial.distance import cdist, pdist, squareform
 
-from megaman.geometry.adjacency import (compute_adjacency_matrix, Adjacency,
-                                        adjacency_methods)
+from megaman.geometry import (Geometry, compute_adjacency_matrix, Adjacency,
+                              adjacency_methods)
 
 
 try:

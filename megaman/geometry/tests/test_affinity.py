@@ -10,9 +10,9 @@ from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.sparse import csr_matrix
 from scipy import io
 
-from megaman.geometry.adjacency import compute_adjacency_matrix
-from megaman.geometry.affinity import (compute_affinity_matrix, Affinity,
-                                       affinity_methods)
+from megaman.geometry import (compute_adjacency_matrix,
+                              compute_affinity_matrix, Affinity,
+                              affinity_methods)
 
 random_state = np.random.RandomState(36)
 n_sample = 10
