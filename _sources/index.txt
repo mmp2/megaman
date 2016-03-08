@@ -2,6 +2,7 @@
    :height: 238 px
    :width: 318 px
    :align: left
+   :target: :doc: _spectrum_Halpha
 .. image:: images/word2vec_rmetric_plot_no_digits.png
    :height: 250 px
    :width: 220 px

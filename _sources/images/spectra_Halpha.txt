@@ -1,4 +1,4 @@
-.. _spectrumHalpha:
+.. _spectrum_Halpha:
 
 Spectrum Halpha Plot
 ====================
