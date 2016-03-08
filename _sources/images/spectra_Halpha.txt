@@ -1,4 +1,4 @@
-.. figure:: spectra_Halpha.png
+.. figure:: images/spectra_Halpha.png
    :scale: 50 %
    :alt: spectrm Halpha
 
