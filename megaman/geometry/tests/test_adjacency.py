@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 from nose import SkipTest
 
 import numpy as np

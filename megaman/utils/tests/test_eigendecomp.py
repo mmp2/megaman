@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 from megaman.utils.eigendecomp import eigen_decomposition, null_space
 from numpy.testing import assert_array_almost_equal
 import numpy as np

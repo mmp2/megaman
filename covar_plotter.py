@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -13,7 +15,7 @@ def plot_point_cov(points, nstd=2, ax=None, **kwargs):
         points : An Nx2 array of the data points.
         nstd : The radius of the ellipse in numbers of standard deviations.
             Defaults to 2 standard deviations.
-        ax : The axis that the ellipse will be plotted on. Defaults to the 
+        ax : The axis that the ellipse will be plotted on. Defaults to the
             current axis.
         Additional keyword arguments are pass on to the ellipse patch.
 
@@ -28,7 +30,7 @@ def plot_point_cov(points, nstd=2, ax=None, **kwargs):
 def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     """
     Plots an `nstd` sigma error ellipse based on the specified covariance
-    matrix (`cov`). Additional keyword arguments are passed on to the 
+    matrix (`cov`). Additional keyword arguments are passed on to the
     ellipse patch artist.
 
     Parameters
@@ -38,7 +40,7 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
             sequence of [x0, y0].
         nstd : The radius of the ellipse in numbers of standard deviations.
             Defaults to 2 standard deviations.
-        ax : The axis that the ellipse will be plotted on. Defaults to the 
+        ax : The axis that the ellipse will be plotted on. Defaults to the
             current axis.
         Additional keyword arguments are pass on to the ellipse patch.
 

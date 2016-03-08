@@ -1,8 +1,7 @@
 """ISOMAP"""
 
 # Author: James McQueen <jmcq@u.washington.edu>
-#
-# License: BSD 3 clause
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
 import numpy as np
 from scipy import sparse
@@ -162,6 +161,7 @@ class Isomap(BaseEmbedding):
 
     References
     ----------
+
     .. [1] Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. A global geometric
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """

@@ -1,7 +1,7 @@
 """ base estimator class for megaman """
 
 # Author: James McQueen  -- <jmcq@u.washington.edu>
-# License: BSD 3 clause (C) 2016
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
 import numpy as np
 from scipy.sparse import isspmatrix

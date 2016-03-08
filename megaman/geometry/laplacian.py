@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import numpy as np
 from scipy.sparse import isspmatrix
 from sklearn.utils.validation import check_array

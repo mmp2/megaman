@@ -2,6 +2,7 @@
 
 # Author: Marina Meila <mmp@stat.washington.edu>
 #         James McQueen <jmcq@u.washington.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 #
 #         after the scikit-learn version by
 #         Gael Varoquaux <gael.varoquaux@normalesup.org>
@@ -213,7 +214,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                 symmetrized_laplacian = (1+epsilon)*sparse.identity(n_nodes) - symmetrized_laplacian
             else:
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
-            
+
     if PD_solver: # then eI - L was used, fix the eigenvalues
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
                                                     random_state, eigen_tol, drop_first, largest = False)

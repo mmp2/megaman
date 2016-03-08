@@ -1,4 +1,7 @@
 """General tests for embeddings"""
+
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 from itertools import product
 
 import numpy as np

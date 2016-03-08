@@ -1,6 +1,7 @@
 """Locally Linear Embedding"""
 
 # Author: James McQueen -- <jmcq@u.washington.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 #
 #
 # After the sci-kit learn version by:

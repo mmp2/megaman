@@ -1,4 +1,5 @@
-# Copied from scipy
+# Adapted from similar tool in scipy
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
 """ cythonize
 Cythonize pyx files into C files as needed.

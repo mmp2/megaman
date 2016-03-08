@@ -1,6 +1,6 @@
 /* Authors: Zhongyue Zhang <zhangz6@cs.washington.edu>
 
-License: BSD 3 clause
+LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 ================================================= */
 #ifndef CYFLANN_INDEX_H_
 #define CYFLANN_INDEX_H_
