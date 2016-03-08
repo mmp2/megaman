@@ -54,6 +54,7 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
         W[i, nbrs_i] = w / np.sum(w)
     return W
 
+
 def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
                             eigen_solver='auto', tol=1e-6,  random_state=None):
     """
@@ -123,9 +124,10 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
         M = (M.T * M).tocsr()
     else:
         M = (W.T * W - W.T - W).toarray()
-        M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I        
+        M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       tol=tol, max_iter=max_iter, random_state=random_state)
+
 
 class LocallyLinearEmbedding(BaseEmbedding):
     """
@@ -167,7 +169,7 @@ class LocallyLinearEmbedding(BaseEmbedding):
     geom : either a Geometry object from megaman.geometry or a dictionary
             containing (some or all) geometry parameters: adjacency_method,
             adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys. 
+            laplacian_kwds as keys.
 
     References
     ----------
@@ -175,11 +177,8 @@ class LocallyLinearEmbedding(BaseEmbedding):
       by locally linear embedding.  Science 290:2323 (2000).
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-             tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
-             affinity_radius = None,  distance_method = 'auto', geom = {}):
-        # initialize geometry
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 tol=1e-6, max_iter=100, reg = 1e3, geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver
@@ -187,7 +186,7 @@ class LocallyLinearEmbedding(BaseEmbedding):
         self.max_iter = max_iter
         self.reg = reg
 
-    def fit(self, X, input_type = 'data'):
+    def fit(self, X, y=None, input_type = 'data'):
         """Fit the model from data in X.
 
         Parameters
@@ -209,14 +208,9 @@ class LocallyLinearEmbedding(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
-        if self.geom.X is None:
-            if input_type == 'data':
-                self.geom.set_data_matrix(X)
-        if self.geom.adjacency_matrix is None:
-            if input_type == 'distance':
-                self.geom.set_adjacency_matrix(X)
+        self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
-        self.embedding_, self.error_ = locally_linear_embedding(self.geom,
+        self.embedding_, self.error_ = locally_linear_embedding(self.geom_,
                                                                 n_components=self.n_components,
                                                                 eigen_solver=self.eigen_solver,
                                                                 tol=self.tol,

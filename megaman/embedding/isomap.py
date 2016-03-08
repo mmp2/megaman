@@ -148,7 +148,7 @@ class Isomap(BaseEmbedding):
     geom : either a Geometry object from megaman.geometry or a dictionary
             containing (some or all) geometry parameters: adjacency_method,
             adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys. 
+            laplacian_kwds as keys.
 
     Returns
     ----------
@@ -162,28 +162,22 @@ class Isomap(BaseEmbedding):
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol=1e-12, path_method='auto', geom = {}):
-        # initializes Geometry 
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 eigen_tol=1e-12, path_method='auto', geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver
         self.eigen_tol = eigen_tol
-        self.path_method = path_method	
-        # intermediary steps for storage
-        self.distance_matrix = None
-        self.graph_distance_matrix = None
-        self.centered_matrix = None
-    
-    def fit(self, X=None, eigen_solver='auto', input_type='data', n_components=None):
+        self.path_method = path_method
+
+    def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
 
         Parameters
         ----------
         input_type : string, one of: 'data', 'distance'.
             The values of input data X. (default = 'data')
-            
+
         X : array-like, shape (n_samples, n_features)
             Training vector, where n_samples in the number of samples
             and n_features is the number of features.
@@ -205,28 +199,21 @@ class Isomap(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
-        if ((self.geom.X is None) and (self.geom.adjacency_matrix is None)):
-            # then we need to assign the passed X to the geometry object
-            if input_type == 'data':
-                self.geom.set_data_matrix(X)
-            elif input_type == 'adjacency':
-                self.geom.set_adjacency_matrix(X)
-            else:
-                raise ValueError("unkonwn input type")
-            
-        # might want to change the eigen solver
-        if (eigen_solver is not None) and (eigen_solver != self.eigen_solver):
-            self.eigen_solver = eigen_solver
-        # we also might want to change the # of components:
-        if (n_components is not None) and (n_components != self.n_components):
-            self.n_components = n_components
+        self.fit_geometry(X, input_type)
+
+        if not hasattr(self, 'distance_matrix'):
+            self.distance_matrix = None
+        if not hasattr(self, 'graph_distance_matrix'):
+            self.graph_distance_matrix = None
+        if not hasattr(self, 'centered_matrix'):
+            self.centered_matrix = None
 
         # don't re-compute these if it's already been done.
         # This might be the case if an eigendecompostion fails and a different sovler is selected
-        if (self.distance_matrix is None and self.geom.adjacency_matrix is None):
-            self.distance_matrix = self.geom.compute_adjacency_matrix()
+        if (self.distance_matrix is None and self.geom_.adjacency_matrix is None):
+            self.distance_matrix = self.geom_.compute_adjacency_matrix()
         elif self.distance_matrix is None:
-            self.distance_matrix = self.geom.adjacency_matrix
+            self.distance_matrix = self.geom_.adjacency_matrix
         if self.graph_distance_matrix is None:
             self.graph_distance_matrix = graph_shortest_path(self.distance_matrix,
                                                              method = self.path_method,
@@ -234,7 +221,7 @@ class Isomap(BaseEmbedding):
         if self.centered_matrix is None:
             self.centered_matrix = center_matrix(self.graph_distance_matrix)
 
-        self.embedding_ = isomap(self.geom, n_components=self.n_components,
+        self.embedding_ = isomap(self.geom_, n_components=self.n_components,
                                  eigen_solver=self.eigen_solver,
                                  random_state=self.random_state,
                                  eigen_tol = self.eigen_tol,
