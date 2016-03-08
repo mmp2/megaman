@@ -3,7 +3,7 @@
 Word2Vec Plot
 ====================
 
-.. figure:: images/word2vec_rmetric_plot_no_digits.png
+.. figure:: word2vec_rmetric_plot_no_digits.png
    :scale: 50 %
    :alt: word2vec embedding with R. metric
 
