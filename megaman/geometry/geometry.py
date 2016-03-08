@@ -123,6 +123,18 @@ class Geometry(object):
         if override or ('radius' not in self.affinity_kwds):
             self.affinity_kwds['radius'] = radius
 
+    def set_matrix(self, X, input_type):
+        """Set the data matrix given the (string) input_type"""
+        if input_type == 'data':
+            self.set_data_matrix(X)
+        elif input_type == 'adjacency':
+            self.set_adjacency_matrix(X)
+        elif input_type == 'affinity':
+            self.set_affinity_matrix(X)
+        else:
+            raise ValueError("Unrecognized input_type: {0}".format(input_type))
+
+
     def compute_adjacency_matrix(self, copy=False, **kwargs):
         """
         This function will compute the adjacency matrix.
