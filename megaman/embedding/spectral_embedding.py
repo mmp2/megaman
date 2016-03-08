@@ -185,9 +185,9 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
             # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I
             # instead of I to make the smallest eigenvalue epsilon.
             epsilon = 2
-            if geom.w is None: # a laplacian existed but it wasn't called with return_lapsym = True
-                geom.compute_laplacian_matrix(copy = False, return_lapsym = True)				
-            w = np.array(geom.w)
+            if geom.laplacian_weights is None: # a laplacian existed but it wasn't called with return_lapsym = True
+                geom.compute_laplacian_matrix(copy = False, return_lapsym = True)
+            w = np.array(geom.laplacian_weights)
             symmetrized_laplacian = geom.laplacian_symmetric.copy()
             if sparse.isspmatrix(symmetrized_laplacian):
                 symmetrized_laplacian.data /= np.sqrt(w[symmetrized_laplacian.row])
@@ -197,7 +197,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                 symmetrized_laplacian /= np.sqrt(w)
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
-                
+
     if re_normalize:
         print('using symmetrized laplacian')
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
@@ -279,7 +279,7 @@ class SpectralEmbedding(BaseEmbedding):
     geom : either a Geometry object from megaman.geometry or a dictionary
             containing (some or all) geometry parameters: adjacency_method,
             adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys. 
+            laplacian_kwds as keys.
 
     References
     ----------
@@ -298,7 +298,7 @@ class SpectralEmbedding(BaseEmbedding):
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
                  eigen_tol = 1e-12, drop_first = True, diffusion_maps = False,
                  geom = {}):
-        # initializes Geometry 
+        # initializes Geometry
         BaseEmbedding.__init__(self, geom)
         # embedding parameters:
         self.n_components = n_components
@@ -307,7 +307,7 @@ class SpectralEmbedding(BaseEmbedding):
         self.diffusion_maps = diffusion_maps
         self.eigen_tol = eigen_tol
         self.drop_first = drop_first
-        
+
     def fit(self, X, input_type = 'data', y=None):
         """
         Fit the model from data in X.

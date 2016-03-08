@@ -8,7 +8,7 @@ from megaman.utils.testing import assert_raise_message
 from megaman.geometry import (compute_adjacency_matrix, adjacency_methods,
                               compute_affinity_matrix, affinity_methods,
                               compute_laplacian_matrix, laplacian_methods)
-from megaman.geometry.geometry import Geometry, affinity_error_msg, distance_error_msg
+from megaman.geometry.geometry import Geometry, distance_error_msg
 
 
 def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
@@ -75,7 +75,7 @@ def test_compute_affinity_matrix_args(almost_equal_decimals=5):
                         assert_array_almost_equal(affinity_true.todense(), affinity_queried.todense(), almost_equal_decimals)
                     else:
                         G.set_affinity_matrix(A)
-                        msg = affinity_error_msg
+                        msg = distance_error_msg
                         assert_raise_message(ValueError, msg, G.compute_affinity_matrix)
 
 
