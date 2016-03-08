@@ -169,12 +169,14 @@ class LTSA(BaseEmbedding):
       dimensionality reduction via tangent space alignment.
       Journal of Shanghai Univ.  8:406 (2004)
     """
-    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 tol=1e-6, max_iter=100, geom=None):
-        self.geom = geom
+    def __init__(self, n_components=2, radius='auto', geom=None,
+                 eigen_solver='auto', random_state=None,
+                 tol=1e-6, max_iter=100):
         self.n_components = n_components
-        self.random_state = random_state
+        self.radius = radius
+        self.geom = geom
         self.eigen_solver = eigen_solver
+        self.random_state = random_state
         self.tol = tol
         self.max_iter = max_iter
 
