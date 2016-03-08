@@ -22,15 +22,19 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    geom :  either a Geometry object from megaman.geometry or a dictionary
-            containing (some or all) geometry parameters: adjacency_method,
-            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys.
+    n_components : integer
+        number of coordinates for the manifold.
+    radius : float (optional)
+        radius for adjacency and affinity calculations. Will be overridden if
+        either is set in `geom`
+    geom : dict or megaman.geometry.Geometry object
+        specification of geometry parameters: keys are
+        ["adjacency_method", "adjacency_kwds", "affinity_method",
+         "affinity_kwds", "laplacian_method", "laplacian_kwds"]
 
     Attributes
     ----------
-    geom : a fitted megaman.geometry.Geometry object.
-
+    geom_ : a fitted megaman.geometry.Geometry object.
     """
     def __init__(self, n_components=2, radius='auto', geom=None):
         self.n_components = n_components

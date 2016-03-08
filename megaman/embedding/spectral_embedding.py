@@ -247,14 +247,23 @@ class SpectralEmbedding(BaseEmbedding):
 
     Parameters
     -----------
-    n_components : integer, optional
-        The dimension of the projection subspace.
+
+    n_components : integer
+        number of coordinates for the manifold.
+    radius : float (optional)
+        radius for adjacency and affinity calculations. Will be overridden if
+        either is set in `geom`
+    geom : dict or megaman.geometry.Geometry object
+        specification of geometry parameters: keys are
+        ["adjacency_method", "adjacency_kwds", "affinity_method",
+         "affinity_kwds", "laplacian_method", "laplacian_kwds"]
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            use standard dense matrix operations for the eigenvalue
+            decomposition. Uses a dense data array, and thus should be avoided
+            for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -267,10 +276,9 @@ class SpectralEmbedding(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
-    random_state : int seed, RandomState instance, or None (default)
-        A pseudo random number generator used for the initialization of the
-        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
-        By default, arpack is used.
+    random_state : numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.RandomState
     eigen_tol : float, optional, default=0.0
         Stopping criterion for eigendecomposition of the Laplacian matrix
         when using arpack eigen_solver.
@@ -281,35 +289,20 @@ class SpectralEmbedding(BaseEmbedding):
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
         version by re-scaling the embedding by the eigenvalues.
-    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
-        distances beyond neighborhood_radius are considered infinite.
-    affinity_radius : scalar, passed to affinity matrix, bandwidth parameter
-        used in Guassian kernel for affinity matrix
-    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.
-        method for computing pairwise radius neighbors graph.
-    input_type : string, one of: 'data', 'distance', 'affinity'.
-        The values of input data X.
-    path_to_flann : string. full file path location of FLANN if not installed to
-        root or to set FLANN_ROOT set to path location. Used for importing pyflann
-        from a different location.
-    geom : either a Geometry object from megaman.geometry or a dictionary
-            containing (some or all) geometry parameters: adjacency_method,
-            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys.
 
     References
     ----------
-    - A Tutorial on Spectral Clustering, 2007
-      Ulrike von Luxburg
-      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
+    .. [1] A Tutorial on Spectral Clustering, 2007
+        Ulrike von Luxburg
+        http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323
 
-    - On Spectral Clustering: Analysis and an algorithm, 2011
-      Andrew Y. Ng, Michael I. Jordan, Yair Weiss
-      http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
+    .. [2] On Spectral Clustering: Analysis and an algorithm, 2011
+        Andrew Y. Ng, Michael I. Jordan, Yair Weiss
+        http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100
 
-    - Normalized cuts and image segmentation, 2000
-      Jianbo Shi, Jitendra Malik
-      http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
+    .. [3] Normalized cuts and image segmentation, 2000
+        Jianbo Shi, Jitendra Malik
+        http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
     def __init__(self, n_components=2, radius='auto', geom=None,
                  eigen_solver='auto', random_state=None, eigen_tol=1e-12,
