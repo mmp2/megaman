@@ -1,3 +1,5 @@
+.. include:: images/spectra_Halpha.rst
+
 .. image:: images/spectra_Halpha.png
    :height: 238 px
    :width: 318 px
@@ -7,6 +9,7 @@
    :height: 250 px
    :width: 220 px
    :align: right
+   
 
 megaman: Scalable manifold learning
 =================================
