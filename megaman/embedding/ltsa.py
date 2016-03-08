@@ -170,10 +170,8 @@ class LTSA(BaseEmbedding):
       Journal of Shanghai Univ.  8:406 (2004)
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 tol = 1e-6, max_iter=100, geom = None):
-        # initialize geometry
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 tol=1e-6, max_iter=100, geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver

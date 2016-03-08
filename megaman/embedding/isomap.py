@@ -162,19 +162,13 @@ class Isomap(BaseEmbedding):
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol=1e-12, path_method='auto', geom = {}):
-        # initializes Geometry
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 eigen_tol=1e-12, path_method='auto', geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver
         self.eigen_tol = eigen_tol
         self.path_method = path_method
-        # intermediary steps for storage
-        self.distance_matrix = None
-        self.graph_distance_matrix = None
-        self.centered_matrix = None
 
     def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
@@ -206,6 +200,13 @@ class Isomap(BaseEmbedding):
             Returns the instance itself.
         """
         self.fit_geometry(X, input_type)
+
+        if not hasattr(self, 'distance_matrix'):
+            self.distance_matrix = None
+        if not hasattr(self, 'graph_distance_matrix'):
+            self.graph_distance_matrix = None
+        if not hasattr(self, 'centered_matrix'):
+            self.centered_matrix = None
 
         # don't re-compute these if it's already been done.
         # This might be the case if an eigendecompostion fails and a different sovler is selected

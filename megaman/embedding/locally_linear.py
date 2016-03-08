@@ -177,11 +177,8 @@ class LocallyLinearEmbedding(BaseEmbedding):
       by locally linear embedding.  Science 290:2323 (2000).
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-             tol = 1e-6, max_iter=100, reg = 1e3, neighborhood_radius = None,
-             affinity_radius = None,  distance_method = 'auto', geom = {}):
-        # initialize geometry
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 tol=1e-6, max_iter=100, reg = 1e3, geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver

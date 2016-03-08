@@ -305,11 +305,9 @@ class SpectralEmbedding(BaseEmbedding):
       http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
     def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol = 1e-12, drop_first = True, diffusion_maps = False,
-                 geom = {}):
-        # initializes Geometry
-        BaseEmbedding.__init__(self, geom)
-        # embedding parameters:
+                 eigen_tol=1e-12, drop_first=True, diffusion_maps=False,
+                 geom=None):
+        self.geom = geom
         self.n_components = n_components
         self.random_state = random_state
         self.eigen_solver = eigen_solver
