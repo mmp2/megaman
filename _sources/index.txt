@@ -7,6 +7,7 @@
    :height: 250 px
    :width: 220 px
    :align: right
+   :target: /megaman/images/word2vec
    
 
 megaman: Scalable manifold learning
