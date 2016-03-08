@@ -182,7 +182,7 @@ class LocallyLinearEmbedding(BaseEmbedding):
     .. [1] Roweis, S. & Saul, L. Nonlinear dimensionality reduction
         by locally linear embedding.  Science 290:2323 (2000).
     """
-    def __init__(self, n_components=2, radius='auto', geom=None,
+    def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
                  tol=1e-6, max_iter=100, reg=1e3):
         self.n_components = n_components

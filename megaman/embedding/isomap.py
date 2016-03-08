@@ -165,7 +165,7 @@ class Isomap(BaseEmbedding):
     .. [1] Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. A global geometric
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
-    def __init__(self, n_components=2, radius='auto', geom=None,
+    def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
                  eigen_tol=1e-12, path_method='auto'):
         self.n_components = n_components

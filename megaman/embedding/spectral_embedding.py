@@ -305,7 +305,7 @@ class SpectralEmbedding(BaseEmbedding):
         Jianbo Shi, Jitendra Malik
         http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
-    def __init__(self, n_components=2, radius='auto', geom=None,
+    def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None, eigen_tol=1e-12,
                  drop_first=True, diffusion_maps=False):
         self.n_components = n_components

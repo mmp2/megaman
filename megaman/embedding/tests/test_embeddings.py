@@ -43,7 +43,12 @@ def test_embeddings_bad_arguments():
     X = rand.rand(100, 3)
 
     def check_bad_args(Embedding):
-        embedding = Embedding(n_components=2, geom='blah')
+        # no radius set
+        embedding = Embedding()
+        assert_raises(ValueError, embedding.fit, X)
+
+        # unrecognized geometry
+        embedding = Embedding(radius=2, geom='blah')
         assert_raises(ValueError, embedding.fit, X)
 
     for Embedding in EMBEDDINGS:
