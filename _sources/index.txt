@@ -1,4 +1,4 @@
-.. image:: images/spectra_D4000.png
+.. image:: images/spectra_Halpha.png
    :height: 238 px
    :width: 318 px
    :align: left
