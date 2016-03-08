@@ -15,7 +15,7 @@ def test_geometry_dict():
                      laplacian_method = 'geometric',
                      laplacian_kwds = {'scaling_eps':4})
     g1 = Geometry(**geom_dict)
-    base_embedding = BaseEmbedding(geom_dict).fit_geometry()
+    base_embedding = BaseEmbedding(geom=geom_dict).fit_geometry()
     assert(g1.__dict__ == base_embedding.geom_.__dict__)
 
 
@@ -27,7 +27,7 @@ def test_geometry_object():
                   affinity_kwds = {'radius':4},
                   laplacian_method = 'geometric',
                   laplacian_kwds = {'scaling_eps':4})
-    base_embedding = BaseEmbedding(g1).fit_geometry()
+    base_embedding = BaseEmbedding(geom=g1).fit_geometry()
     assert(g1.__dict__ == base_embedding.geom_.__dict__)
 
 
@@ -40,7 +40,7 @@ def test_geometry_update():
                   affinity_kwds = {'radius':4},
                   laplacian_method = 'geometric',
                   laplacian_kwds = {'scaling_eps':4})
-    base_embedding = BaseEmbedding(g1)
+    base_embedding = BaseEmbedding(geom=g1)
     X = np.random.rand(10, 2)
     # Now update g1 -- object that was passed
     g1.set_data_matrix(X)
