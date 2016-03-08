@@ -11,3 +11,4 @@ megaman package.
    :maxdepth: 2
 
    spectra_Halpha.rst
+   word2vec.rst
