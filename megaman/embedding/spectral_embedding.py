@@ -172,7 +172,10 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                                       size=laplacian.shape[0],
                                       nvec=n_components + 1)
     re_normalize = False
+    PD_solver = False
     if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
+        epsilon = 2
+        PD_solver = True
         if lapl_type not in ['symmetricnormalized', 'unnormalized']:
             re_normalize = True
             # If lobpcg (or amg with lobpcg) is chosen and
@@ -192,7 +195,6 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
             # lambda(I - L*) = 1 - lambda(L*).
             # Finally, since we want positive definite not semi-definite we use (1+epsilon)*I
             # instead of I to make the smallest eigenvalue epsilon.
-            epsilon = 2
             if geom.laplacian_weights is None: # a laplacian existed but it wasn't called with return_lapsym = True
                 geom.compute_laplacian_matrix(copy = False, return_lapsym = True)
             w = np.array(geom.laplacian_weights)
@@ -205,9 +207,14 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                 symmetrized_laplacian /= np.sqrt(w)
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
-
-    if re_normalize:
-        print('using symmetrized laplacian')
+        else: # using a symmetric laplacian but adjust to avoid positive definite errors
+            symmetrized_laplacian = geom.laplacian_matrix.copy()
+            if sparse.isspmatrix(symmetrized_laplacian):
+                symmetrized_laplacian = (1+epsilon)*sparse.identity(n_nodes) - symmetrized_laplacian
+            else:
+                symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
+            
+    if PD_solver: # then eI - L was used, fix the eigenvalues
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
                                                     random_state, eigen_tol, drop_first, largest = False)
         lambdas = -lambdas + epsilon
