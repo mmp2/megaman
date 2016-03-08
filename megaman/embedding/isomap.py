@@ -7,6 +7,7 @@
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path as graph_shortest_path
+
 from ..utils.eigendecomp import eigen_decomposition
 from ..embedding.base import BaseEmbedding
 
@@ -201,6 +202,7 @@ class Isomap(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
+        X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
 
         if not hasattr(self, 'distance_matrix'):

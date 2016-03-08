@@ -37,6 +37,15 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
         self.radius = radius
         self.geom = geom
 
+    def _validate_input(self, X, input_type):
+        if input_type == 'data':
+            sparse_formats = None
+        elif input_type in ['adjacency', 'affinity']:
+            sparse_formats = ['csr', 'coo', 'lil', 'bsr', 'dok', 'dia']
+        else:
+            raise ValueError("unrecognized input_type: {0}".format(input_type))
+        return check_array(X, dtype=FLOAT_DTYPES, accept_sparse=sparse_formats)
+
     def estimate_radius(self, X, input_type='data', intrinsic_dim=None):
         """Estimate a radius based on the data and intrinsic dimensionality
 
@@ -88,25 +97,12 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
             self.geom_.set_radius(self.radius,
                                   override=False)
 
-
         if X is not None:
-            if input_type == 'data':
-                X = check_array(X, dtype=FLOAT_DTYPES)
-                self.geom_.set_data_matrix(X)
-            elif input_type == 'adjacency':
-                X = check_array(X, dtype=FLOAT_DTYPES,
-                                accept_sparse=['csr', 'csc', 'coo'])
-                self.geom_.set_adjacency_matrix(X)
-            elif input_type == 'affinity':
-                X = check_array(X, dtype=FLOAT_DTYPES,
-                                accept_sparse=['csr', 'csc', 'coo'])
-                self.geom_.set_affinity_matrix(X)
-            else:
-                raise ValueError("Unrecognized input_type: "
-                                 "{0}".format(input_type))
+            self.geom_.set_matrix(X, input_type)
+
         return self
 
-    def fit_transform(self, X, input_type='data'):
+    def fit_transform(self, X, y=None, input_type='data'):
         """Fit the model from data in X and transform X.
 
         Parameters
@@ -127,5 +123,9 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
         -------
         X_new: array-like, shape (n_samples, n_components)
         """
-        self.fit(X, input_type=input_type)
+        self.fit(X, y=y, input_type=input_type)
         return self.embedding_
+
+    def transform(self, X, y=None, input_type='data'):
+        raise NotImplementedError("transform() not implemented. "
+                                  "Try fit_transform()")

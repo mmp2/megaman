@@ -338,6 +338,7 @@ class SpectralEmbedding(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
+        X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
         self.embedding_ = spectral_embedding(self.geom_,

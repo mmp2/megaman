@@ -10,7 +10,7 @@ from megaman.geometry.geometry import Geometry
 
 EMBEDDINGS = [Isomap, LocallyLinearEmbedding, LTSA, SpectralEmbedding]
 
-
+# # TODO: make estimator_checks pass!
 # def test_estimator_checks():
 #     from sklearn.utils.estimator_checks import check_estimator
 #     for Embedding in EMBEDDINGS:
