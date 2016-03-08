@@ -32,6 +32,7 @@ We adopted the following convention:
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
+from scipy.special import gammaln
 from .adjacency import compute_adjacency_matrix
 from .affinity import compute_affinity_matrix
 from .laplacian import compute_laplacian_matrix
@@ -81,11 +82,11 @@ class Geometry(object):
                  affinity_method='auto', affinity_kwds=None,
                  laplacian_method='auto',laplacian_kwds=None):
         self.adjacency_method = adjacency_method
-        self.adjacency_kwds = adjacency_kwds
+        self.adjacency_kwds = dict(**(adjacency_kwds or {}))
         self.affinity_method = affinity_method
-        self.affinity_kwds = affinity_kwds
+        self.affinity_kwds = dict(**(affinity_kwds or {}))
         self.laplacian_method = laplacian_method
-        self.laplacian_kwds = laplacian_kwds
+        self.laplacian_kwds = dict(**(laplacian_kwds or {}))
 
         self.X = None
         self.adjacency_matrix = None
@@ -93,6 +94,46 @@ class Geometry(object):
         self.laplacian_matrix = None
         self.laplacian_symmetric = None
         self.laplacian_weights = None
+
+    def set_radius(self, radius, override=True, X=None, n_components=2):
+        """Set the radius for the adjacency and affinity computation
+
+        By default, this will override keyword arguments provided on
+        initialization.
+
+        Parameters
+        ----------
+        radius : float
+            radius to set for adjacency and affinity.
+        override : bool (default: True)
+            if False, then only set radius if not already defined in
+            `adjacency_args` and `affinity_args`.
+        X : ndarray or sparse (optional)
+            if provided, estimate a suitable radius from this data.
+        n_components : int (default=2)
+            the number of components to use when estimating the radius
+        """
+        if radius < 0:
+            raise ValueError("radius must be non-negative")
+
+        if override or ('radius' not in self.adjacency_kwds and
+                        'n_neighbors' not in self.adjacency_kwds):
+            self.adjacency_kwds['radius'] = radius
+
+        if override or ('radius' not in self.affinity_kwds):
+            self.affinity_kwds['radius'] = radius
+
+    def set_matrix(self, X, input_type):
+        """Set the data matrix given the (string) input_type"""
+        if input_type == 'data':
+            self.set_data_matrix(X)
+        elif input_type == 'adjacency':
+            self.set_adjacency_matrix(X)
+        elif input_type == 'affinity':
+            self.set_affinity_matrix(X)
+        else:
+            raise ValueError("Unrecognized input_type: {0}".format(input_type))
+
 
     def compute_adjacency_matrix(self, copy=False, **kwargs):
         """
@@ -114,11 +155,10 @@ class Geometry(object):
         if self.X is None:
             raise ValueError(distance_error_msg)
 
-        adjacency_kwds = dict(**(self.adjacency_kwds or {}))
-        adjacency_kwds.update(kwargs)
+        self.adjacency_kwds.update(kwargs)
         self.adjacency_matrix = compute_adjacency_matrix(self.X,
                                                          self.adjacency_method,
-                                                         **adjacency_kwds)
+                                                         **self.adjacency_kwds)
         if copy:
             return self.adjacency_matrix.copy()
         else:
@@ -146,11 +186,10 @@ class Geometry(object):
         if self.adjacency_matrix is None:
             self.compute_adjacency_matrix()
 
-        affinity_kwds = dict(**(self.affinity_kwds or {}))
-        affinity_kwds.update(kwargs)
+        self.affinity_kwds.update(kwargs)
         self.affinity_matrix = compute_affinity_matrix(self.adjacency_matrix,
                                                        self.affinity_method,
-                                                       **affinity_kwds)
+                                                       **self.affinity_kwds)
         if copy:
             return self.affinity_matrix.copy()
         else:
@@ -182,12 +221,11 @@ class Geometry(object):
         if self.affinity_matrix is None:
             self.compute_affinity_matrix()
 
-        laplacian_kwds = dict(**(self.laplacian_kwds or {}))
-        laplacian_kwds.update(kwargs)
-        laplacian_kwds['full_output'] = return_lapsym
+        self.laplacian_kwds.update(kwargs)
+        self.laplacian_kwds['full_output'] = return_lapsym
         result = compute_laplacian_matrix(self.affinity_matrix,
                                           self.laplacian_method,
-                                          **laplacian_kwds)
+                                          **self.laplacian_kwds)
         if return_lapsym:
             (self.laplacian_matrix,
              self.laplacian_symmetric,

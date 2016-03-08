@@ -7,6 +7,7 @@
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path as graph_shortest_path
+
 from ..utils.eigendecomp import eigen_decomposition
 from ..embedding.base import BaseEmbedding
 
@@ -161,12 +162,14 @@ class Isomap(BaseEmbedding):
     .. [1] Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. A global geometric
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
-    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol=1e-12, path_method='auto', geom=None):
-        self.geom = geom
+    def __init__(self, n_components=2, radius='auto', geom=None,
+                 eigen_solver='auto', random_state=None,
+                 eigen_tol=1e-12, path_method='auto'):
         self.n_components = n_components
-        self.random_state = random_state
+        self.radius = radius
+        self.geom = geom
         self.eigen_solver = eigen_solver
+        self.random_state = random_state
         self.eigen_tol = eigen_tol
         self.path_method = path_method
 
@@ -199,6 +202,7 @@ class Isomap(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
+        X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
 
         if not hasattr(self, 'distance_matrix'):

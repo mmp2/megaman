@@ -304,16 +304,17 @@ class SpectralEmbedding(BaseEmbedding):
       Jianbo Shi, Jitendra Malik
       http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
-    def __init__(self, n_components=2, eigen_solver='auto', random_state=None,
-                 eigen_tol=1e-12, drop_first=True, diffusion_maps=False,
-                 geom=None):
-        self.geom = geom
+    def __init__(self, n_components=2, radius='auto', geom=None,
+                 eigen_solver='auto', random_state=None, eigen_tol=1e-12,
+                 drop_first=True, diffusion_maps=False):
         self.n_components = n_components
-        self.random_state = random_state
+        self.radius = radius
+        self.geom = geom
         self.eigen_solver = eigen_solver
-        self.diffusion_maps = diffusion_maps
+        self.random_state = random_state
         self.eigen_tol = eigen_tol
         self.drop_first = drop_first
+        self.diffusion_maps = diffusion_maps
 
     def fit(self, X, y=None, input_type='data'):
         """
@@ -337,6 +338,7 @@ class SpectralEmbedding(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
+        X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
         self.embedding_ = spectral_embedding(self.geom_,
