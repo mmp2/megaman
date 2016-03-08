@@ -77,60 +77,60 @@ def test_spectral_embedding_two_components(seed=36):
 
 
 def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
-	"""Test spectral embedding with precomputed kernel"""
-	radius = 4.0
-	se_precomp = SpectralEmbedding(n_components=2,
-								   random_state=np.random.RandomState(seed))
-	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius},
-				   'adjacency_method':'brute'}
-	se_rbf = SpectralEmbedding(n_components=2, random_state=np.random.RandomState(seed),
-							   geom = geom_params)
-	G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':radius},
-					  affinity_kwds = {'radius':radius})
-	G.set_data_matrix(S)
-	A = G.compute_affinity_matrix()
-	embed_precomp = se_precomp.fit_transform(A, input_type = 'affinity')
-	embed_rbf = se_rbf.fit_transform(S, input_type = 'data')
-	assert_array_almost_equal(
-		se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense(),
-		almost_equal_decimals)
-	assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
+    """Test spectral embedding with precomputed kernel"""
+    radius = 4.0
+    se_precomp = SpectralEmbedding(n_components=2,
+                                   random_state=np.random.RandomState(seed))
+    geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius},
+                   'adjacency_method':'brute'}
+    se_rbf = SpectralEmbedding(n_components=2, random_state=np.random.RandomState(seed),
+                               geom = geom_params)
+    G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':radius},
+                      affinity_kwds = {'radius':radius})
+    G.set_data_matrix(S)
+    A = G.compute_affinity_matrix()
+    embed_precomp = se_precomp.fit_transform(A, input_type = 'affinity')
+    embed_rbf = se_rbf.fit_transform(S, input_type = 'data')
+    assert_array_almost_equal(
+        se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense(),
+        almost_equal_decimals)
+    assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
 
 
 def test_spectral_embedding_amg_solver(seed=20):
-	"""Test spectral embedding with amg solver vs arpack using symmetric laplacian"""
-	radius = 4.0
-	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
-				   'laplacian_method':'symmetricnormalized'}
-	try:
-		from pyamg import smoothed_aggregation_solver
-	except ImportError:
-		raise SkipTest("pyamg not available.")
-	se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
-							   random_state=np.random.RandomState(seed), geom = geom_params)
-	se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
-								  random_state=np.random.RandomState(seed))
-	embed_amg = se_amg.fit_transform(S)
-	embed_arpack = se_arpack.fit_transform(S)
-	assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
+    """Test spectral embedding with amg solver vs arpack using symmetric laplacian"""
+    radius = 4.0
+    geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
+                   'laplacian_method':'symmetricnormalized'}
+    try:
+        from pyamg import smoothed_aggregation_solver
+    except ImportError:
+        raise SkipTest("pyamg not available.")
+    se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
+                               random_state=np.random.RandomState(seed), geom = geom_params)
+    se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
+                                  random_state=np.random.RandomState(seed))
+    embed_amg = se_amg.fit_transform(S)
+    embed_arpack = se_arpack.fit_transform(S)
+    assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
 
 
 def test_spectral_embedding_symmetrzation(seed=36):
-	"""Test spectral embedding with amg solver vs arpack using non symmetric laplacian"""
-	radius = 4.0
-	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
-				   'laplacian_method':'geometric'}
-	try:
-		from pyamg import smoothed_aggregation_solver
-	except ImportError:
-		raise SkipTest("pyamg not available.")
-	se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
-							   random_state=np.random.RandomState(seed), geom = geom_params)
-	se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
-								  random_state=np.random.RandomState(seed))
-	embed_amg = se_amg.fit_transform(S)
-	embed_arpack = se_arpack.fit_transform(S)
-	assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
+    """Test spectral embedding with amg solver vs arpack using non symmetric laplacian"""
+    radius = 4.0
+    geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
+                   'laplacian_method':'geometric'}
+    try:
+        from pyamg import smoothed_aggregation_solver
+    except ImportError:
+        raise SkipTest("pyamg not available.")
+    se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
+                               random_state=np.random.RandomState(seed), geom = geom_params)
+    se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
+                                  random_state=np.random.RandomState(seed))
+    embed_amg = se_amg.fit_transform(S)
+    embed_arpack = se_arpack.fit_transform(S)
+    assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
 
 
 def test_spectral_embedding_unknown_eigensolver(seed=36):
