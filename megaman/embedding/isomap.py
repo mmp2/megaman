@@ -118,14 +118,23 @@ class Isomap(BaseEmbedding):
 
     Parameters
     -----------
-    n_components : integer, default: 2
-        The dimension of the projected subspace.
+
+    n_components : integer
+        number of coordinates for the manifold.
+    radius : float (optional)
+        radius for adjacency and affinity calculations. Will be overridden if
+        either is set in `geom`
+    geom : dict or megaman.geometry.Geometry object
+        specification of geometry parameters: keys are
+        ["adjacency_method", "adjacency_kwds", "affinity_method",
+         "affinity_kwds", "laplacian_method", "laplacian_kwds"]
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            use standard dense matrix operations for the eigenvalue
+            decomposition. Uses a dense data array, and thus should be avoided
+            for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -138,27 +147,21 @@ class Isomap(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
-    random_state : int seed, RandomState instance, or None, default : None
-        A pseudo random number generator used for the initialization of the
-        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
+    random_state : numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.RandomState
     eigen_tol : float, optional. Tolerance for 'arpack' solver.
     path_method : string, optionl. method for computing graph shortest path.
-        One of :
-        'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path
-        for more information.
-    geom : either a Geometry object from megaman.geometry or a dictionary
-            containing (some or all) geometry parameters: adjacency_method,
-            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys.
+        One of ['auto', 'D', 'FW', 'BF', 'J'].
+        See `scipy.sparse.csgraph.shortest_path` for more information.
 
-    Returns
+    Attributes
     ----------
     embedding_ : array, shape = (n_samples, n_components)
         Spectral embedding of the training matrix.
 
     References
     ----------
-
     .. [1] Tenenbaum, J.B.; De Silva, V.; & Langford, J.C. A global geometric
            framework for nonlinear dimensionality reduction. Science 290 (5500)
     """
