@@ -68,24 +68,24 @@ def test_spectral_embedding_two_components(seed=36):
     se_precomp = SpectralEmbedding(n_components=1,
                                    random_state=np.random.RandomState(seed),
                                    eigen_solver = 'arpack')
-    embedded_coordinate = se_precomp.fit_transform(affinity, input_type = 'affinity')
-    # Some numpy versions are touchy with types
-    embedded_coordinate = \
-        se_precomp.fit_transform(affinity.astype(np.float32))
+    embedded_coordinate = se_precomp.fit_transform(affinity,
+                                                   input_type='affinity')
+
     # thresholding on the first components using 0.
     label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
     assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
+
 
 def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
 	"""Test spectral embedding with precomputed kernel"""
 	radius = 4.0
 	se_precomp = SpectralEmbedding(n_components=2,
 								   random_state=np.random.RandomState(seed))
-	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 
+	geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius},
 				   'adjacency_method':'brute'}
 	se_rbf = SpectralEmbedding(n_components=2, random_state=np.random.RandomState(seed),
 							   geom = geom_params)
-	G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':radius}, 
+	G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':radius},
 					  affinity_kwds = {'radius':radius})
 	G.set_data_matrix(S)
 	A = G.compute_affinity_matrix()
@@ -95,6 +95,7 @@ def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5
 		se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense(),
 		almost_equal_decimals)
 	assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
+
 
 def test_spectral_embedding_amg_solver(seed=20):
 	"""Test spectral embedding with amg solver vs arpack using symmetric laplacian"""
@@ -113,6 +114,7 @@ def test_spectral_embedding_amg_solver(seed=20):
 	embed_arpack = se_arpack.fit_transform(S)
 	assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
 
+
 def test_spectral_embedding_symmetrzation(seed=36):
 	"""Test spectral embedding with amg solver vs arpack using non symmetric laplacian"""
 	radius = 4.0
@@ -130,12 +132,14 @@ def test_spectral_embedding_symmetrzation(seed=36):
 	embed_arpack = se_arpack.fit_transform(S)
 	assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
 
+
 def test_spectral_embedding_unknown_eigensolver(seed=36):
     """Test that SpectralClustering fails with an unknown eigensolver"""
     se = SpectralEmbedding(n_components=1,
                            random_state=np.random.RandomState(seed),
                            eigen_solver="<unknown>")
     assert_raises(ValueError, se.fit, S)
+
 
 def test_connectivity(seed=36):
     """Test that graph connectivity test works as expected"""

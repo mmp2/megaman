@@ -16,6 +16,7 @@ from ..embedding.base import BaseEmbedding
 from ..utils.validation import check_random_state
 from ..utils.eigendecomp import eigen_decomposition, check_eigen_solver
 
+
 def _graph_connected_component(graph, node_id):
     """
     Find the largest graph connected components the contains one
@@ -48,6 +49,7 @@ def _graph_connected_component(graph, node_id):
             break
     return connected_components
 
+
 def _graph_is_connected(graph):
     """
     Return whether the graph is connected (True) or Not (False)
@@ -70,6 +72,7 @@ def _graph_is_connected(graph):
     else:
         # dense graph, find all connected components start from node 0
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
+
 
 def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                        random_state=None, eigen_tol=0.0, drop_first=True,
@@ -150,14 +153,19 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
       http://dx.doi.org/10.1137%2FS1064827500366124
     """
     random_state = check_random_state(random_state)
+
     if geom.affinity_matrix is None:
         geom.compute_affinity_matrix()
     if not _graph_is_connected(geom.affinity_matrix):
-        warnings.warn("Graph is not fully connected, spectral embedding may not work as expected.")
+        warnings.warn("Graph is not fully connected: "
+                      "spectral embedding may not work as expected.")
+
     if geom.laplacian_matrix is None:
-        laplacian = geom.compute_laplacian_matrix(copy = False, return_lapsym = True)
+        laplacian = geom.compute_laplacian_matrix(copy=False,
+                                                  return_lapsym=True)
     else:
         laplacian = geom.laplacian_matrix
+
     n_nodes = laplacian.shape[0]
     lapl_type = geom.laplacian_method
     eigen_solver = check_eigen_solver(eigen_solver,
@@ -219,6 +227,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     else:
         embedding = diffusion_map[:, :n_components]
     return embedding
+
 
 class SpectralEmbedding(BaseEmbedding):
     """
@@ -308,7 +317,7 @@ class SpectralEmbedding(BaseEmbedding):
         self.eigen_tol = eigen_tol
         self.drop_first = drop_first
 
-    def fit(self, X, input_type = 'data', y=None):
+    def fit(self, X, y=None, input_type='data'):
         """
         Fit the model from data in X.
 
@@ -330,24 +339,16 @@ class SpectralEmbedding(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
-        if self.geom.X is None:
-            if input_type == 'data':
-                self.geom.set_data_matrix(X)
-        if self.geom.adjacency_matrix is None:
-            if input_type == 'distance':
-                self.geom.set_adjacency_matrix(X)
-        if self.geom.affinity_matrix is None:
-            if input_type == 'affinity':
-                self.geom.set_affinity_matrix(X)
+        self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = spectral_embedding(self.geom,
+        self.embedding_ = spectral_embedding(self.geom_,
                                              n_components = self.n_components,
                                              eigen_solver = self.eigen_solver,
                                              random_state = random_state,
                                              eigen_tol = self.eigen_tol,
                                              drop_first = self.drop_first,
                                              diffusion_maps = self.diffusion_maps)
-        self.affinity_matrix_ = self.geom.affinity_matrix
-        self.laplacian_matrix_ = self.geom.laplacian_matrix
-        self.laplacian_matrix_type_ = self.geom.laplacian_method
+        self.affinity_matrix_ = self.geom_.affinity_matrix
+        self.laplacian_matrix_ = self.geom_.laplacian_matrix
+        self.laplacian_matrix_type_ = self.geom_.laplacian_method
         return self

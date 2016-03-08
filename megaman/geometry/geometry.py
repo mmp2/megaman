@@ -229,7 +229,7 @@ class Geometry(object):
         affinity_mat : sparse matrix (N_obs, N_obs).
             The adjacency matrix to input.
         """
-        affinity_mat = check_array(affinity_mat, accept_sparse = sparse_formats)
+        affinity_mat = check_array(affinity_mat, accept_sparse=sparse_formats)
         if affinity_mat.shape[0] != affinity_mat.shape[1]:
             raise ValueError("affinity matrix is not square")
         self.affinity_matrix = affinity_mat

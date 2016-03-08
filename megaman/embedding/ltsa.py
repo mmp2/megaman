@@ -18,6 +18,7 @@ from ..embedding.base import BaseEmbedding
 from ..utils.validation import check_random_state, check_array
 from ..utils.eigendecomp import null_space, check_eigen_solver
 
+
 def ltsa(geom, n_components, eigen_solver='auto', tol=1e-6,
          max_iter=100,random_state=None):
     """
@@ -160,7 +161,7 @@ class LTSA(BaseEmbedding):
     geom : either a Geometry object from megaman.geometry or a dictionary
             containing (some or all) geometry parameters: adjacency_method,
             adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys. 
+            laplacian_kwds as keys.
 
     References
     ----------
@@ -178,8 +179,8 @@ class LTSA(BaseEmbedding):
         self.eigen_solver = eigen_solver
         self.tol = tol
         self.max_iter = max_iter
-        
-    def fit(self, X, input_type='data', y=None):
+
+    def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
 
         Parameters
@@ -201,14 +202,11 @@ class LTSA(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
-        if self.geom.X is None:
-            if input_type == 'data':
-                self.geom.set_data_matrix(X)
-        if self.geom.adjacency_matrix is None:
-            if input_type == 'distance':
-                self.geom.set_adjacency_matrix(X)
+        self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
-        (self.embedding_, self.error_) = ltsa(self.geom,n_components=self.n_components,
-                                                eigen_solver=self.eigen_solver, tol = self.tol,
-                                                random_state=random_state, max_iter = self.max_iter)
+        (self.embedding_, self.error_) = ltsa(self.geom_, tol = self.tol,
+                                              n_components=self.n_components,
+                                              eigen_solver=self.eigen_solver,
+                                              random_state=random_state,
+                                              max_iter = self.max_iter)
         return self
