@@ -1,8 +1,8 @@
-.. image:: images/spectra_Halpha.png
-   :alt: 3,000,000 words and phrases from word2vec embedded into 2 dimensions. 10,000 sub-sample and estimated "stretch" shown.
+.. image:: images/spectra_D4000.png
    :height: 238 px
    :width: 318 px
    :align: left
+   :target: images/spectra_Halpha.rst
 .. image:: images/word2vec_rmetric_plot_no_digits.png
    :height: 250 px
    :width: 220 px

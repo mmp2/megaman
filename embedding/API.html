@@ -44,7 +44,7 @@
 <p>Spectral Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>geom=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spectral embedding for non-linear dimensionality reduction.</p>
 <p>Forms an affinity matrix given by the specified function and
 applies spectral decomposition to the corresponding graph laplacian.
@@ -152,7 +152,7 @@ Jianbo Shi, Jitendra Malik
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -287,7 +287,7 @@ Andrew V. Knyazev
 <span class="target" id="module-megaman.embedding.isomap"></span><p>ISOMAP</p>
 <dl class="class">
 <dt id="megaman.embedding.isomap.Isomap">
-<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>geom=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Isomap Embedding</p>
 <p>Non-linear dimensionality reduction through Isometric Mapping</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -363,7 +363,7 @@ framework for nonlinear dimensionality reduction. Science 290 (5500)</td></tr>
 </table>
 <dl class="method">
 <dt id="megaman.embedding.isomap.Isomap.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X=None</em>, <em>eigen_solver='auto'</em>, <em>input_type='data'</em>, <em>n_components=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -486,7 +486,7 @@ for more information.</p>
 <span class="target" id="module-megaman.embedding.locally_linear"></span><p>Locally Linear Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em>, <em>neighborhood_radius=None</em>, <em>affinity_radius=None</em>, <em>distance_method='auto'</em>, <em>geom={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em>, <em>geom=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Locally Linear Embedding</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -559,7 +559,7 @@ by locally linear embedding.  Science 290:2323 (2000).</li>
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -799,7 +799,7 @@ Journal of Shanghai Univ.  8:406 (2004)</li>
 </ul>
 <dl class="method">
 <dt id="megaman.embedding.ltsa.LTSA.fit">
-<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>input_type='data'</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the model from data in X.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />

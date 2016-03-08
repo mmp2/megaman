@@ -188,7 +188,7 @@
 <span class="sd">    geom : either a Geometry object from megaman.geometry or a dictionary</span>
 <span class="sd">            containing (some or all) geometry parameters: adjacency_method,</span>
 <span class="sd">            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,</span>
-<span class="sd">            laplacian_kwds as keys. </span>
+<span class="sd">            laplacian_kwds as keys.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    ----------</span>
@@ -202,28 +202,22 @@
 <span class="sd">           framework for nonlinear dimensionality reduction. Science 290 (5500)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">path_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">geom</span> <span class="o">=</span> <span class="p">{}):</span>
-        <span class="c1"># initializes Geometry </span>
-        <span class="n">BaseEmbedding</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">)</span>
-        <span class="c1"># embedding parameters:</span>
+                 <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">path_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span> <span class="o">=</span> <span class="n">eigen_tol</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span> <span class="o">=</span> <span class="n">path_method</span>	
-        <span class="c1"># intermediary steps for storage</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="o">=</span> <span class="bp">None</span>
-    
-<div class="viewcode-block" id="Isomap.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.Isomap.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span> <span class="o">=</span> <span class="n">path_method</span>
+
+<div class="viewcode-block" id="Isomap.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.isomap.Isomap.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_type : string, one of: &#39;data&#39;, &#39;distance&#39;.</span>
 <span class="sd">            The values of input data X. (default = &#39;data&#39;)</span>
-<span class="sd">            </span>
+
 <span class="sd">        X : array-like, shape (n_samples, n_features)</span>
 <span class="sd">            Training vector, where n_samples in the number of samples</span>
 <span class="sd">            and n_features is the number of features.</span>
@@ -245,28 +239,21 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns the instance itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">)):</span>
-            <span class="c1"># then we need to assign the passed X to the geometry object</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_data_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;adjacency&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unkonwn input type&quot;</span><span class="p">)</span>
-            
-        <span class="c1"># might want to change the eigen solver</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">eigen_solver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">eigen_solver</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
-        <span class="c1"># we also might want to change the # of components:</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">n_components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_components</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;distance_matrix&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;graph_distance_matrix&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;centered_matrix&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="o">=</span> <span class="bp">None</span>
 
         <span class="c1"># don&#39;t re-compute these if it&#39;s already been done.</span>
         <span class="c1"># This might be the case if an eigendecompostion fails and a different sovler is selected</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">compute_adjacency_matrix</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="o">.</span><span class="n">compute_adjacency_matrix</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="o">.</span><span class="n">adjacency_matrix</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span> <span class="o">=</span> <span class="n">graph_shortest_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">,</span>
                                                              <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_method</span><span class="p">,</span>
@@ -274,7 +261,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">centered_matrix</span> <span class="o">=</span> <span class="n">center_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph_distance_matrix</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span> <span class="o">=</span> <span class="n">isomap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span> <span class="o">=</span> <span class="n">isomap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
                                  <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
                                  <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
                                  <span class="n">eigen_tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eigen_tol</span><span class="p">,</span>

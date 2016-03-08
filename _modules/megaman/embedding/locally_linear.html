@@ -94,6 +94,7 @@
         <span class="n">W</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">nbrs_i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">W</span></div>
 
+
 <div class="viewcode-block" id="locally_linear_embedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.locally_linear_embedding">[docs]</a><span class="k">def</span> <span class="nf">locally_linear_embedding</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
                             <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>  <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -163,9 +164,10 @@
         <span class="n">M</span> <span class="o">=</span> <span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">M</span> <span class="o">=</span> <span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">W</span> <span class="o">-</span> <span class="n">W</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
-        <span class="n">M</span><span class="o">.</span><span class="n">flat</span><span class="p">[::</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># W = W - I = W - I        </span>
+        <span class="n">M</span><span class="o">.</span><span class="n">flat</span><span class="p">[::</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># W = W - I = W - I</span>
     <span class="k">return</span> <span class="n">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="n">eigen_solver</span><span class="p">,</span>
                       <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="LocallyLinearEmbedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.LocallyLinearEmbedding">[docs]</a><span class="k">class</span> <span class="nc">LocallyLinearEmbedding</span><span class="p">(</span><span class="n">BaseEmbedding</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -207,7 +209,7 @@
 <span class="sd">    geom : either a Geometry object from megaman.geometry or a dictionary</span>
 <span class="sd">            containing (some or all) geometry parameters: adjacency_method,</span>
 <span class="sd">            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,</span>
-<span class="sd">            laplacian_kwds as keys. </span>
+<span class="sd">            laplacian_kwds as keys.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -215,11 +217,8 @@
 <span class="sd">      by locally linear embedding.  Science 290:2323 (2000).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-             <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">reg</span> <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span> <span class="n">neighborhood_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
-             <span class="n">affinity_radius</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>  <span class="n">distance_method</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">geom</span> <span class="o">=</span> <span class="p">{}):</span>
-        <span class="c1"># initialize geometry</span>
-        <span class="n">BaseEmbedding</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">)</span>
-        <span class="c1"># embedding parameters:</span>
+                 <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">reg</span> <span class="o">=</span> <span class="mf">1e3</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
@@ -227,7 +226,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span>
 
-<div class="viewcode-block" id="LocallyLinearEmbedding.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="LocallyLinearEmbedding.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">input_type</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
 
 <span class="sd">        Parameters</span>
@@ -249,14 +248,9 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns the instance itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_data_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;distance&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span><span class="p">)</span>
         <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span> <span class="o">=</span> <span class="n">locally_linear_embedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span> <span class="o">=</span> <span class="n">locally_linear_embedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="p">,</span>
                                                                 <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
                                                                 <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
                                                                 <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>

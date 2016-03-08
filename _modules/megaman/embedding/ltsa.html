@@ -58,6 +58,7 @@
 <span class="kn">from</span> <span class="nn">..utils.validation</span> <span class="kn">import</span> <span class="n">check_random_state</span><span class="p">,</span> <span class="n">check_array</span>
 <span class="kn">from</span> <span class="nn">..utils.eigendecomp</span> <span class="kn">import</span> <span class="n">null_space</span><span class="p">,</span> <span class="n">check_eigen_solver</span>
 
+
 <div class="viewcode-block" id="ltsa"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.ltsa.ltsa">[docs]</a><span class="k">def</span> <span class="nf">ltsa</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
          <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -200,7 +201,7 @@
 <span class="sd">    geom : either a Geometry object from megaman.geometry or a dictionary</span>
 <span class="sd">            containing (some or all) geometry parameters: adjacency_method,</span>
 <span class="sd">            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,</span>
-<span class="sd">            laplacian_kwds as keys. </span>
+<span class="sd">            laplacian_kwds as keys.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -209,17 +210,15 @@
 <span class="sd">      Journal of Shanghai Univ.  8:406 (2004)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">geom</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
-        <span class="c1"># initialize geometry</span>
-        <span class="n">BaseEmbedding</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">)</span>
-        <span class="c1"># embedding parameters:</span>
+                 <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
-        
-<div class="viewcode-block" id="LTSA.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.ltsa.LTSA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="LTSA.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.ltsa.LTSA.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
 
 <span class="sd">        Parameters</span>
@@ -241,16 +240,13 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns the instance itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_data_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;distance&#39;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">set_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_geometry</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">input_type</span><span class="p">)</span>
         <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
-        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span><span class="p">)</span> <span class="o">=</span> <span class="n">ltsa</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span><span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
-                                                <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
-                                                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">max_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span><span class="p">)</span> <span class="o">=</span> <span class="n">ltsa</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
+                                              <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
+                                              <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
+                                              <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                                              <span class="n">max_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div></div>
 </pre></div>
 

@@ -79,33 +79,40 @@ matrices and allows for re-computation whenever necessary.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>adjacency_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>adjacency_method</strong> : string {&#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;}</p>
 <blockquote>
 <div><p>method for computing pairwise radius neighbors graph.</p>
 </div></blockquote>
-<p><strong>adjacency_kwds</strong> : dictionary containing keyword arguments for adjacency matrix.</p>
+<p><strong>adjacency_kwds</strong> : dict</p>
 <blockquote>
-<div><p>see distance.py docmuentation for arguments for each method.
-If new kwargs are passed to compute_adjacency_matrix then this dictionary will
-be updated.</p>
+<div><p>dictionary containing keyword arguments for adjacency matrix.
+see distance.py docmuentation for arguments for each method.
+If new kwargs are passed to compute_adjacency_matrix then this
+dictionary will be updated.</p>
 </div></blockquote>
-<p><strong>affinity_method</strong> : string, one of &#8216;auto&#8217;, &#8216;gaussian&#8217;.</p>
-<p><strong>affinity_kwds</strong> : dictionary containing keyword arguments for affinity matrix.</p>
+<p><strong>affinity_method</strong> : string {&#8216;auto&#8217;, &#8216;gaussian&#8217;}</p>
 <blockquote>
-<div><p>see affinity.py docmuentation for arguments for each method.
-If new kwargs are passed to compute_affinity_matrix then this dictionary will
-be updated.</p>
+<div><p>method of computing affinity matrix</p>
 </div></blockquote>
-<p><strong>laplacian_method</strong> : string, one of: &#8216;symmetricnormalized&#8217;, &#8216;geometric&#8217;, &#8216;renormalized&#8217;,</p>
+<p><strong>affinity_kwds</strong> : dict</p>
 <blockquote>
-<div><p>&#8216;unnormalized&#8217;, &#8216;randomwalk&#8217; type of laplacian to be computed.
-see laplacian.py for more information.</p>
+<div><p>dictionary containing keyword arguments for affinity matrix.
+see affinity.py docmuentation for arguments for each method.
+If new kwargs are passed to compute_affinity_matrix then this
+dictionary will be updated.</p>
 </div></blockquote>
-<p><strong>laplacian_kwds</strong> : dictionary containing keyword arguments for Laplacian matrix.</p>
+<p><strong>laplacian_method</strong> : string,</p>
+<blockquote>
+<div><p>type of laplacian to be computed. Possibilities are
+{&#8216;symmetricnormalized&#8217;, &#8216;geometric&#8217;, &#8216;renormalized&#8217;,
+&#8216;unnormalized&#8217;, &#8216;randomwalk&#8217;} see laplacian.py for more information.</p>
+</div></blockquote>
+<p><strong>laplacian_kwds</strong> : dict</p>
 <blockquote class="last">
-<div><p>see laplacian.py docmuentation for arguments for each method.
-If new kwargs are passed to compute_laplacian_matrix then this dictionary will
-be updated.</p>
+<div><p>dictionary containing keyword arguments for Laplacian matrix.
+see laplacian.py docmuentation for arguments for each method.
+If new kwargs are passed to compute_laplacian_matrix then this
+dictionary will be updated.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -114,11 +121,10 @@ be updated.</p>
 <dl class="method">
 <dt id="megaman.geometry.geometry.Geometry.compute_adjacency_matrix">
 <code class="descname">compute_adjacency_matrix</code><span class="sig-paren">(</span><em>copy=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.compute_adjacency_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.compute_adjacency_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Note: this function will compute the adjacency matrix. In order to acquire</dt>
-<dd>the existing adjacency matrix use self.adjacency_matrix as
-comptute_adjacency_matrix() will re-compute the adjacency matrix.</dd>
-</dl>
+<dd><p>This function will compute the adjacency matrix.
+In order to acquire the existing adjacency matrix use
+self.adjacency_matrix as comptute_adjacency_matrix() will re-compute
+the adjacency matrix.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -127,9 +133,9 @@ comptute_adjacency_matrix() will re-compute the adjacency matrix.</dd>
 <p><strong>**kwargs</strong> : see distance.py docmuentation for arguments for each method.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.adjacency_matrix</strong> : sparse Ndarray (N_obs, N_obs). Non explicit 0.0 values</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.adjacency_matrix</strong> : sparse matrix (N_obs, N_obs)</p>
 <blockquote class="last">
-<div><p>(e.g. diagonal) should be considered Infinite.</p>
+<div><p>Non explicit 0.0 values should be considered not connected.</p>
 </div></blockquote>
 </td>
 </tr>
@@ -140,23 +146,27 @@ comptute_adjacency_matrix() will re-compute the adjacency matrix.</dd>
 <dl class="method">
 <dt id="megaman.geometry.geometry.Geometry.compute_affinity_matrix">
 <code class="descname">compute_affinity_matrix</code><span class="sig-paren">(</span><em>copy=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/geometry.html#Geometry.compute_affinity_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.geometry.Geometry.compute_affinity_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Note: this function will compute the affinity matrix. In order to acquire</dt>
-<dd>the existing affinity matrix use self.affinity_matrix as
-comptute_affinity_matrix() will re-compute the affinity matrix.</dd>
-</dl>
+<dd><p>This function will compute the affinity matrix. In order to
+acquire the existing affinity matrix use self.affinity_matrix as
+comptute_affinity_matrix() will re-compute the affinity matrix.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>copy</strong> : boolean, whether to return a copied version of the affinity matrix</p>
-<p><strong>**kwargs</strong> : see affinity.py docmuentation for arguments for each method.</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>copy</strong> : boolean</p>
+<blockquote>
+<div><p>whether to return a copied version of the affinity matrix</p>
+</div></blockquote>
+<p><strong>**kwargs :</strong></p>
+<blockquote>
+<div><p>see affinity.py docmuentation for arguments for each method.</p>
+</div></blockquote>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.affinity_matrix</strong> : sparse Ndarray (N_obs, N_obs) contains the pairwise</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.affinity_matrix</strong> : sparse matrix (N_obs, N_obs)</p>
 <blockquote class="last">
-<div><p>affinity values using the Guassian kernel and bandwidth equal to the
-affinity_radius</p>
+<div><p>contains the pairwise affinity values using the Guassian kernel
+and bandwidth equal to the affinity_radius</p>
 </div></blockquote>
 </td>
 </tr>
@@ -184,11 +194,18 @@ comptute_laplacian_matrix() will re-compute the laplacian matrix.</dd>
 <p><strong>**kwargs</strong> : see laplacian.py docmuentation for arguments for each method.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.laplacian_matrix</strong> : sparse Ndarray (N_obs, N_obs). The requested laplacian.</p>
-<p><strong>self.laplacian_symmetric</strong> : sparse Ndarray (N_obs, N_obs). The symmetric laplacian.</p>
-<p><strong>self.w</strong> : Ndarray (N_obs). The renormalization weights used to make</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>self.laplacian_matrix</strong> : sparse matrix (N_obs, N_obs).</p>
+<blockquote>
+<div><p>The requested laplacian.</p>
+</div></blockquote>
+<p><strong>self.laplacian_symmetric</strong> : sparse matrix (N_obs, N_obs)</p>
+<blockquote>
+<div><p>The symmetric laplacian.</p>
+</div></blockquote>
+<p><strong>self.laplacian_weights</strong> : ndarray (N_obs,)</p>
 <blockquote class="last">
-<div><p>laplacian_matrix from laplacian_symmetric</p>
+<div><p>The renormalization weights used to make
+laplacian_matrix from laplacian_symmetric</p>
 </div></blockquote>
 </td>
 </tr>
@@ -203,7 +220,11 @@ comptute_laplacian_matrix() will re-compute the laplacian matrix.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>adjacency_mat</strong> : sparse Ndarray (N_obs, N_obs). The adjacency matrix to input.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>adjacency_mat</strong> : sparse matrix (N_obs, N_obs)</p>
+<blockquote class="last">
+<div><p>The adjacency matrix to input.</p>
+</div></blockquote>
+</td>
 </tr>
 </tbody>
 </table>
@@ -216,7 +237,11 @@ comptute_laplacian_matrix() will re-compute the laplacian matrix.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>affinity_mat</strong> : sparse Ndarray (N_obs, N_obs). The adjacency matrix to input.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>affinity_mat</strong> : sparse matrix (N_obs, N_obs).</p>
+<blockquote class="last">
+<div><p>The adjacency matrix to input.</p>
+</div></blockquote>
+</td>
 </tr>
 </tbody>
 </table>
@@ -229,7 +254,11 @@ comptute_laplacian_matrix() will re-compute the laplacian matrix.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> : ndarray (N_obs, N_features). The original data set to input.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>X</strong> : ndarray (N_obs, N_features)</p>
+<blockquote class="last">
+<div><p>The original data set to input.</p>
+</div></blockquote>
+</td>
 </tr>
 </tbody>
 </table>
@@ -242,7 +271,11 @@ comptute_laplacian_matrix() will re-compute the laplacian matrix.</dd>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>laplacian_mat</strong> : sparse Ndarray (N_obs, N_obs). The Laplacian matrix to input.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>laplacian_mat</strong> : sparse matrix (N_obs, N_obs).</p>
+<blockquote class="last">
+<div><p>The Laplacian matrix to input.</p>
+</div></blockquote>
+</td>
 </tr>
 </tbody>
 </table>
