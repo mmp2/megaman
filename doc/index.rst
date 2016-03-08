@@ -1,11 +1,14 @@
-.. image:: images/spectra_D4000.png
+.. image:: images/spectra_Halpha.png
    :height: 238 px
    :width: 318 px
    :align: left
+   :target: /megaman/images/spectra_Halpha
 .. image:: images/word2vec_rmetric_plot_no_digits.png
    :height: 250 px
    :width: 220 px
    :align: right
+   :target: /megaman/images/word2vec
+   
 
 megaman: Scalable manifold learning
 =================================
@@ -32,6 +35,7 @@ Documentation
    geometry/index
    embedding/index
    utils/index
+   images/index
 
 
 Indices and tables
