@@ -1,13 +1,8 @@
 .. image:: images/spectra_Halpha.png
-   :alt: 3,000,000 words and phrases mapped by word2vec into 300 dimensions were embedded into 2 
-   dimensions using Spectral Embedding. The plot shows a sample of 10,000 points displaying 
-   the overall shape of the embedding as well as the estimated "stretch" 
-   :target: images/spectra_Halpha_caption.png
    :height: 238 px
    :width: 318 px
    :align: left
 .. image:: images/word2vec_rmetric_plot_no_digits.png
-   :target: images/word2vec_rmetric_plot_no_digits_caption.png
    :height: 250 px
    :width: 220 px
    :align: right
