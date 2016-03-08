@@ -10,4 +10,4 @@ megaman package.
 .. toctree::
    :maxdepth: 2
 
-   spectra_Halpha.rst
+   spectra_Halpha
