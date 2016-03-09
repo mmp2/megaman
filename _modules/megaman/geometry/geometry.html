@@ -38,7 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for megaman.geometry.geometry</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Scalable Manifold learning utilities and algorithms.</span>
 
 <span class="sd">Graphs are represented with their weighted adjacency matrices, preferably using</span>
@@ -72,6 +72,7 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span> <span class="c1">## removes integer division</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">gammaln</span>
 <span class="kn">from</span> <span class="nn">.adjacency</span> <span class="kn">import</span> <span class="n">compute_adjacency_matrix</span>
 <span class="kn">from</span> <span class="nn">.affinity</span> <span class="kn">import</span> <span class="n">compute_affinity_matrix</span>
 <span class="kn">from</span> <span class="nn">.laplacian</span> <span class="kn">import</span> <span class="n">compute_laplacian_matrix</span>
@@ -121,11 +122,11 @@
                  <span class="n">affinity_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">affinity_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">laplacian_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span><span class="n">laplacian_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_method</span> <span class="o">=</span> <span class="n">adjacency_method</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="n">adjacency_kwds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">adjacency_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">affinity_method</span> <span class="o">=</span> <span class="n">affinity_method</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="o">=</span> <span class="n">affinity_kwds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">affinity_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span> <span class="o">=</span> <span class="n">laplacian_method</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="n">laplacian_kwds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">laplacian_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="bp">None</span>
@@ -133,6 +134,46 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_symmetric</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_weights</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="Geometry.set_radius"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_radius">[docs]</a>    <span class="k">def</span> <span class="nf">set_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">override</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the radius for the adjacency and affinity computation</span>
+
+<span class="sd">        By default, this will override keyword arguments provided on</span>
+<span class="sd">        initialization.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            radius to set for adjacency and affinity.</span>
+<span class="sd">        override : bool (default: True)</span>
+<span class="sd">            if False, then only set radius if not already defined in</span>
+<span class="sd">            `adjacency_args` and `affinity_args`.</span>
+<span class="sd">        X : ndarray or sparse (optional)</span>
+<span class="sd">            if provided, estimate a suitable radius from this data.</span>
+<span class="sd">        n_components : int (default=2)</span>
+<span class="sd">            the number of components to use when estimating the radius</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;radius must be non-negative&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">override</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="ow">and</span>
+                        <span class="s1">&#39;n_neighbors&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span>
+
+        <span class="k">if</span> <span class="n">override</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;radius&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="p">[</span><span class="s1">&#39;radius&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span></div>
+
+<div class="viewcode-block" id="Geometry.set_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.set_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">set_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">input_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the data matrix given the (string) input_type&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_data_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;adjacency&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_adjacency_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">input_type</span> <span class="o">==</span> <span class="s1">&#39;affinity&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_affinity_matrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized input_type: {0}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">input_type</span><span class="p">))</span></div>
+
 
 <div class="viewcode-block" id="Geometry.compute_adjacency_matrix"><a class="viewcode-back" href="../../../geometry/API.html#megaman.geometry.geometry.Geometry.compute_adjacency_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">compute_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -154,11 +195,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">distance_error_msg</span><span class="p">)</span>
 
-        <span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
-        <span class="n">adjacency_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">compute_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">,</span>
                                                          <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_method</span><span class="p">,</span>
-                                                         <span class="o">**</span><span class="n">adjacency_kwds</span><span class="p">)</span>
+                                                         <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -186,11 +226,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">compute_adjacency_matrix</span><span class="p">()</span>
 
-        <span class="n">affinity_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
-        <span class="n">affinity_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="o">=</span> <span class="n">compute_affinity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="p">,</span>
                                                        <span class="bp">self</span><span class="o">.</span><span class="n">affinity_method</span><span class="p">,</span>
-                                                       <span class="o">**</span><span class="n">affinity_kwds</span><span class="p">)</span>
+                                                       <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -222,12 +261,11 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">compute_affinity_matrix</span><span class="p">()</span>
 
-        <span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
-        <span class="n">laplacian_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">laplacian_kwds</span><span class="p">[</span><span class="s1">&#39;full_output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">return_lapsym</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">[</span><span class="s1">&#39;full_output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">return_lapsym</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">compute_laplacian_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_matrix</span><span class="p">,</span>
                                           <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span><span class="p">,</span>
-                                          <span class="o">**</span><span class="n">laplacian_kwds</span><span class="p">)</span>
+                                          <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">return_lapsym</span><span class="p">:</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_matrix</span><span class="p">,</span>
              <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_symmetric</span><span class="p">,</span>
@@ -333,7 +371,7 @@
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
       
     </div>
