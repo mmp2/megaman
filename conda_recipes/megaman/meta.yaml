@@ -1,0 +1,40 @@
+package:
+    name: megaman
+    version: "0.1.dev1"
+
+source:
+    git_url: https://github.com/mmp2/megaman.git
+    git_tag: 1ddd723f91b40b5309682d2f0e1c92e054085243
+
+build:
+    number: 1
+
+requirements:
+    build:
+        - python
+        - gcc [osx]
+        - cython
+        - numpy
+        - flann
+    run:
+        - python
+        - numpy
+        - scipy
+        - scikit-learn
+        - flann
+        - pyflann
+        - pyamg # [py27]
+
+test:
+    requires:
+        - nose
+    imports:
+        - megaman
+        - megaman.geometry
+        - megaman.embedding
+        - megaman.utils
+
+about:
+    home: http://mmp2.github.io/megaman
+    license: BSD
+    license_file: LICENSE

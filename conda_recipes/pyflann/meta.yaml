@@ -1,0 +1,26 @@
+package:
+    name: pyflann
+    version: "1.8.5dev"
+
+source:
+    git_url: https://github.com/mariusmuja/flann.git
+    git_tag: b8a442fd98f8ce32ae3465bfd3427b5cbc36f6a5
+
+build:
+    number: 1
+
+requirements:
+    build:
+        - python
+        - setuptools
+        - flann
+        - cmake
+    run:
+        - python
+        - flann
+        - numpy
+
+about:
+    home: http://www.cs.ubc.ca/research/flann/
+    license: BSD
+    license_file: COPYING
