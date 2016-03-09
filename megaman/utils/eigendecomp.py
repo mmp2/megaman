@@ -9,13 +9,18 @@ from sklearn.utils.validation import check_random_state
 
 from .validation import check_array
 
+EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg']
+BAD_EIGEN_SOLVERS = {}
+
 try:
     from pyamg import smoothed_aggregation_solver
     PYAMG_LOADED = True
+    EIGEN_SOLVERS.append('amg')
 except ImportError:
     PYAMG_LOADED = False
-
-EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'amg']
+    BAD_EIGEN_SOLVERS['amg'] = """The eigen_solver was set to 'amg',
+    but pyamg is not available. Please either
+    install pyamg or use another method."""
 
 
 def check_eigen_solver(eigen_solver, size=None, nvec=None):
@@ -35,17 +40,14 @@ def check_eigen_solver(eigen_solver, size=None, nvec=None):
         The eigen solver. This only differs from the input if
         eigen_solver == 'auto' and `size` is specified.
     """
-    if eigen_solver not in EIGEN_SOLVERS:
+    if eigen_solver in BAD_EIGEN_SOLVERS:
+        raise ValueError(BAD_EIGEN_SOLVERS[eigen_solver])
+    elif eigen_solver not in EIGEN_SOLVERS:
         raise ValueError("Unrecognized eigen_solver: '{0}'."
                          "Should be one of: {1}".format(eigen_solver,
                                                         EIGEN_SOLVERS))
 
-    elif eigen_solver == 'amg' and not PYAMG_LOADED:
-        raise ValueError("The eigen_solver was set to 'amg', but pyamg is "
-                         "not available. Please either install pyamg or "
-                         "use another method.")
-
-    elif size is not None and nvec is not None:
+    if size is not None and nvec is not None:
         # do some checks of the eigensolver
         if eigen_solver == 'lobpcg' and size < 5 * nvec + 1:
             warnings.warn("lobpcg does not perform well with small matrices or "

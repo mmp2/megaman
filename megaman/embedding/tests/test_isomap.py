@@ -13,8 +13,9 @@ from numpy.testing import assert_array_almost_equal
 
 import megaman.embedding.isomap as iso
 import megaman.geometry.geometry as geom
+from megaman.utils.eigendecomp import EIGEN_SOLVERS
 
-eigen_solvers = ['auto', 'dense', 'arpack', 'amg', 'lobpcg']
+
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
     each columns"""
@@ -52,7 +53,7 @@ def test_isomap_simple_grid():
     # distances from each point to all others
     G = squareform(pdist(X))
     g = geom.Geometry(adjacency_kwds = {'radius':radius})
-    for eigen_solver in eigen_solvers:
+    for eigen_solver in EIGEN_SOLVERS:
         clf = iso.Isomap(n_components = 2, eigen_solver = eigen_solver, geom=g)
         clf.fit(X)
         G_iso = squareform(pdist(clf.embedding_))

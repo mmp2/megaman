@@ -105,7 +105,7 @@ def test_spectral_embedding_amg_solver(seed=20):
     geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
                    'laplacian_method':'symmetricnormalized'}
     try:
-        from pyamg import smoothed_aggregation_solver
+        import pyamg
     except ImportError:
         raise SkipTest("pyamg not available.")
     se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
@@ -123,7 +123,7 @@ def test_spectral_embedding_symmetrzation(seed=36):
     geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
                    'laplacian_method':'geometric'}
     try:
-        from pyamg import smoothed_aggregation_solver
+        import pyamg
     except ImportError:
         raise SkipTest("pyamg not available.")
     se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
