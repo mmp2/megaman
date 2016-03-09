@@ -36,7 +36,7 @@ class BaseEmbedding(BaseEstimator, TransformerMixin):
     ----------
     geom_ : a fitted megaman.geometry.Geometry object.
     """
-    def __init__(self, n_components=2, radius='auto', geom=None):
+    def __init__(self, n_components=2, radius=None, geom=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
