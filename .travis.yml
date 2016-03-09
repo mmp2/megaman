@@ -16,8 +16,8 @@ env:
     - CONDA_DEPS="pip nose coverage cython scikit-learn flann"
     - PIP_DEPS="coveralls"
   matrix:
-    - EXTRA_CONDA_DEPS="pyflann" EXTRA_PIP_DEPS="pyamg"
-    - EXTRA_CONDA_DEPS="" EXTRA_PIP_DEPS=""
+    - EXTRA_DEPS="pyflann pyamg"
+    - EXTRA_DEPS=""
 
 before_install:
 - export MINICONDA=$HOME/miniconda
@@ -29,8 +29,8 @@ before_install:
 - conda config --set always_yes yes
 - conda update conda
 - conda info -a
-- conda install -c $CONDA_CHANNEL python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS $EXTRA_CONDA_DEPS
-- travis_retry pip install $PIP_DEPS $EXTRA_PIP_DEPS
+- conda install -c $CONDA_CHANNEL python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS $EXTRA_DEPS
+- travis_retry pip install $PIP_DEPS
 
 install:
 - python setup.py install
