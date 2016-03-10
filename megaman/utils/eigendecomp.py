@@ -291,8 +291,9 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
             n_components = min(k + k_skip + 10, M.shape[0])
             eigen_values, eigen_vectors = eigen_decomposition(M, n_components,
                                                               eigen_solver = eigen_solver,
-                                                              drop_first = False,
-                                                              largest = False)
+                                                              drop_first=False,
+                                                              largest=False,
+                                                              random_state=random_state)
             eigen_values = eigen_values -1
             index = np.argsort(np.abs(eigen_values))
             eigen_values = eigen_values[index]
@@ -303,9 +304,10 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack', tol=1E-6, max_iter=100,
             M = 2.0*sparse.identity(M.shape[0]) + M
             n_components = min(k + k_skip + 10, M.shape[0])
             eigen_values, eigen_vectors = eigen_decomposition(M, n_components,
-                                                              eigen_solver = eigen_solver,
-                                                              drop_first = False,
-                                                              largest = False)
+                                                              eigen_solver=eigen_solver,
+                                                              drop_first=False,
+                                                              largest=False,
+                                                              random_state=random_state)
             eigen_values = eigen_values - 2
             index = np.argsort(np.abs(eigen_values))
             eigen_values = eigen_values[index]
