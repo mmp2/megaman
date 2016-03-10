@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; megaman 0.3.dev0 documentation</title>
+    <title>API Documentation &mdash; megaman 0.1 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.3.dev0',
+        VERSION:     '0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.3.dev0 documentation" href="../index.html" />
+    <link rel="top" title="megaman 0.1 documentation" href="../index.html" />
     <link rel="up" title="Tools for Embedding (megaman.embedding)" href="index.html" />
     <link rel="next" title="Utility tools for megaman (megaman.utils)" href="../utils/index.html" />
     <link rel="prev" title="Spectral Embedding" href="spectral_embedding.html" />
@@ -44,7 +44,7 @@
 <p>Spectral Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius='auto'</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spectral embedding for non-linear dimensionality reduction.</p>
 <p>Forms an affinity matrix given by the specified function and
 applies spectral decomposition to the corresponding graph laplacian.
@@ -54,9 +54,22 @@ eigenvectors for each data point.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer, optional</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer</p>
 <blockquote>
-<div><p>The dimension of the projection subspace.</p>
+<div><p>number of coordinates for the manifold.</p>
+</div></blockquote>
+<p><strong>radius</strong> : float (optional)</p>
+<blockquote>
+<div><p>radius for adjacency and affinity calculations. Will be overridden if
+either is set in <cite>geom</cite></p>
+</div></blockquote>
+<p><strong>geom</strong> : dict or megaman.geometry.Geometry object</p>
+<blockquote>
+<div><p>specification of geometry parameters: keys are
+[&#8220;adjacency_method&#8221;, &#8220;adjacency_kwds&#8221;, &#8220;affinity_method&#8221;,</p>
+<blockquote>
+<div><p>&#8220;affinity_kwds&#8221;, &#8220;laplacian_method&#8221;, &#8220;laplacian_kwds&#8221;]</p>
+</div></blockquote>
 </div></blockquote>
 <p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
 <blockquote>
@@ -65,8 +78,9 @@ eigenvectors for each data point.</p>
 <dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
 </dd>
 <dt>&#8216;dense&#8217; :</dt>
-<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition.
-For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue
+decomposition. Uses a dense data array, and thus should be avoided
+for large problems.</p>
 </dd>
 <dt>&#8216;arpack&#8217; :</dt>
 <dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method,
@@ -85,11 +99,10 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
-<p><strong>random_state</strong> : int seed, RandomState instance, or None (default)</p>
+<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
 <blockquote>
-<div><p>A pseudo random number generator used for the initialization of the
-lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.
-By default, arpack is used.</p>
+<div><p>The generator or seed used to determine the starting vector for arpack
+iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
 <p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
 <blockquote>
@@ -104,52 +117,38 @@ connected graph, but for spectral clustering, this should be kept as
 False to retain the first eigenvector.</p>
 </div></blockquote>
 <p><strong>diffusion_map</strong> : boolean, optional. Whether to return the diffusion map</p>
-<blockquote>
-<div><p>version by re-scaling the embedding by the eigenvalues.</p>
-</div></blockquote>
-<p><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
-<blockquote>
-<div><p>distances beyond neighborhood_radius are considered infinite.</p>
-</div></blockquote>
-<p><strong>affinity_radius</strong> : scalar, passed to affinity matrix, bandwidth parameter</p>
-<blockquote>
-<div><p>used in Guassian kernel for affinity matrix</p>
-</div></blockquote>
-<p><strong>distance_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;cython&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
-<blockquote>
-<div><p>method for computing pairwise radius neighbors graph.</p>
-</div></blockquote>
-<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;.</p>
-<blockquote>
-<div><p>The values of input data X.</p>
-</div></blockquote>
-<p><strong>path_to_flann</strong> : string. full file path location of FLANN if not installed to</p>
-<blockquote>
-<div><p>root or to set FLANN_ROOT set to path location. Used for importing pyflann
-from a different location.</p>
-</div></blockquote>
-<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
 <blockquote class="last">
-<div><p>containing (some or all) geometry parameters: adjacency_method,
-adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-laplacian_kwds as keys.</p>
+<div><p>version by re-scaling the embedding by the eigenvalues.</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<ul class="simple">
-<li>A Tutorial on Spectral Clustering, 2007
+<table class="docutils citation" frame="void" id="r1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[R1]</a></td><td>A Tutorial on Spectral Clustering, 2007
 Ulrike von Luxburg
-<a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323</a></li>
-<li>On Spectral Clustering: Analysis and an algorithm, 2011
+<a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.165.9323</a></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="r2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[R2]</a></td><td>On Spectral Clustering: Analysis and an algorithm, 2011
 Andrew Y. Ng, Michael I. Jordan, Yair Weiss
-<a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100</a></li>
-<li>Normalized cuts and image segmentation, 2000
+<a class="reference external" href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.19.8100</a></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="r3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[R3]</a></td><td>Normalized cuts and image segmentation, 2000
 Jianbo Shi, Jitendra Malik
-<a class="reference external" href="http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324">http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324</a></li>
-</ul>
+<a class="reference external" href="http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324">http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324</a></td></tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding.fit">
 <code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding.fit" title="Permalink to this definition">¶</a></dt>
@@ -287,16 +286,29 @@ Andrew V. Knyazev
 <span class="target" id="module-megaman.embedding.isomap"></span><p>ISOMAP</p>
 <dl class="class">
 <dt id="megaman.embedding.isomap.Isomap">
-<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius='auto'</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Isomap Embedding</p>
 <p>Non-linear dimensionality reduction through Isometric Mapping</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer, default: 2</p>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>n_components</strong> : integer</p>
 <blockquote>
-<div><p>The dimension of the projected subspace.</p>
+<div><p>number of coordinates for the manifold.</p>
+</div></blockquote>
+<p><strong>radius</strong> : float (optional)</p>
+<blockquote>
+<div><p>radius for adjacency and affinity calculations. Will be overridden if
+either is set in <cite>geom</cite></p>
+</div></blockquote>
+<p><strong>geom</strong> : dict or megaman.geometry.Geometry object</p>
+<blockquote>
+<div><p>specification of geometry parameters: keys are
+[&#8220;adjacency_method&#8221;, &#8220;adjacency_kwds&#8221;, &#8220;affinity_method&#8221;,</p>
+<blockquote>
+<div><p>&#8220;affinity_kwds&#8221;, &#8220;laplacian_method&#8221;, &#8220;laplacian_kwds&#8221;]</p>
+</div></blockquote>
 </div></blockquote>
 <p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
 <blockquote>
@@ -305,8 +317,9 @@ Andrew V. Knyazev
 <dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
 </dd>
 <dt>&#8216;dense&#8217; :</dt>
-<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition.
-For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue
+decomposition. Uses a dense data array, and thus should be avoided
+for large problems.</p>
 </dd>
 <dt>&#8216;arpack&#8217; :</dt>
 <dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method,
@@ -325,40 +338,39 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
-<p><strong>random_state</strong> : int seed, RandomState instance, or None, default</p>
+<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
 <blockquote>
-<div><p>A pseudo random number generator used for the initialization of the
-lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.</p>
+<div><p>The generator or seed used to determine the starting vector for arpack
+iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
 <p><strong>eigen_tol</strong> : float, optional. Tolerance for &#8216;arpack&#8217; solver.</p>
 <p><strong>path_method</strong> : string, optionl. method for computing graph shortest path.</p>
-<blockquote>
-<div><p>One of :
-&#8216;auto&#8217;, &#8216;D&#8217;, &#8216;FW&#8217;, &#8216;BF&#8217;, &#8216;J&#8217;. See scipy.sparse.csgraph.shortest_path
-for more information.</p>
-</div></blockquote>
-<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
-<blockquote>
-<div><p>containing (some or all) geometry parameters: adjacency_method,
-adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-laplacian_kwds as keys.</p>
-</div></blockquote>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>embedding_</strong> : array, shape = (n_samples, n_components)</p>
 <blockquote class="last">
-<div><p>Spectral embedding of the training matrix.</p>
+<div><p>One of [&#8216;auto&#8217;, &#8216;D&#8217;, &#8216;FW&#8217;, &#8216;BF&#8217;, &#8216;J&#8217;].
+See <cite>scipy.sparse.csgraph.shortest_path</cite> for more information.</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<table class="docutils citation" frame="void" id="r1" rules="none">
+<table class="docutils citation" frame="void" id="r4" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[R1]</a></td><td>Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C. A global geometric
+<tr><td class="label"><a class="fn-backref" href="#id4">[R4]</a></td><td>Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C. A global geometric
 framework for nonlinear dimensionality reduction. Science 290 (5500)</td></tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="89%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a href="#id8"><span class="problematic" id="id9">embedding_</span></a></td>
+<td>(array, shape = (n_samples, n_components)) Spectral embedding of the training matrix.</td>
+</tr>
 </tbody>
 </table>
 <dl class="method">
@@ -486,7 +498,7 @@ for more information.</p>
 <span class="target" id="module-megaman.embedding.locally_linear"></span><p>Locally Linear Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius='auto'</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Locally Linear Embedding</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -496,6 +508,19 @@ for more information.</p>
 <blockquote>
 <div><p>number of coordinates for the manifold.</p>
 </div></blockquote>
+<p><strong>radius</strong> : float (optional)</p>
+<blockquote>
+<div><p>radius for adjacency and affinity calculations. Will be overridden if
+either is set in <cite>geom</cite></p>
+</div></blockquote>
+<p><strong>geom</strong> : dict or megaman.geometry.Geometry object</p>
+<blockquote>
+<div><p>specification of geometry parameters: keys are
+[&#8220;adjacency_method&#8221;, &#8220;adjacency_kwds&#8221;, &#8220;affinity_method&#8221;,</p>
+<blockquote>
+<div><p>&#8220;affinity_kwds&#8221;, &#8220;laplacian_method&#8221;, &#8220;laplacian_kwds&#8221;]</p>
+</div></blockquote>
+</div></blockquote>
 <p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
 <blockquote>
 <div><dl class="docutils">
@@ -503,8 +528,9 @@ for more information.</p>
 <dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
 </dd>
 <dt>&#8216;dense&#8217; :</dt>
-<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition.
-For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue
+decomposition. Uses a dense data array, and thus should be avoided
+for large problems.</p>
 </dd>
 <dt>&#8216;arpack&#8217; :</dt>
 <dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method,
@@ -523,40 +549,37 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
+<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
+<blockquote>
+<div><p>The generator or seed used to determine the starting vector for arpack
+iterations.  Defaults to numpy.random.RandomState</p>
+</div></blockquote>
 <p><strong>tol</strong> : float, optional</p>
 <blockquote>
 <div><p>Tolerance for &#8216;arpack&#8217; method
 Not used if eigen_solver==&#8217;dense&#8217;.</p>
 </div></blockquote>
-<p><strong>max_iter</strong> : integer</p>
+<p><strong>max_iter</strong> : integer, optional</p>
 <blockquote>
 <div><p>maximum number of iterations for the arpack solver.</p>
 </div></blockquote>
-<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
-<blockquote>
-<div><p>The generator or seed used to determine the starting vector for arpack
-iterations.  Defaults to numpy.random.</p>
-</div></blockquote>
-<p><strong>reg</strong> : float</p>
-<blockquote>
+<p><strong>reg</strong> : float, optional</p>
+<blockquote class="last">
 <div><p>regularization constant, multiplies the trace of the local covariance
 matrix of the distances.</p>
-</div></blockquote>
-<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
-<blockquote class="last">
-<div><p>containing (some or all) geometry parameters: adjacency_method,
-adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-laplacian_kwds as keys.</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<ul class="simple">
-<li>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
-by locally linear embedding.  Science 290:2323 (2000).</li>
-</ul>
+<table class="docutils citation" frame="void" id="r5" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[R5]</a></td><td>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
+by locally linear embedding.  Science 290:2323 (2000).</td></tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">
 <code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit" title="Permalink to this definition">¶</a></dt>
@@ -697,10 +720,10 @@ iterations.  Defaults to numpy.random.</p>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<table class="docutils citation" frame="void" id="r2" rules="none">
+<table class="docutils citation" frame="void" id="r6" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[R2]</a></td><td>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
+<tr><td class="label"><a class="fn-backref" href="#id6">[R6]</a></td><td>Roweis, S. &amp; Saul, L. Nonlinear dimensionality reduction
 by locally linear embedding.  Science 290:2323 (2000).</td></tr>
 </tbody>
 </table>
@@ -709,7 +732,7 @@ by locally linear embedding.  Science 290:2323 (2000).</td></tr>
 <span class="target" id="module-megaman.embedding.ltsa"></span><p>Local Tangent Space Alignment</p>
 <dl class="class">
 <dt id="megaman.embedding.ltsa.LTSA">
-<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius='auto'</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Local Tangent Space Alignment</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -719,6 +742,19 @@ by locally linear embedding.  Science 290:2323 (2000).</td></tr>
 <blockquote>
 <div><p>number of coordinates for the manifold.</p>
 </div></blockquote>
+<p><strong>radius</strong> : float (optional)</p>
+<blockquote>
+<div><p>radius for adjacency and affinity calculations. Will be overridden if
+either is set in <cite>geom</cite></p>
+</div></blockquote>
+<p><strong>geom</strong> : dict or megaman.geometry.Geometry object</p>
+<blockquote>
+<div><p>specification of geometry parameters: keys are
+[&#8220;adjacency_method&#8221;, &#8220;adjacency_kwds&#8221;, &#8220;affinity_method&#8221;,</p>
+<blockquote>
+<div><p>&#8220;affinity_kwds&#8221;, &#8220;laplacian_method&#8221;, &#8220;laplacian_kwds&#8221;]</p>
+</div></blockquote>
+</div></blockquote>
 <p><strong>eigen_solver</strong> : {&#8216;auto&#8217;, &#8216;dense&#8217;, &#8216;arpack&#8217;, &#8216;lobpcg&#8217;, or &#8216;amg&#8217;}</p>
 <blockquote>
 <div><dl class="docutils">
@@ -726,8 +762,9 @@ by locally linear embedding.  Science 290:2323 (2000).</td></tr>
 <dd><p class="first last">algorithm will attempt to choose the best method for input data</p>
 </dd>
 <dt>&#8216;dense&#8217; :</dt>
-<dd><p class="first last">use standard dense matrix operations for the eigenvalue decomposition.
-For this method, M must be an array or matrix type.  This method should be avoided for large problems.</p>
+<dd><p class="first last">use standard dense matrix operations for the eigenvalue
+decomposition. Uses a dense data array, and thus should be avoided
+for large problems.</p>
 </dd>
 <dt>&#8216;arpack&#8217; :</dt>
 <dd><p class="first last">use arnoldi iteration in shift-invert mode. For this method,
@@ -746,57 +783,33 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
+<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
+<blockquote>
+<div><p>The generator or seed used to determine the starting vector for arpack
+iterations.  Defaults to numpy.random.RandomState</p>
+</div></blockquote>
 <p><strong>tol</strong> : float, optional</p>
 <blockquote>
 <div><p>Tolerance for &#8216;arpack&#8217; method
 Not used if eigen_solver==&#8217;dense&#8217;.</p>
 </div></blockquote>
 <p><strong>max_iter</strong> : integer</p>
-<blockquote>
-<div><p>maximum number of iterations for the arpack solver.</p>
-</div></blockquote>
-<p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
-<blockquote>
-<div><p>The generator or seed used to determine the starting vector for arpack
-iterations.  Defaults to numpy.random.</p>
-</div></blockquote>
-<p><strong>neighborhood_radius</strong> : scalar, passed to distance_matrix. Value such that all</p>
-<blockquote>
-<div><p>distances beyond neighborhood_radius are considered infinite.</p>
-</div></blockquote>
-<p><strong>affinity_radius</strong> : scalar, passed to affinity_matrix. &#8216;bandwidth&#8217; parameter</p>
-<blockquote>
-<div><p>used in Guassian kernel for affinity matrix</p>
-</div></blockquote>
-<p><strong>distance_method</strong> : string, one of &#8216;auto&#8217;, &#8216;brute&#8217;, &#8216;cython&#8217;, &#8216;pyflann&#8217;, &#8216;cyflann&#8217;.</p>
-<blockquote>
-<div><p>method for computing pairwise radius neighbors graph.</p>
-</div></blockquote>
-<p><strong>input_type</strong> : string, one of: &#8216;data&#8217;, &#8216;distance&#8217;, &#8216;affinity&#8217;.</p>
-<blockquote>
-<div><p>The values of input data X.</p>
-</div></blockquote>
-<p><strong>path_to_flann</strong> : string. full file path location of FLANN if not installed to</p>
-<blockquote>
-<div><p>root or to set FLANN_ROOT set to path location. Used for importing pyflann
-from a different location.</p>
-</div></blockquote>
-<p><strong>geom</strong> : either a Geometry object from megaman.geometry or a dictionary</p>
 <blockquote class="last">
-<div><p>containing (some or all) geometry parameters: adjacency_method,
-adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-laplacian_kwds as keys.</p>
+<div><p>maximum number of iterations for the arpack solver.</p>
 </div></blockquote>
 </td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">References</p>
-<ul class="simple">
-<li>Zhang, Z. &amp; Zha, H. Principal manifolds and nonlinear
+<table class="docutils citation" frame="void" id="r7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[R7]</a></td><td>Zhang, Z. &amp; Zha, H. Principal manifolds and nonlinear
 dimensionality reduction via tangent space alignment.
-Journal of Shanghai Univ.  8:406 (2004)</li>
-</ul>
+Journal of Shanghai Univ.  8:406 (2004)</td></tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="megaman.embedding.ltsa.LTSA.fit">
 <code class="descname">fit</code><span class="sig-paren">(</span><em>X</em>, <em>y=None</em>, <em>input_type='data'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA.fit" title="Permalink to this definition">¶</a></dt>
@@ -957,7 +970,7 @@ Journal of Shanghai Univ.  8:406 (2004)</li>
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
       
       |

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>megaman.embedding.isomap &mdash; megaman 0.3.dev0 documentation</title>
+    <title>megaman.embedding.isomap &mdash; megaman 0.1 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.3.dev0',
+        VERSION:     '0.1',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.3.dev0 documentation" href="../../../index.html" />
+    <link rel="top" title="megaman 0.1 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" />
    
   
@@ -41,8 +41,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;ISOMAP&quot;&quot;&quot;</span>
 
 <span class="c1"># Author: James McQueen &lt;jmcq@u.washington.edu&gt;</span>
-<span class="c1">#</span>
-<span class="c1"># License: BSD 3 clause</span>
+<span class="c1"># LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
@@ -158,14 +157,23 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    -----------</span>
-<span class="sd">    n_components : integer, default: 2</span>
-<span class="sd">        The dimension of the projected subspace.</span>
+
+<span class="sd">    n_components : integer</span>
+<span class="sd">        number of coordinates for the manifold.</span>
+<span class="sd">    radius : float (optional)</span>
+<span class="sd">        radius for adjacency and affinity calculations. Will be overridden if</span>
+<span class="sd">        either is set in `geom`</span>
+<span class="sd">    geom : dict or megaman.geometry.Geometry object</span>
+<span class="sd">        specification of geometry parameters: keys are</span>
+<span class="sd">        [&quot;adjacency_method&quot;, &quot;adjacency_kwds&quot;, &quot;affinity_method&quot;,</span>
+<span class="sd">         &quot;affinity_kwds&quot;, &quot;laplacian_method&quot;, &quot;laplacian_kwds&quot;]</span>
 <span class="sd">    eigen_solver : {&#39;auto&#39;, &#39;dense&#39;, &#39;arpack&#39;, &#39;lobpcg&#39;, or &#39;amg&#39;}</span>
 <span class="sd">        &#39;auto&#39; :</span>
 <span class="sd">            algorithm will attempt to choose the best method for input data</span>
 <span class="sd">        &#39;dense&#39; :</span>
-<span class="sd">            use standard dense matrix operations for the eigenvalue decomposition.</span>
-<span class="sd">            For this method, M must be an array or matrix type.  This method should be avoided for large problems.</span>
+<span class="sd">            use standard dense matrix operations for the eigenvalue</span>
+<span class="sd">            decomposition. Uses a dense data array, and thus should be avoided</span>
+<span class="sd">            for large problems.</span>
 <span class="sd">        &#39;arpack&#39; :</span>
 <span class="sd">            use arnoldi iteration in shift-invert mode. For this method,</span>
 <span class="sd">            M may be a dense matrix, sparse matrix, or general linear operator.</span>
@@ -178,20 +186,15 @@
 <span class="sd">        &#39;amg&#39; :</span>
 <span class="sd">            AMG requires pyamg to be installed. It can be faster on very large,</span>
 <span class="sd">            sparse problems, but may also lead to instabilities.</span>
-<span class="sd">    random_state : int seed, RandomState instance, or None, default : None</span>
-<span class="sd">        A pseudo random number generator used for the initialization of the</span>
-<span class="sd">        lobpcg eigen vectors decomposition when eigen_solver == &#39;amg&#39;.</span>
+<span class="sd">    random_state : numpy.RandomState or int, optional</span>
+<span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
+<span class="sd">        iterations.  Defaults to numpy.random.RandomState</span>
 <span class="sd">    eigen_tol : float, optional. Tolerance for &#39;arpack&#39; solver.</span>
 <span class="sd">    path_method : string, optionl. method for computing graph shortest path.</span>
-<span class="sd">        One of :</span>
-<span class="sd">        &#39;auto&#39;, &#39;D&#39;, &#39;FW&#39;, &#39;BF&#39;, &#39;J&#39;. See scipy.sparse.csgraph.shortest_path</span>
-<span class="sd">        for more information.</span>
-<span class="sd">    geom : either a Geometry object from megaman.geometry or a dictionary</span>
-<span class="sd">            containing (some or all) geometry parameters: adjacency_method,</span>
-<span class="sd">            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,</span>
-<span class="sd">            laplacian_kwds as keys.</span>
+<span class="sd">        One of [&#39;auto&#39;, &#39;D&#39;, &#39;FW&#39;, &#39;BF&#39;, &#39;J&#39;].</span>
+<span class="sd">        See `scipy.sparse.csgraph.shortest_path` for more information.</span>
 
-<span class="sd">    Returns</span>
+<span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    embedding_ : array, shape = (n_samples, n_components)</span>
 <span class="sd">        Spectral embedding of the training matrix.</span>
@@ -202,7 +205,7 @@
 <span class="sd">    .. [1] Tenenbaum, J.B.; De Silva, V.; &amp; Langford, J.C. A global geometric</span>
 <span class="sd">           framework for nonlinear dimensionality reduction. Science 290 (5500)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span> <span class="n">path_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
@@ -310,7 +313,7 @@
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
       
     </div>
