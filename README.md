@@ -20,7 +20,7 @@ Documentation can be found at http://mmp2.github.io/megaman/
 
 ## Examples
 
-See documentation and example.py for usage.
+See https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb for tutorial.
 
 ## Installation
 
