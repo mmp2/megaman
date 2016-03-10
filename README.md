@@ -33,7 +33,7 @@ manager for the scientific Python ecosystem.
 To install megaman and its dependencies, run
 
 ```
-$ conda install -c https://conda.anaconda.org/jakevdp megaman
+$ conda install --channel=jakevdp megaman
 ```
 
 Currently builds are available for OSX-64 and Linux-64, on Python 2.7, 3.4, and 3.5.
@@ -60,7 +60,7 @@ Optional requirements include
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
 ```
-$ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
+$ conda install --channel=jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
 ```
 
 Finally, within the source repository, run this command to install the ``megaman`` package itself:
@@ -73,7 +73,7 @@ megaman uses ``nose`` for unit tests. With ``nose`` installed, type
 ```
 $ make test
 ```
-to run the unit tests. The tests are run on Python versions 2.7
+to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.5.
 
 ## Authors
 - [James McQueen](http://www.stat.washington.edu/people/jmcq/)

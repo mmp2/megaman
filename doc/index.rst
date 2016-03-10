@@ -32,6 +32,7 @@ Documentation
 .. toctree::
    :maxdepth: 2
 
+   installation
    geometry/index
    embedding/index
    utils/index
