@@ -7,8 +7,7 @@ def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('__check_build', parent_package, top_path)
     config.add_extension('_check_build',
-                         sources=['_check_build.c'],
-                         include_dirs=[numpy.get_include()])
+                         sources=['_check_build.c'])
 
     return config
 
