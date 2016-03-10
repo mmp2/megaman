@@ -1,9 +1,13 @@
-from megaman.utils.eigendecomp import eigen_decomposition, null_space
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
+from megaman.utils.eigendecomp import (eigen_decomposition, null_space,
+                                       EIGEN_SOLVERS)
 from numpy.testing import assert_array_almost_equal
 import numpy as np
 
-spd_solvers = ['auto', 'dense', 'arpack', 'amg', 'lobpcg']
-non_spd_solvers = ['auto', 'dense', 'arpack']
+
+SPD_SOLVERS = EIGEN_SOLVERS
+NON_SPD_SOLVERS = ['auto', 'dense', 'arpack']
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
@@ -48,30 +52,30 @@ def _test_all_null_solvers(solvers_to_test, S):
                 _check_with_col_sign_flipping(Null_Space[solvers_to_test[i]],
                                         Null_Space[solvers_to_test[j]], 0.05)
 def test_sym_pos_def_agreement():
-    solvers_to_test = spd_solvers
+    solvers_to_test = SPD_SOLVERS
     rng = np.random.RandomState(0)
     X = rng.uniform(size=(100, 40))
     S = np.dot(X.T, X)
     _test_all_solvers(solvers_to_test, S)
 
 def test_null_space_sym_pos_def_agreement():
-    solvers_to_test = spd_solvers
-    solvers_to_test = spd_solvers
+    solvers_to_test = SPD_SOLVERS
+    solvers_to_test = SPD_SOLVERS
     rng = np.random.RandomState(0)
     X = rng.uniform(size=(100, 100))
     S = np.dot(X.T, X)
     _test_all_null_solvers(solvers_to_test, S)
 
 def test_null_space_sym_agreement():
-    solvers_to_test = non_spd_solvers
-    solvers_to_test = non_spd_solvers
+    solvers_to_test = NON_SPD_SOLVERS
+    solvers_to_test = NON_SPD_SOLVERS
     rng = np.random.RandomState(0)
     X = rng.uniform(size=(10, 10))
     S = X + X.T
     _test_all_null_solvers(solvers_to_test, S)
 
 def test_null_space_non_sym_agreement():
-    solvers_to_test = non_spd_solvers
+    solvers_to_test = NON_SPD_SOLVERS
     rng = np.random.RandomState(0)
     S = rng.uniform(size=(10, 10))
     _test_all_null_solvers(solvers_to_test, S)

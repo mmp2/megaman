@@ -1,6 +1,7 @@
 """Locally Linear Embedding"""
 
 # Author: James McQueen -- <jmcq@u.washington.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 #
 #
 # After the sci-kit learn version by:
@@ -135,14 +136,23 @@ class LocallyLinearEmbedding(BaseEmbedding):
 
     Parameters
     ----------
+
     n_components : integer
         number of coordinates for the manifold.
+    radius : float (optional)
+        radius for adjacency and affinity calculations. Will be overridden if
+        either is set in `geom`
+    geom : dict or megaman.geometry.Geometry object
+        specification of geometry parameters: keys are
+        ["adjacency_method", "adjacency_kwds", "affinity_method",
+         "affinity_kwds", "laplacian_method", "laplacian_kwds"]
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            use standard dense matrix operations for the eigenvalue
+            decomposition. Uses a dense data array, and thus should be avoided
+            for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -155,28 +165,24 @@ class LocallyLinearEmbedding(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+    random_state : numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.RandomState
     tol : float, optional
         Tolerance for 'arpack' method
         Not used if eigen_solver=='dense'.
-    max_iter : integer
+    max_iter : integer, optional
         maximum number of iterations for the arpack solver.
-    random_state : numpy.RandomState or int, optional
-        The generator or seed used to determine the starting vector for arpack
-        iterations.  Defaults to numpy.random.
-    reg : float
+    reg : float, optional
         regularization constant, multiplies the trace of the local covariance
         matrix of the distances.
-    geom : either a Geometry object from megaman.geometry or a dictionary
-            containing (some or all) geometry parameters: adjacency_method,
-            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys.
 
     References
     ----------
-    * Roweis, S. & Saul, L. Nonlinear dimensionality reduction
-      by locally linear embedding.  Science 290:2323 (2000).
+    .. [1] Roweis, S. & Saul, L. Nonlinear dimensionality reduction
+        by locally linear embedding.  Science 290:2323 (2000).
     """
-    def __init__(self, n_components=2, radius='auto', geom=None,
+    def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
                  tol=1e-6, max_iter=100, reg=1e3):
         self.n_components = n_components

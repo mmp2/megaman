@@ -9,7 +9,7 @@
 #          Lars Buitinck
 #          Alexandre Gramfort
 #          Nicolas Tresegnie
-# License: BSD 3 clause
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 import warnings
 import numbers
 

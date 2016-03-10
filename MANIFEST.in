@@ -1,4 +1,8 @@
 include *.md
 include *.py
-recursive-include megaman *.py
+recursive-include megaman *.py *.pyx *.pxd *.cc *.h
+recursive-include doc *
+recursive-include tools *.py
+recursive-include examples *.py
+include Makefile
 include LICENSE

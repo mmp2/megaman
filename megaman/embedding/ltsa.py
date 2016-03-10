@@ -1,6 +1,7 @@
 """Local Tangent Space Alignment"""
 
 # Author: James McQueen -- <jmcq@u.washington.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 #
 #
 # After the sci-kit learn version by:
@@ -121,12 +122,20 @@ class LTSA(BaseEmbedding):
     ----------
     n_components : integer
         number of coordinates for the manifold.
+    radius : float (optional)
+        radius for adjacency and affinity calculations. Will be overridden if
+        either is set in `geom`
+    geom : dict or megaman.geometry.Geometry object
+        specification of geometry parameters: keys are
+        ["adjacency_method", "adjacency_kwds", "affinity_method",
+         "affinity_kwds", "laplacian_method", "laplacian_kwds"]
     eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            use standard dense matrix operations for the eigenvalue
+            decomposition. Uses a dense data array, and thus should be avoided
+            for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -139,37 +148,22 @@ class LTSA(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+    random_state : numpy.RandomState or int, optional
+        The generator or seed used to determine the starting vector for arpack
+        iterations.  Defaults to numpy.random.RandomState
     tol : float, optional
         Tolerance for 'arpack' method
         Not used if eigen_solver=='dense'.
     max_iter : integer
         maximum number of iterations for the arpack solver.
-    random_state : numpy.RandomState or int, optional
-        The generator or seed used to determine the starting vector for arpack
-        iterations.  Defaults to numpy.random.
-    neighborhood_radius : scalar, passed to distance_matrix. Value such that all
-        distances beyond neighborhood_radius are considered infinite.
-    affinity_radius : scalar, passed to affinity_matrix. 'bandwidth' parameter
-        used in Guassian kernel for affinity matrix
-    distance_method : string, one of 'auto', 'brute', 'cython', 'pyflann', 'cyflann'.
-        method for computing pairwise radius neighbors graph.
-    input_type : string, one of: 'data', 'distance', 'affinity'.
-        The values of input data X.
-    path_to_flann : string. full file path location of FLANN if not installed to
-        root or to set FLANN_ROOT set to path location. Used for importing pyflann
-        from a different location.
-    geom : either a Geometry object from megaman.geometry or a dictionary
-            containing (some or all) geometry parameters: adjacency_method,
-            adjacency_kwds, affinity_method, affinity_kwds, laplacian_method,
-            laplacian_kwds as keys.
 
     References
     ----------
-    * Zhang, Z. & Zha, H. Principal manifolds and nonlinear
-      dimensionality reduction via tangent space alignment.
-      Journal of Shanghai Univ.  8:406 (2004)
+    .. [1] Zhang, Z. & Zha, H. Principal manifolds and nonlinear
+        dimensionality reduction via tangent space alignment.
+        Journal of Shanghai Univ.  8:406 (2004)
     """
-    def __init__(self, n_components=2, radius='auto', geom=None,
+    def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
                  tol=1e-6, max_iter=100):
         self.n_components = n_components

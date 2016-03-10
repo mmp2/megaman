@@ -1,5 +1,5 @@
 % generates the test data used by test_laplacian.py
-%
+% LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 %
 
 %addpath /mnt/costila/speclust/code-dominique-rmetric/

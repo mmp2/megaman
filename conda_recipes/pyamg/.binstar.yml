@@ -1,0 +1,10 @@
+package: pyamg
+platform:
+  - osx-64
+  - osx-32
+  - linux-64
+  - linux-32
+script:
+  - conda build .
+build_targets:
+  - conda

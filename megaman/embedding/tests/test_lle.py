@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import sys
 import numpy as np
 import scipy as sp
@@ -11,8 +13,8 @@ from sklearn.neighbors import NearestNeighbors
 
 import megaman.embedding.locally_linear as lle
 import megaman.geometry.geometry as geom
+from megaman.utils.eigendecomp import EIGEN_SOLVERS
 
-eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
@@ -65,7 +67,7 @@ def test_lle_simple_grid():
     N = lle.barycenter_graph(distance_matrix, X).todense()
     reconstruction_error = np.linalg.norm(np.dot(N, X) - X, 'fro')
     assert(reconstruction_error < tol)
-    for eigen_solver in eigen_solvers:
+    for eigen_solver in EIGEN_SOLVERS:
         clf = lle.LocallyLinearEmbedding(n_components = n_components, geom = G,
                                 eigen_solver = eigen_solver, random_state = rng)
         clf.fit(X)
@@ -88,7 +90,7 @@ def test_lle_manifold():
     N = lle.barycenter_graph(distance_matrix, X).todense()
     reconstruction_error = np.linalg.norm(np.dot(N, X) - X)
     assert(reconstruction_error < tol)
-    for eigen_solver in eigen_solvers:
+    for eigen_solver in EIGEN_SOLVERS:
         clf = lle.LocallyLinearEmbedding(n_components = n_components, geom = G,
                                 eigen_solver = eigen_solver, random_state = rng)
         clf.fit(X)

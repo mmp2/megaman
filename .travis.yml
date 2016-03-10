@@ -13,8 +13,11 @@ env:
     # Directory where tests are run from
     - TEST_DIR=/tmp/megaman
     - CONDA_CHANNEL="https://conda.anaconda.org/jakevdp"
+    - CONDA_DEPS="pip nose coverage cython scikit-learn flann"
+    - PIP_DEPS="coveralls"
   matrix:
-    - CONDA_DEPS="pip nose coverage cython numpy scipy scikit-learn pyflann" PIP_DEPS="pyamg coveralls"
+    - EXTRA_DEPS="pyflann pyamg"
+    - EXTRA_DEPS=""
 
 before_install:
 - export MINICONDA=$HOME/miniconda
@@ -26,7 +29,7 @@ before_install:
 - conda config --set always_yes yes
 - conda update conda
 - conda info -a
-- conda install -c $CONDA_CHANNEL python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
+- conda install -c $CONDA_CHANNEL python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS $EXTRA_DEPS
 - travis_retry pip install $PIP_DEPS
 
 install:

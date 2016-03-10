@@ -1,4 +1,6 @@
 # Author: Jake VanderPlas
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+#
 # Adapted from scikit-learn's similar utility
 
 """ Module to give helpful messages to the user that did not

@@ -1,3 +1,5 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import sys
 import numpy as np
 import scipy as sp
@@ -11,8 +13,8 @@ from numpy.testing import assert_array_almost_equal
 import megaman.embedding.ltsa as ltsa
 from megaman.embedding.locally_linear import barycenter_graph
 import megaman.geometry.geometry as geom
+from megaman.utils.eigendecomp import EIGEN_SOLVERS
 
-eigen_solvers = ['auto', 'dense', 'amg', 'lobpcg', 'arpack']
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
@@ -26,6 +28,7 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
         if not sign:
             return False
     return True
+
 
 def test_ltsa_with_sklearn():
     N = 10
@@ -42,18 +45,19 @@ def test_ltsa_with_sklearn():
     (mm_Y_ltsa, err) = ltsa.ltsa(G, n_components, eigen_solver = 'arpack')
     assert(_check_with_col_sign_flipping(sk_Y_ltsa, mm_Y_ltsa, 0.05))
 
+
 def test_ltsa_eigendecomps():
     N = 10
     X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
     n_components = 2
     G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':2})
     G.set_data_matrix(X)
-    (mm_ltsa_ar, err) = ltsa.ltsa(G, n_components, eigen_solver = 'arpack')
-    (mm_ltsa_de, err2) = ltsa.ltsa(G, n_components, eigen_solver = 'dense')
-    (mm_ltsa_amg, err3) = ltsa.ltsa(G, n_components, eigen_solver = 'amg')
-    assert(_check_with_col_sign_flipping(mm_ltsa_ar, mm_ltsa_de, 0.05))
-    assert(_check_with_col_sign_flipping(mm_ltsa_ar, mm_ltsa_amg, 0.05))
-    assert(_check_with_col_sign_flipping(mm_ltsa_amg, mm_ltsa_de, 0.05))
+    mm_ltsa_ref, err_ref = ltsa.ltsa(G, n_components,
+                                     eigen_solver=EIGEN_SOLVERS[0])
+    for eigen_solver in EIGEN_SOLVERS[1:]:
+        mm_ltsa, err = ltsa.ltsa(G, n_components, eigen_solver=eigen_solver)
+        assert(_check_with_col_sign_flipping(mm_ltsa, mm_ltsa_ref, 0.05))
+
 
 def test_ltsa_manifold():
     rng = np.random.RandomState(0)
@@ -69,7 +73,7 @@ def test_ltsa_manifold():
     N = barycenter_graph(distance_matrix, X).todense()
     reconstruction_error = np.linalg.norm(np.dot(N, X) - X)
     assert(reconstruction_error < tol)
-    for eigen_solver in eigen_solvers:
+    for eigen_solver in EIGEN_SOLVERS:
         clf = ltsa.LTSA(n_components = n_components, geom = G,
                         eigen_solver = eigen_solver, random_state = rng)
         clf.fit(X)

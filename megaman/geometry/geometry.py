@@ -28,7 +28,7 @@ We adopted the following convention:
 
 # Authors: Marina Meila <mmp@stat.washington.edu>
 #         James McQueen <jmcq@u.washington.edu>
-# License: BSD 3 clause
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 from __future__ import division ## removes integer division
 import numpy as np
 from scipy import sparse
@@ -155,10 +155,11 @@ class Geometry(object):
         if self.X is None:
             raise ValueError(distance_error_msg)
 
-        self.adjacency_kwds.update(kwargs)
+        kwds = self.adjacency_kwds.copy()
+        kwds.update(kwargs)
         self.adjacency_matrix = compute_adjacency_matrix(self.X,
                                                          self.adjacency_method,
-                                                         **self.adjacency_kwds)
+                                                         **kwds)
         if copy:
             return self.adjacency_matrix.copy()
         else:
@@ -186,10 +187,11 @@ class Geometry(object):
         if self.adjacency_matrix is None:
             self.compute_adjacency_matrix()
 
-        self.affinity_kwds.update(kwargs)
+        kwds = self.affinity_kwds.copy()
+        kwds.update(kwargs)
         self.affinity_matrix = compute_affinity_matrix(self.adjacency_matrix,
                                                        self.affinity_method,
-                                                       **self.affinity_kwds)
+                                                       **kwds)
         if copy:
             return self.affinity_matrix.copy()
         else:
@@ -221,11 +223,12 @@ class Geometry(object):
         if self.affinity_matrix is None:
             self.compute_affinity_matrix()
 
-        self.laplacian_kwds.update(kwargs)
-        self.laplacian_kwds['full_output'] = return_lapsym
+        kwds = self.laplacian_kwds.copy()
+        kwds.update(kwargs)
+        kwds['full_output'] = return_lapsym
         result = compute_laplacian_matrix(self.affinity_matrix,
                                           self.laplacian_method,
-                                          **self.laplacian_kwds)
+                                          **kwds)
         if return_lapsym:
             (self.laplacian_matrix,
              self.laplacian_symmetric,

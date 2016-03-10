@@ -1,3 +1,6 @@
+# Setup script for megaman: scalable manifold learning
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import io
 import os
 import re
