@@ -1,4 +1,4 @@
-# megaman: Scalable manifold learning
+# megaman: Manifold Learning for Millions of Points
 
 [![build status](http://img.shields.io/travis/mmp2/megaman/master.svg?style=flat)](https://travis-ci.org/mmp2/megaman)
 [![version status](http://img.shields.io/pypi/v/megaman.svg?style=flat)](https://pypi.python.org/pypi/megaman)
@@ -16,7 +16,9 @@ with hundreds of dimensions in 10 minutes.
 megaman is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters.
 
-Documentation can be found at http://mmp2.github.io/megaman/
+Package documentation can be found at http://mmp2.github.io/megaman/
+
+You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 ## Examples
 
