@@ -77,16 +77,32 @@ class Geometry(object):
         see laplacian.py docmuentation for arguments for each method.
         If new kwargs are passed to compute_laplacian_matrix then this
         dictionary will be updated.
+    **kwargs :
+        additional arguments will be parsed and used to override values in
+        the above dictionaries. For example:
+        - `affinity_radius` will override `affinity_kwds['radius']`
+        - `adjacency_n_neighbors` will override `adjacency_kwds['n_neighbors']`
+        etc.
     """
     def __init__(self, adjacency_method='auto', adjacency_kwds=None,
                  affinity_method='auto', affinity_kwds=None,
-                 laplacian_method='auto',laplacian_kwds=None):
+                 laplacian_method='auto',laplacian_kwds=None, **kwargs):
         self.adjacency_method = adjacency_method
         self.adjacency_kwds = dict(**(adjacency_kwds or {}))
         self.affinity_method = affinity_method
         self.affinity_kwds = dict(**(affinity_kwds or {}))
         self.laplacian_method = laplacian_method
         self.laplacian_kwds = dict(**(laplacian_kwds or {}))
+
+        # map extra keywords: e.g. affinity_radius -> affinity_kwds['radius']
+        dicts = dict(adjaceny=self.adjacency_kwds,
+                     affinity=self.affinity_kwds,
+                     laplacian=self.laplacian_kwds)
+        for key, val in kwargs.items():
+            keysplit = key.split('_')
+            if keysplit[0] not in dicts:
+                raise ValueError('key `{0}` not valid'.format(key))
+            dicts[keysplit[0]]['_'.join(keysplit[1:])] = val
 
         self.X = None
         self.adjacency_matrix = None
