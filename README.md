@@ -20,11 +20,9 @@ Documentation can be found at http://mmp2.github.io/megaman/
 
 ## Examples
 
-See https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb for tutorial.
+- [Tutorial Notebook]( https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb)
 
-## Installation
-
-### Install the Release with Conda
+## Installation with Conda
 
 The easiest way to install ``megaman`` and its dependencies is with
 [conda](http://conda.pydata.org/miniconda.html), the cross-platform package
@@ -37,9 +35,9 @@ $ conda install -c https://conda.anaconda.org/jakevdp megaman
 ```
 
 Currently builds are available for OSX-64 and Linux-64, on Python 2.7, 3.4, and 3.5.
-For other operating systems, see teh full install instructions below.
+For other operating systems, see the full install instructions below.
 
-### Installation from source
+## Installation from source
 
 To install megaman from source requires the following:
 
@@ -63,7 +61,7 @@ These requirements can be installed on Linux and MacOSX using the following cond
 $ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
 ```
 
-Finally, install the ``megaman`` package itself:
+Finally, within the source repository, run this command to install the ``megaman`` package itself:
 ```
 $ python setup.py install
 ```
