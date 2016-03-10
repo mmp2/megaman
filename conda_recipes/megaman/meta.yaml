@@ -1,10 +1,10 @@
 package:
     name: megaman
-    version: "0.1.dev1"
+    version: 0.1.1
 
 source:
     git_url: https://github.com/mmp2/megaman.git
-    git_tag: 1ddd723f91b40b5309682d2f0e1c92e054085243
+    git_tag: v0.1.1
 
 build:
     number: 1
@@ -12,18 +12,17 @@ build:
 requirements:
     build:
         - python
-        - gcc [osx]
         - cython
         - numpy
         - flann
+        - gcc [osx]
     run:
         - python
         - numpy
         - scipy
         - scikit-learn
-        - flann
+        - pyamg
         - pyflann
-        - pyamg # [py27]
 
 test:
     requires:
