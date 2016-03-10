@@ -1,6 +1,6 @@
 include *.md
 include *.py
-recursive-include megaman *.py *.pyx *.pxd *.cc *.h
+recursive-include megaman *.py *.pyx *.pxd *.cc *.h *.mat *.png
 recursive-include doc *
 recursive-include tools *.py
 recursive-include examples *.py
