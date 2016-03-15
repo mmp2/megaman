@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 from scipy import ndimage
+from sklearn.utils import check_random_state
 
 
 def get_megaman_image(factor=1):
@@ -39,9 +40,17 @@ def _make_S_curve(x, range=(-0.75, 0.75)):
     return X
 
 
-def generate_megaman_manifold(sampling=2, nfolds=2):
+def generate_megaman_manifold(sampling=2, nfolds=2,
+                              rotate=True, random_state=None):
     """Generate a manifold of the megaman data"""
     X, c = generate_megaman_data(sampling)
     for i in range(nfolds):
         X = np.hstack([_make_S_curve(x) for x in X.T])
+
+    if rotate:
+        rand = check_random_state(random_state)
+        R = rand.randn(X.shape[1], X.shape[1])
+        U, s, VT = np.linalg.svd(R)
+        X = np.dot(X, U)
+
     return X, c
