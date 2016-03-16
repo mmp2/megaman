@@ -8,6 +8,7 @@ def configuration(parent_package='', top_path=None):
     config = Configuration('megaman', parent_package, top_path)
 
     config.add_subpackage('__check_build')
+    config.add_subpackage('datasets')
     config.add_subpackage('embedding')
     config.add_subpackage('embedding/tests')
     config.add_subpackage('geometry')
@@ -16,6 +17,7 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('utils')
     config.add_subpackage('utils/tests')
     config.add_data_files('geometry/tests/testmegaman_laplacian_rad0_2_lam1_5_n200.mat')
+    config.add_data_files('datasets/megaman.png')
 
     return config
 
