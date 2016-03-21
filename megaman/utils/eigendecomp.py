@@ -261,6 +261,23 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
     -------
     null_space : estimated k vectors of the null space
     error : estimated error (sum of eigenvalues)
+    
+    Notes
+    -----
+    dense solver key words: see
+        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html
+        for symmetric problems and 
+        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig
+        for non symmetric problems.
+    arpack sovler key words: see
+        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html
+        for symmetric problems and http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
+        for non symmetric problems.
+    lobpcg solver keywords: see
+        http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lobpcg.html
+    amg solver keywords: see
+        http://pyamg.googlecode.com/svn/branches/1.0.x/Docs/html/pyamg.aggregation.html#module-pyamg.aggregation.aggregation
+        (Note amg solver uses lobpcg and also accepts lobpcg keywords)
     """
     eigen_solver, solver_kwds = check_eigen_solver(eigen_solver, solver_kwds,
                                                    size=M.shape[0],
