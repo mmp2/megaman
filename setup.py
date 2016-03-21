@@ -50,14 +50,14 @@ def configuration(parent_package='',top_path=None):
 
     return config
 
-DESCRIPTION = "megaman: Scalable Manifold Learning"
+DESCRIPTION = "megaman: Manifold Learning for Millions of Points"
 LONG_DESCRIPTION = """
-megaman: Scalable Manifold Learning
-===================================
+megaman: Manifold Learning for Millions of Points
+=================================================
 
 This repository contains a scalable implementation of several manifold learning
 algorithms, making use of FLANN for fast approximate nearest neighbors and
-scipy routines for fast matrix decompositions.
+PyAMG, LOBPCG, ARPACK, and other routines for fast matrix decompositions.
 
 For more information, visit https://github.com/mmp2/megaman
 """

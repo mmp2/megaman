@@ -1,4 +1,4 @@
-# megaman: Scalable manifold learning
+# megaman: Manifold Learning for Millions of Points
 
 [![build status](http://img.shields.io/travis/mmp2/megaman/master.svg?style=flat)](https://travis-ci.org/mmp2/megaman)
 [![version status](http://img.shields.io/pypi/v/megaman.svg?style=flat)](https://pypi.python.org/pypi/megaman)
@@ -16,15 +16,15 @@ with hundreds of dimensions in 10 minutes.
 megaman is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters.
 
-Documentation can be found at http://mmp2.github.io/megaman/
+Package documentation can be found at http://mmp2.github.io/megaman/
+
+You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 ## Examples
 
-See documentation and example.py for usage.
+- [Tutorial Notebook]( https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb)
 
-## Installation
-
-### Install the Release with Conda
+## Installation with Conda
 
 The easiest way to install ``megaman`` and its dependencies is with
 [conda](http://conda.pydata.org/miniconda.html), the cross-platform package
@@ -33,13 +33,13 @@ manager for the scientific Python ecosystem.
 To install megaman and its dependencies, run
 
 ```
-$ conda install -c https://conda.anaconda.org/jakevdp megaman
+$ conda install --channel=jakevdp megaman
 ```
 
 Currently builds are available for OSX-64 and Linux-64, on Python 2.7, 3.4, and 3.5.
-For other operating systems, see teh full install instructions below.
+For other operating systems, see the full install instructions below.
 
-### Installation from source
+## Installation from source
 
 To install megaman from source requires the following:
 
@@ -60,10 +60,10 @@ Optional requirements include
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
 ```
-$ conda install -c https://conda.anaconda.org/jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
+$ conda install --channel=jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
 ```
 
-Finally, install the ``megaman`` package itself:
+Finally, within the source repository, run this command to install the ``megaman`` package itself:
 ```
 $ python setup.py install
 ```
@@ -73,7 +73,7 @@ megaman uses ``nose`` for unit tests. With ``nose`` installed, type
 ```
 $ make test
 ```
-to run the unit tests. The tests are run on Python versions 2.7
+to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.5.
 
 ## Authors
 - [James McQueen](http://www.stat.washington.edu/people/jmcq/)

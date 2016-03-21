@@ -4,7 +4,7 @@ In this tutorial we're going to use a synthetic data set in particular
 one that lies on a 2 dimensional manifold in 3 dimensional space
 that can be embedded isometrically into 2 dimensions -- an S curve.
 '''
-
+import numpy as np
 from sklearn import datasets
 N = 1000
 X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
@@ -150,13 +150,13 @@ print(number_connected_components)
 Since the number of connected components is large this indicates that
 our radius is too small. Let's increase:
 '''
-rad1 = 1.0
+rad2 = 0.5
 # compute an adjacency matrix with a radius
-geom.adjacency_kwds = {'radius':rad1}
+geom.adjacency_kwds = {'radius':rad2}
 adjacency_matrix = geom.compute_adjacency_matrix()
 # compute the corresponding affinity matrix
-geom.affinity_kwds = {'radius':rad1}
-affinity_matrix = geom.compute_affinity_matrix({'radius':rad1})
+geom.affinity_kwds = {'radius':rad2}
+affinity_matrix = geom.compute_affinity_matrix({'radius':rad2})
 (number_connected_components, labels) = connected_components(affinity_matrix)
 print(number_connected_components)
 
@@ -168,12 +168,12 @@ determined the parameters you can pass a dictionary or geometry
 arguments to one of the embedding classes instead of a Geometry
 object with the geom argument.
 '''
-radius = 1.0
+radius = 0.5
 adjacency_method = 'cyflann'
 adjacency_kwds = {'radius':radius} # ignore distances above this radius
 affinity_method = 'gaussian'
 affinity_kwds = {'radius':radius} # A = exp(-||x - y||/radius^2) 
-laplacian_method = 'geometric'
+laplacian_method = 'symmetricnormalized'
 laplacian_kwds = {'scaling_epps':radius} # scaling ensures convergence to Laplace-Beltrami operator
 
 geom  = {'adjacency_method':adjacency_method, 'adjacency_kwds':adjacency_kwds,
@@ -208,9 +208,10 @@ n_components = 2
 Once you have your geometry selected, each method works fairly simply.
 Below demonstrates fitting each method:
 '''
-spectral = SpectralEmbedding(n_components=n_components, 
+spectral = SpectralEmbedding(n_components=3, 
                              eigen_solver='amg',
-							 geom=geom)
+							 geom=geom,
+                             drop_first = False)
 embed_spectral = spectral.fit_transform(X)
 ltsa = LTSA(n_components=n_components,
             eigen_solver='arpack',
@@ -224,6 +225,17 @@ isomap = Isomap(n_components=n_components,
                 eigen_solver='arpack',
 				geom=geom)
 embed_isomap = isomap.fit_transform(X)
+
+'''
+for visualization purposes we're going to use the 1st and 3rd 
+spectral component and scale it up:
+'''
+
+embed_spectral = embed_spectral[:, [0, 2]] * 50.0
+tmp = embed_spectral[:, 1].copy()
+embed_spectral[:,1] = embed_spectral[:,0].copy()
+embed_spectral[:,0] = tmp.copy()
+tmp = None
 
 ## Visualization
 '''
@@ -264,6 +276,10 @@ from megaman.geometry.rmetric import RiemannMetric
 '''
 We can then estimate the R metric on each embedding with:
 '''
+geom.laplacian_method = 'geometric'
+geom.laplacian_kwds = {'scaling_epps':radius} # scaling ensures convergence to Laplace-Beltrami operator
+laplacian_matrix = geom.compute_laplacian_matrix()
+
 
 rmetric_spectral = RiemannMetric(embed_spectral, geom.laplacian_matrix)
 H_spectral = rmetric_spectral.get_dual_rmetric()
@@ -287,21 +303,35 @@ Here's an example of using it with the isomap embedding.
 Note that we use equal aspect ratio otherwise it is hard
 to determine what the actual distortion is.
 '''
-import numpy as np
 from covar_plotter import plot_cov_ellipse
 
-# <rmetric plot code>
 n_plot = 50
-sample_points = np.random.choice(range(N), n_plot, replace = False)
+rng = np.random.RandomState(8675309)
+sample_points = rng.choice(range(N), n_plot, replace = False)
+
 f, ax = plt.subplots()
-ax.scatter(embed_isomap[:, 0], embed_isomap[:, 1], s = 1, alpha = 0.25)
+ax.scatter(embed_isomap[:, 0], embed_isomap[:, 1], s = 1)
 ax.set_aspect('equal') # if an ellipse is a circle no distortion occured. 
 for i in range(n_plot):
     ii = sample_points[i]
     cov = H_isomap[ii, :, :]
-    plot_cov_ellipse(cov*0.1, embed_isomap[ii, :] ,ax=ax, edgecolor='none', alpha = 0.5)
+    plot_cov_ellipse(cov*0.05, embed_isomap[ii, :] ,ax=ax, edgecolor='none', alpha = 0.5)
 plt.savefig("tutorial_isomap_plot.png", format='png', bbox_inches='tight')
 plt.close()
+
+'''
+we can also do this with the spectral embedding:
+'''
+f, ax = plt.subplots()
+ax.scatter(embed_spectral[:, 0], embed_spectral[:, 1], s = 1)
+ax.set_aspect('equal') # if an ellipse is a circle no distortion occured. 
+for i in range(n_plot):
+    ii = sample_points[i]
+    cov = H_spectral[ii,:,:]
+    plot_cov_ellipse(cov*0.01, embed_spectral[ii,:] ,ax=ax, edgecolor='none', alpha = 0.5)
+plt.savefig("tutorial_spectral_plot.png", format='png', bbox_inches='tight')
+plt.close()
+
 ## Best parameters for large data sets
 
 ### Adjacency Matrix -- using FLANN

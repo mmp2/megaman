@@ -7,22 +7,24 @@ source:
     git_tag: v0.1.1
 
 build:
-    number: 1
+    number: 2
+    string: np{{CONDA_NPY}}py{{CONDA_PY}}_{{PKG_BUILDNUM}}
 
 requirements:
     build:
-        - python
+        - python >=2.7,<3|>=3.4,{{PY_VER}}*
+        - numpy {{NPY_VER}}*
         - cython
-        - numpy
         - flann
-        - gcc [osx]
+        - gcc 4.8* # [osx]
     run:
-        - python
-        - numpy
-        - scipy
-        - scikit-learn
+        - python {{PY_VER}}*
+        - numpy {{NPY_VER}}*
+        - scipy >=0.16
+        - scikit-learn >=0.17
         - pyamg
         - pyflann
+        - libgcc 4.8* # [osx]
 
 test:
     requires:

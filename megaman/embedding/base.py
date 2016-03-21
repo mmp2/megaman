@@ -7,9 +7,13 @@ import numpy as np
 from scipy.sparse import isspmatrix
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.validation import check_array, FLOAT_DTYPES
+from sklearn.utils.validation import check_array
 
 from ..geometry.geometry import Geometry
+
+# from sklearn.utils.validation import FLOAT_DTYPES
+FLOAT_DTYPES = (np.float64, np.float32, np.float16)
+
 
 class BaseEmbedding(BaseEstimator, TransformerMixin):
     """ Base Class for all megaman embeddings.

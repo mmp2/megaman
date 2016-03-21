@@ -7,15 +7,16 @@ source:
     git_tag: b8a442fd98f8ce32ae3465bfd3427b5cbc36f6a5
 
 build:
-    number: 1
+    number: 2
+    string: {{PKG_BUILDNUM}}_g{{GIT_FULL_HASH[:7]}}
 
 requirements:
     build:
-        - gcc [osx]
+        - gcc 4.8* # [osx]
         - hdf5
         - cmake
     run:
-        - libgcc [osx]
+        - libgcc 4.8* #[osx]
         - hdf5
 
 about:

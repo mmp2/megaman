@@ -305,6 +305,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
                                                               eigen_solver = eigen_solver,
                                                               drop_first = False,
                                                               largest = False,
+                                                              random_state=random_state,
                                                               solver_kwds=solver_kwds)
             eigen_values = eigen_values -1
             index = np.argsort(np.abs(eigen_values))
@@ -319,6 +320,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
                                                               eigen_solver = eigen_solver,
                                                               drop_first = False,
                                                               largest = False,
+                                                              random_state=random_state,
                                                               solver_kwds=solver_kwds)
             eigen_values = eigen_values - 2
             index = np.argsort(np.abs(eigen_values))
