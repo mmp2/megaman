@@ -12,7 +12,7 @@ env:
   global:
     # Directory where tests are run from
     - TEST_DIR=/tmp/megaman
-    - CONDA_CHANNEL="https://conda.anaconda.org/jakevdp"
+    - CONDA_CHANNEL="conda-forge"
     - CONDA_DEPS="pip nose coverage cython scikit-learn flann"
     - PIP_DEPS="coveralls"
   matrix:
