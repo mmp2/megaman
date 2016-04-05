@@ -37,10 +37,10 @@ manager for the scientific Python ecosystem.
 To install megaman and its dependencies, run
 
 ```
-$ conda install --channel=jakevdp megaman
+$ conda install megaman --channel=conda-forge
 ```
 
-Currently builds are available for OSX-64 and Linux-64, on Python 2.7, 3.4, and 3.5.
+Currently builds are available for OSX and Linux, on Python 2.7, 3.4, and 3.5.
 For other operating systems, see the full install instructions below.
 
 ## Installation from source
@@ -64,7 +64,7 @@ Optional requirements include
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
 ```
-$ conda install --channel=jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
+$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
 ```
 
 Finally, within the source repository, run this command to install the ``megaman`` package itself:
