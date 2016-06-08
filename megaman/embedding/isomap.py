@@ -25,9 +25,9 @@ def center_matrix(G):
     return(K)
 
 def isomap(geom, n_components=8, eigen_solver='auto',
-           random_state=None, eigen_tol=1e-12, path_method='auto',
+           random_state=None, path_method='auto',
            distance_matrix=None, graph_distance_matrix = None,
-           centered_matrix=None):
+           centered_matrix=None, solver_kwds=None):
     """
     Parameters
     ----------
@@ -56,9 +56,6 @@ def isomap(geom, n_components=8, eigen_solver='auto',
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
         By default, arpack is used.
-    eigen_tol : float, optional, default=0.0
-        Stopping criterion for eigendecomposition of the Laplacian matrix
-        when using arpack eigen_solver.
     path_method : string, method for computing graph shortest path. One of :
         'auto', 'D', 'FW', 'BF', 'J'. See scipy.sparse.csgraph.shortest_path
         for more information.
@@ -68,6 +65,7 @@ def isomap(geom, n_components=8, eigen_solver='auto',
         matrix. Output of graph_shortest_path.
     centered_matrix : Ndarray (n_obs, n_obs), optional. Centered version of
         graph_distance_matrix
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
     -------
@@ -101,7 +99,7 @@ def isomap(geom, n_components=8, eigen_solver='auto',
                                                  largest=True,
                                                  eigen_solver=eigen_solver,
                                                  random_state=random_state,
-                                                 eigen_tol=eigen_tol)
+                                                 solver_kwds=solver_kwds)
     # Step 5:
     # return Y = [sqrt(lambda_1)*V_1, ..., sqrt(lambda_d)*V_d]
     ind = np.argsort(lambdas); ind = ind[::-1] # sort largest
@@ -149,10 +147,10 @@ class Isomap(BaseEmbedding):
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState
-    eigen_tol : float, optional. Tolerance for 'arpack' solver.
     path_method : string, optionl. method for computing graph shortest path.
         One of ['auto', 'D', 'FW', 'BF', 'J'].
         See `scipy.sparse.csgraph.shortest_path` for more information.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Attributes
     ----------
@@ -167,14 +165,14 @@ class Isomap(BaseEmbedding):
     """
     def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
-                 eigen_tol=1e-12, path_method='auto'):
+                 path_method='auto', solver_kwds=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
         self.eigen_solver = eigen_solver
         self.random_state = random_state
-        self.eigen_tol = eigen_tol
         self.path_method = path_method
+        self.solver_kwds = solver_kwds
 
     def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
@@ -231,9 +229,9 @@ class Isomap(BaseEmbedding):
         self.embedding_ = isomap(self.geom_, n_components=self.n_components,
                                  eigen_solver=self.eigen_solver,
                                  random_state=self.random_state,
-                                 eigen_tol = self.eigen_tol,
                                  path_method = self.path_method,
                                  distance_matrix = self.distance_matrix,
                                  graph_distance_matrix = self.graph_distance_matrix,
-                                 centered_matrix = self.centered_matrix)
+                                 centered_matrix = self.centered_matrix,
+                                 solver_kwds = self.solver_kwds)
         return self

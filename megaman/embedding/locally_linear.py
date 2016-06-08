@@ -56,8 +56,9 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
     return W
 
 
-def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
-                            eigen_solver='auto', tol=1e-6,  random_state=None):
+def locally_linear_embedding(geom, n_components, reg=1e-3,
+                            eigen_solver='auto',  random_state=None,
+                            solver_kwds=None):
     """
     Perform a Locally Linear Embedding analysis on the data.
 
@@ -87,14 +88,10 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
-    tol : float, optional
-        Tolerance for 'arpack' method
-        Not used if eigen_solver=='dense'.
-    max_iter : integer
-        maximum number of iterations for the arpack solver.
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
     -------
@@ -117,9 +114,9 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
     W = barycenter_graph(geom.adjacency_matrix, geom.X, reg=reg)
     # we'll compute M = (I-W)'(I-W)
     # depending on the solver, we'll do this differently
-    eigen_solver = check_eigen_solver(eigen_solver,
-                                      size=W.shape[0],
-                                      nvec=n_components + 1)
+    eigen_solver, solver_kwds = check_eigen_solver(eigen_solver, solver_kwds,
+                                                   size=W.shape[0],
+                                                   nvec=n_components + 1)
     if eigen_solver != 'dense':
         M = eye(*W.shape, format=W.format) - W
         M = (M.T * M).tocsr()
@@ -127,7 +124,7 @@ def locally_linear_embedding(geom, n_components, reg=1e-3, max_iter=100,
         M = (W.T * W - W.T - W).toarray()
         M.flat[::M.shape[0] + 1] += 1  # W = W - I = W - I
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
-                      tol=tol, max_iter=max_iter, random_state=random_state)
+                      random_state=random_state)
 
 
 class LocallyLinearEmbedding(BaseEmbedding):
@@ -168,14 +165,10 @@ class LocallyLinearEmbedding(BaseEmbedding):
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState
-    tol : float, optional
-        Tolerance for 'arpack' method
-        Not used if eigen_solver=='dense'.
-    max_iter : integer, optional
-        maximum number of iterations for the arpack solver.
     reg : float, optional
         regularization constant, multiplies the trace of the local covariance
         matrix of the distances.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     References
     ----------
@@ -184,15 +177,14 @@ class LocallyLinearEmbedding(BaseEmbedding):
     """
     def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
-                 tol=1e-6, max_iter=100, reg=1e3):
+                 reg=1e3,solver_kwds=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
         self.eigen_solver = eigen_solver
         self.random_state = random_state
-        self.tol = tol
-        self.max_iter = max_iter
         self.reg = reg
+        self.solver_kwds = solver_kwds
 
     def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
@@ -222,8 +214,7 @@ class LocallyLinearEmbedding(BaseEmbedding):
         self.embedding_, self.error_ = locally_linear_embedding(self.geom_,
                                                                 n_components=self.n_components,
                                                                 eigen_solver=self.eigen_solver,
-                                                                tol=self.tol,
                                                                 random_state=self.random_state,
                                                                 reg=self.reg,
-                                                                max_iter=self.max_iter)
+                                                                solver_kwds=self.solver_kwds)
         return self

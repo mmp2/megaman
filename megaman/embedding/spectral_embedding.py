@@ -76,8 +76,8 @@ def _graph_is_connected(graph):
 
 
 def spectral_embedding(geom, n_components=8, eigen_solver='auto',
-                       random_state=None, eigen_tol=0.0, drop_first=True,
-                       diffusion_maps = False):
+                       random_state=None, drop_first=True,
+                       diffusion_maps = False, solver_kwds = None):
     """
     Project the sample on the first eigen vectors of the graph Laplacian.
 
@@ -122,9 +122,6 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         A pseudo random number generator used for the initialization of the
         lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
         By default, arpack is used.
-    eigen_tol : float, optional, default=0.0
-        Stopping criterion for eigendecomposition of the Laplacian matrix
-        when using arpack eigen_solver.
     drop_first : bool, optional, default=True
         Whether to drop the first eigenvector. For spectral embedding, this
         should be True as the first eigenvector should be constant vector for
@@ -132,6 +129,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
         version by re-scaling the embedding by the eigenvalues.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
     -------
@@ -169,9 +167,9 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
 
     n_nodes = laplacian.shape[0]
     lapl_type = geom.laplacian_method
-    eigen_solver = check_eigen_solver(eigen_solver,
-                                      size=laplacian.shape[0],
-                                      nvec=n_components + 1)
+    eigen_solver, solver_kwds = check_eigen_solver(eigen_solver,solver_kwds,
+                                                   size=laplacian.shape[0],
+                                                   nvec=n_components + 1)
     re_normalize = False
     PD_solver = False
     if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
@@ -216,12 +214,14 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                 symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
 
     if PD_solver: # then eI - L was used, fix the eigenvalues
-        lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver,
-                                                    random_state, eigen_tol, drop_first, largest = False)
+        lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver=eigen_solver,
+                                                     random_state=random_state, drop_first=drop_first, largest = False,
+                                                     solver_kwds=solver_kwds)
         lambdas = -lambdas + epsilon
     else:
-        lambdas, diffusion_map = eigen_decomposition(laplacian, n_components+1, eigen_solver,
-                                                    random_state, eigen_tol, drop_first, largest = True)
+        lambdas, diffusion_map = eigen_decomposition(laplacian, n_components+1, eigen_solver=eigen_solver,
+                                                     random_state=random_state, drop_first=drop_first, largest = True,
+                                                     solver_kwds=solver_kwds)
     if re_normalize:
         diffusion_map /= np.sqrt(w[:, np.newaxis]) # put back on original Laplacian space
         diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
@@ -229,7 +229,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
     if diffusion_maps:
-        diffusion_map = diffusion_map * np.sqrt(lambdas)
+        diffusion_map = diffusion_map * np.sqrt(np.abs(lambdas))
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
     else:
@@ -280,9 +280,6 @@ class SpectralEmbedding(BaseEmbedding):
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState
-    eigen_tol : float, optional, default=0.0
-        Stopping criterion for eigendecomposition of the Laplacian matrix
-        when using arpack eigen_solver.
     drop_first : bool, optional, default=True
         Whether to drop the first eigenvector. For spectral embedding, this
         should be True as the first eigenvector should be constant vector for
@@ -290,6 +287,7 @@ class SpectralEmbedding(BaseEmbedding):
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
         version by re-scaling the embedding by the eigenvalues.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     References
     ----------
@@ -306,16 +304,16 @@ class SpectralEmbedding(BaseEmbedding):
         http://citeseer.ist.psu.edu/viewdoc/summary?doi=10.1.1.160.2324
     """
     def __init__(self, n_components=2, radius=None, geom=None,
-                 eigen_solver='auto', random_state=None, eigen_tol=1e-12,
-                 drop_first=True, diffusion_maps=False):
+                 eigen_solver='auto', random_state=None,
+                 drop_first=True, diffusion_maps=False, solver_kwds=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
         self.eigen_solver = eigen_solver
         self.random_state = random_state
-        self.eigen_tol = eigen_tol
         self.drop_first = drop_first
         self.diffusion_maps = diffusion_maps
+        self.solver_kwds = solver_kwds
 
     def fit(self, X, y=None, input_type='data'):
         """
@@ -346,9 +344,9 @@ class SpectralEmbedding(BaseEmbedding):
                                              n_components = self.n_components,
                                              eigen_solver = self.eigen_solver,
                                              random_state = random_state,
-                                             eigen_tol = self.eigen_tol,
                                              drop_first = self.drop_first,
-                                             diffusion_maps = self.diffusion_maps)
+                                             diffusion_maps = self.diffusion_maps,
+                                             solver_kwds = self.solver_kwds)
         self.affinity_matrix_ = self.geom_.affinity_matrix
         self.laplacian_matrix_ = self.geom_.laplacian_matrix
         self.laplacian_matrix_type_ = self.geom_.laplacian_method

@@ -20,8 +20,8 @@ from ..utils.validation import check_random_state, check_array
 from ..utils.eigendecomp import null_space, check_eigen_solver
 
 
-def ltsa(geom, n_components, eigen_solver='auto', tol=1e-6,
-         max_iter=100,random_state=None):
+def ltsa(geom, n_components, eigen_solver='auto',
+         random_state=None, solver_kwds=None):
     """
     Perform a Local Tangent Space Alignment analysis on the data.
 
@@ -48,14 +48,10 @@ def ltsa(geom, n_components, eigen_solver='auto', tol=1e-6,
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
-    tol : float, optional
-        Tolerance for 'arpack' method
-        Not used if eigen_solver=='dense'.
-    max_iter : integer
-        maximum number of iterations for the arpack solver.
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
     -------
@@ -81,9 +77,9 @@ def ltsa(geom, n_components, eigen_solver='auto', tol=1e-6,
     if geom.adjacency_matrix is None:
         geom.compute_adjacency_matrix()
     (rows, cols) = geom.adjacency_matrix.nonzero()
-    eigen_solver = check_eigen_solver(eigen_solver,
-                                      size=geom.adjacency_matrix.shape[0],
-                                      nvec=n_components + 1)
+    eigen_solver, solver_kwds = check_eigen_solver(eigen_solver, solver_kwds,
+                                                   size=geom.adjacency_matrix.shape[0],
+                                                   nvec=n_components + 1)
     if eigen_solver != 'dense':
         M = sparse.csr_matrix((N, N))
     else:
@@ -111,7 +107,7 @@ def ltsa(geom, n_components, eigen_solver='auto', tol=1e-6,
             M[nbrs_x, nbrs_y] -= GiGiT
             M[neighbors_i, neighbors_i] += 1
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
-                      tol=tol, max_iter=max_iter, random_state=random_state)
+                      random_state=random_state,solver_kwds=solver_kwds)
 
 
 class LTSA(BaseEmbedding):
@@ -151,11 +147,7 @@ class LTSA(BaseEmbedding):
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState
-    tol : float, optional
-        Tolerance for 'arpack' method
-        Not used if eigen_solver=='dense'.
-    max_iter : integer
-        maximum number of iterations for the arpack solver.
+    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     References
     ----------
@@ -165,14 +157,13 @@ class LTSA(BaseEmbedding):
     """
     def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
-                 tol=1e-6, max_iter=100):
+                 tol=1e-6, max_iter=100, solver_kwds=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
         self.eigen_solver = eigen_solver
         self.random_state = random_state
-        self.tol = tol
-        self.max_iter = max_iter
+        self.solver_kwds = solver_kwds
 
     def fit(self, X, y=None, input_type='data'):
         """Fit the model from data in X.
@@ -199,9 +190,9 @@ class LTSA(BaseEmbedding):
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
-        (self.embedding_, self.error_) = ltsa(self.geom_, tol = self.tol,
+        (self.embedding_, self.error_) = ltsa(self.geom_,
                                               n_components=self.n_components,
                                               eigen_solver=self.eigen_solver,
                                               random_state=random_state,
-                                              max_iter = self.max_iter)
+                                              solver_kwds = self.solver_kwds)
         return self

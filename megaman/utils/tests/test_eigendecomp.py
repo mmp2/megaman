@@ -8,6 +8,11 @@ import numpy as np
 
 SPD_SOLVERS = EIGEN_SOLVERS
 NON_SPD_SOLVERS = ['auto', 'dense', 'arpack']
+SOLVER_KWDS_DICT = {'auto':None,
+                    'dense':{'turbo':True, 'type':1},
+                    'arpack':{'mode':'normal', 'tol':0, 'maxiter':None},
+                    'lobpcg':{'maxiter':20, 'tol':None},
+                    'amg':{'maxiter':20, 'tol':None,'aggregate':'standard'}}
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
@@ -22,13 +27,18 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
             return False
     return True
 
-def _test_all_solvers(solvers_to_test, S):
+def _test_all_solvers(solvers_to_test, S, solver_kwds_dict={}):
     for largest in [True, False]:
         Lambdas = {};
         for eigen_solver in solvers_to_test:
+            if eigen_solver in solver_kwds_dict.keys():
+                solver_kwds = solver_kwds_dict[eigen_solver]
+            else:
+                solver_kwds = None
             lambdas, diffusion_map = eigen_decomposition(S, n_components = 3,
                                                         eigen_solver = eigen_solver,
-                                                        largest = largest, drop_first = False)
+                                                        largest = largest, drop_first = False,
+                                                        solver_kwds=solver_kwds)
             Lambdas[eigen_solver] = np.sort(lambdas)
         # pairwise comparison:
         for i in range(len(solvers_to_test)):
@@ -38,11 +48,15 @@ def _test_all_solvers(solvers_to_test, S):
                 assert_array_almost_equal(Lambdas[solvers_to_test[i]],
                                         Lambdas[solvers_to_test[j]])
 
-def _test_all_null_solvers(solvers_to_test, S):
+def _test_all_null_solvers(solvers_to_test, S, solver_kwds_dict={}):
     for largest in [True, False]:
         Null_Space = {};
         for eigen_solver in solvers_to_test:
-            nullspace, errors = null_space(S, k = 3, eigen_solver = eigen_solver)
+            if eigen_solver in solver_kwds_dict.keys():
+                solver_kwds = solver_kwds_dict[eigen_solver]
+            else:
+                solver_kwds = None
+            nullspace, errors = null_space(S, k = 3, eigen_solver = eigen_solver, solver_kwds=solver_kwds)
             Null_Space[eigen_solver] = nullspace
         # pairwise comparison:
         for i in range(len(solvers_to_test)):
@@ -70,12 +84,26 @@ def test_null_space_sym_agreement():
     solvers_to_test = NON_SPD_SOLVERS
     solvers_to_test = NON_SPD_SOLVERS
     rng = np.random.RandomState(0)
-    X = rng.uniform(size=(10, 10))
+    X = rng.uniform(size=(16, 16))
     S = X + X.T
     _test_all_null_solvers(solvers_to_test, S)
 
 def test_null_space_non_sym_agreement():
     solvers_to_test = NON_SPD_SOLVERS
     rng = np.random.RandomState(0)
-    S = rng.uniform(size=(10, 10))
+    S = rng.uniform(size=(16, 16))
     _test_all_null_solvers(solvers_to_test, S)
+
+def test_base_eigen_solver_kwds():
+    solvers_to_test = SPD_SOLVERS
+    rng = np.random.RandomState(0)
+    X = rng.uniform(size=(100, 40))
+    S = np.dot(X.T, X)
+    _test_all_solvers(solvers_to_test, S, solver_kwds_dict=SOLVER_KWDS_DICT)
+
+def test_null_eigen_solver_kwds():
+    solvers_to_test = SPD_SOLVERS
+    rng = np.random.RandomState(0)
+    X = rng.uniform(size=(100, 40))
+    S = np.dot(X.T, X)
+    _test_all_null_solvers(solvers_to_test, S, solver_kwds_dict=SOLVER_KWDS_DICT)
