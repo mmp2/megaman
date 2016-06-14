@@ -303,7 +303,7 @@ Here's an example of using it with the isomap embedding.
 Note that we use equal aspect ratio otherwise it is hard
 to determine what the actual distortion is.
 '''
-from covar_plotter import plot_cov_ellipse
+from megaman.utils.covar_plotter import plot_cov_ellipse
 
 n_plot = 50
 rng = np.random.RandomState(8675309)

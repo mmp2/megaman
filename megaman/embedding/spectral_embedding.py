@@ -77,7 +77,7 @@ def _graph_is_connected(graph):
 
 def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                        random_state=None, drop_first=True,
-                       diffusion_maps = False, solver_kwds = None):
+                       diffusion_maps = False, diffusion_time =0, solver_kwds = None):
     """
     Project the sample on the first eigen vectors of the graph Laplacian.
 
@@ -129,6 +129,9 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
         version by re-scaling the embedding by the eigenvalues.
+        NOTE: for the correct diffusion maps embedding of Coifman et. al.
+        use laplacian_type = 'geometric' or 'renormalized' and provide the 
+        renormalization_exponent value . 
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
@@ -225,11 +228,26 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     if re_normalize:
         diffusion_map /= np.sqrt(w[:, np.newaxis]) # put back on original Laplacian space
         diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
+    # sort the eigenvalues 
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
     if diffusion_maps:
-        diffusion_map = diffusion_map * np.sqrt(np.abs(lambdas))
+        # Check that diffusion maps is using the correct laplacian, warn otherwise
+        if lapl_type not in ['geometric', 'renormalized']:
+            warnings.warn("for correct diffusion maps embedding use laplacian type 'geometric' or 'renormalized'.")
+        # Step 5 of diffusion maps:
+        vectors = diffusion_map
+        psi = vectors/vectors[:,[0]]
+        diffusion_times = diffusion_time
+        if diffusion_time == 0:
+            lambdas = np.abs(lambdas)
+            diffusion_times = np.exp(1. -  np.log(1 - lambdas[1:])/np.log(lambdas[1:]))
+            lambdas = lambdas / (1 - lambdas)
+        else:
+            lambdas = np.abs(lambdas)
+            lambdas = lambdas ** float(diffusion_time)
+        diffusion_map = psi * lambdas
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
     else:
@@ -305,7 +323,7 @@ class SpectralEmbedding(BaseEmbedding):
     """
     def __init__(self, n_components=2, radius=None, geom=None,
                  eigen_solver='auto', random_state=None,
-                 drop_first=True, diffusion_maps=False, solver_kwds=None):
+                 drop_first=True, diffusion_maps=False, diffusion_time=0,solver_kwds=None):
         self.n_components = n_components
         self.radius = radius
         self.geom = geom
@@ -313,6 +331,7 @@ class SpectralEmbedding(BaseEmbedding):
         self.random_state = random_state
         self.drop_first = drop_first
         self.diffusion_maps = diffusion_maps
+        self.diffusion_time = diffusion_time
         self.solver_kwds = solver_kwds
 
     def fit(self, X, y=None, input_type='data'):
@@ -346,6 +365,7 @@ class SpectralEmbedding(BaseEmbedding):
                                              random_state = random_state,
                                              drop_first = self.drop_first,
                                              diffusion_maps = self.diffusion_maps,
+                                             diffusion_time = self.diffusion_time,
                                              solver_kwds = self.solver_kwds)
         self.affinity_matrix_ = self.geom_.affinity_matrix
         self.laplacian_matrix_ = self.geom_.laplacian_matrix
