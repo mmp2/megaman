@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>megaman.embedding.locally_linear &mdash; megaman 0.1 documentation</title>
+    <title>megaman.embedding.locally_linear &mdash; megaman 0.2.dev0 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.1',
+        VERSION:     '0.2.dev0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,14 +23,16 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.1 documentation" href="../../../index.html" />
+    <link rel="top" title="megaman 0.2.dev0 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" />
    
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">  
+  <body role="document">
+  
 
     <div class="document">
       <div class="documentwrapper">
@@ -96,8 +98,9 @@
     <span class="k">return</span> <span class="n">W</span></div>
 
 
-<div class="viewcode-block" id="locally_linear_embedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.locally_linear_embedding">[docs]</a><span class="k">def</span> <span class="nf">locally_linear_embedding</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-                            <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>  <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="locally_linear_embedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.locally_linear_embedding">[docs]</a><span class="k">def</span> <span class="nf">locally_linear_embedding</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+                            <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>  <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                            <span class="n">solver_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Perform a Locally Linear Embedding analysis on the data.</span>
 
@@ -127,14 +130,10 @@
 <span class="sd">        &#39;amg&#39; :</span>
 <span class="sd">            AMG requires pyamg to be installed. It can be faster on very large,</span>
 <span class="sd">            sparse problems, but may also lead to instabilities.</span>
-<span class="sd">    tol : float, optional</span>
-<span class="sd">        Tolerance for &#39;arpack&#39; method</span>
-<span class="sd">        Not used if eigen_solver==&#39;dense&#39;.</span>
-<span class="sd">    max_iter : integer</span>
-<span class="sd">        maximum number of iterations for the arpack solver.</span>
 <span class="sd">    random_state : numpy.RandomState or int, optional</span>
 <span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
 <span class="sd">        iterations.  Defaults to numpy.random.</span>
+<span class="sd">    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -157,9 +156,9 @@
     <span class="n">W</span> <span class="o">=</span> <span class="n">barycenter_graph</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="n">reg</span><span class="p">)</span>
     <span class="c1"># we&#39;ll compute M = (I-W)&#39;(I-W)</span>
     <span class="c1"># depending on the solver, we&#39;ll do this differently</span>
-    <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span>
-                                      <span class="n">size</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                      <span class="n">nvec</span><span class="o">=</span><span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="p">,</span>
+                                                   <span class="n">size</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                   <span class="n">nvec</span><span class="o">=</span><span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">!=</span> <span class="s1">&#39;dense&#39;</span><span class="p">:</span>
         <span class="n">M</span> <span class="o">=</span> <span class="n">eye</span><span class="p">(</span><span class="o">*</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="n">W</span><span class="o">.</span><span class="n">format</span><span class="p">)</span> <span class="o">-</span> <span class="n">W</span>
         <span class="n">M</span> <span class="o">=</span> <span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
@@ -167,7 +166,7 @@
         <span class="n">M</span> <span class="o">=</span> <span class="p">(</span><span class="n">W</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">W</span> <span class="o">-</span> <span class="n">W</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
         <span class="n">M</span><span class="o">.</span><span class="n">flat</span><span class="p">[::</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># W = W - I = W - I</span>
     <span class="k">return</span> <span class="n">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="n">eigen_solver</span><span class="p">,</span>
-                      <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span></div>
+                      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="LocallyLinearEmbedding"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.LocallyLinearEmbedding">[docs]</a><span class="k">class</span> <span class="nc">LocallyLinearEmbedding</span><span class="p">(</span><span class="n">BaseEmbedding</span><span class="p">):</span>
@@ -208,14 +207,10 @@
 <span class="sd">    random_state : numpy.RandomState or int, optional</span>
 <span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
 <span class="sd">        iterations.  Defaults to numpy.random.RandomState</span>
-<span class="sd">    tol : float, optional</span>
-<span class="sd">        Tolerance for &#39;arpack&#39; method</span>
-<span class="sd">        Not used if eigen_solver==&#39;dense&#39;.</span>
-<span class="sd">    max_iter : integer, optional</span>
-<span class="sd">        maximum number of iterations for the arpack solver.</span>
 <span class="sd">    reg : float, optional</span>
 <span class="sd">        regularization constant, multiplies the trace of the local covariance</span>
 <span class="sd">        matrix of the distances.</span>
+<span class="sd">    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -224,15 +219,14 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">reg</span><span class="o">=</span><span class="mf">1e3</span><span class="p">):</span>
+                 <span class="n">reg</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span><span class="n">solver_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver_kwds</span> <span class="o">=</span> <span class="n">solver_kwds</span>
 
 <div class="viewcode-block" id="LocallyLinearEmbedding.fit"><a class="viewcode-back" href="../../../embedding/API.html#megaman.embedding.locally_linear.LocallyLinearEmbedding.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">input_type</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the model from data in X.</span>
@@ -262,10 +256,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">embedding_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_</span> <span class="o">=</span> <span class="n">locally_linear_embedding</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom_</span><span class="p">,</span>
                                                                 <span class="n">n_components</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
                                                                 <span class="n">eigen_solver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eigen_solver</span><span class="p">,</span>
-                                                                <span class="n">tol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
                                                                 <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
                                                                 <span class="n">reg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reg</span><span class="p">,</span>
-                                                                <span class="n">max_iter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+                                                                <span class="n">solver_kwds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">solver_kwds</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div></div>
 </pre></div>
 
@@ -303,8 +296,8 @@
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
       
     </div>
 

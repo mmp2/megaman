@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>megaman.utils.eigendecomp &mdash; megaman 0.1 documentation</title>
+    <title>megaman.utils.eigendecomp &mdash; megaman 0.2.dev0 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.1',
+        VERSION:     '0.2.dev0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,14 +23,16 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.1 documentation" href="../../../index.html" />
+    <link rel="top" title="megaman 0.2.dev0 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" />
    
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">  
+  <body role="document">
+  
 
     <div class="document">
       <div class="documentwrapper">
@@ -51,6 +53,7 @@
 
 <span class="n">EIGEN_SOLVERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="s1">&#39;dense&#39;</span><span class="p">,</span> <span class="s1">&#39;arpack&#39;</span><span class="p">,</span> <span class="s1">&#39;lobpcg&#39;</span><span class="p">]</span>
 <span class="n">BAD_EIGEN_SOLVERS</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">AMG_KWDS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;strength&#39;</span><span class="p">,</span> <span class="s1">&#39;aggregate&#39;</span><span class="p">,</span> <span class="s1">&#39;smooth&#39;</span><span class="p">,</span> <span class="s1">&#39;max_levels&#39;</span><span class="p">,</span> <span class="s1">&#39;max_coarse&#39;</span><span class="p">]</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyamg</span> <span class="kn">import</span> <span class="n">smoothed_aggregation_solver</span>
@@ -63,7 +66,7 @@
 <span class="s2">    install pyamg or use another method.&quot;&quot;&quot;</span>
 
 
-<div class="viewcode-block" id="check_eigen_solver"><a class="viewcode-back" href="../../../utils/API.html#megaman.utils.eigendecomp.check_eigen_solver">[docs]</a><span class="k">def</span> <span class="nf">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="check_eigen_solver"><a class="viewcode-back" href="../../../utils/API.html#megaman.utils.eigendecomp.check_eigen_solver">[docs]</a><span class="k">def</span> <span class="nf">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">nvec</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check that the selected eigensolver is valid</span>
 
 <span class="sd">    Parameters</span>
@@ -93,17 +96,21 @@
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;lobpcg does not perform well with small matrices or &quot;</span>
                           <span class="s2">&quot;with large numbers of vectors. Switching to &#39;dense&#39;&quot;</span><span class="p">)</span>
             <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+            <span class="n">solver_kwds</span> <span class="o">=</span> <span class="bp">None</span>
 
         <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">200</span> <span class="ow">and</span> <span class="n">nvec</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">PYAMG_LOADED</span><span class="p">:</span>
                     <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;amg&#39;</span>
+                    <span class="n">solver_kwds</span> <span class="o">=</span> <span class="bp">None</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;arpack&#39;</span>
+                    <span class="n">solver_kwds</span> <span class="o">=</span> <span class="bp">None</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">eigen_solver</span> <span class="o">=</span> <span class="s1">&#39;dense&#39;</span>
+                <span class="n">solver_kwds</span> <span class="o">=</span> <span class="bp">None</span>
 
-    <span class="k">return</span> <span class="n">eigen_solver</span></div>
+    <span class="k">return</span> <span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span></div>
 
 
 <span class="k">def</span> <span class="nf">_is_symmetric</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-8</span><span class="p">):</span>
@@ -115,8 +122,8 @@
 
 
 <div class="viewcode-block" id="eigen_decomposition"><a class="viewcode-back" href="../../../utils/API.html#megaman.utils.eigendecomp.eigen_decomposition">[docs]</a><span class="k">def</span> <span class="nf">eigen_decomposition</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-                        <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">eigen_tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-                        <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                        <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                        <span class="n">drop_first</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to compute the eigendecomposition of a square matrix.</span>
 
@@ -150,8 +157,7 @@
 <span class="sd">        A pseudo random number generator used for the initialization of the</span>
 <span class="sd">        lobpcg eigen vectors decomposition when eigen_solver == &#39;amg&#39;.</span>
 <span class="sd">        By default, arpack is used.</span>
-<span class="sd">    eigen_tol : float, optional, default=0.0</span>
-<span class="sd">        Stopping criterion for eigendecomposition when using arpack eigen_solver</span>
+<span class="sd">    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -161,9 +167,9 @@
     <span class="k">if</span> <span class="n">drop_first</span><span class="p">:</span>
         <span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span> <span class="o">+</span> <span class="mi">1</span>
 
-    <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span>
-                                      <span class="n">size</span><span class="o">=</span><span class="n">n_nodes</span><span class="p">,</span>
-                                      <span class="n">nvec</span><span class="o">=</span><span class="n">n_components</span><span class="p">)</span>
+    <span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="p">,</span>
+                                                   <span class="n">size</span><span class="o">=</span><span class="n">n_nodes</span><span class="p">,</span>
+                                                   <span class="n">nvec</span><span class="o">=</span><span class="n">n_components</span><span class="p">)</span>
     <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
     <span class="c1"># Convert G to best type for eigendecomposition</span>
@@ -185,27 +191,39 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;SM&#39;</span>
             <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigsh</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span>
-                                           <span class="n">tol</span><span class="o">=</span><span class="n">eigen_tol</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="n">v0</span><span class="p">)</span>
+                                           <span class="n">v0</span><span class="o">=</span><span class="n">v0</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
                 <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;LR&#39;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">which</span> <span class="o">=</span> <span class="s1">&#39;SR&#39;</span>
-            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigs</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span><span class="n">tol</span><span class="o">=</span><span class="n">eigen_tol</span><span class="p">)</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigs</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">n_components</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="n">which</span><span class="p">,</span>
+                                          <span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">lambdas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
         <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">diffusion_map</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;amg&#39;</span><span class="p">:</span>
+        <span class="c1"># separate amg &amp; lobpcg keywords:</span>
+        <span class="k">if</span> <span class="n">solver_kwds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">amg_kwds</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">lobpcg_kwds</span> <span class="o">=</span> <span class="n">solver_kwds</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">kwd</span> <span class="ow">in</span> <span class="n">AMG_KWDS</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">kwd</span> <span class="ow">in</span> <span class="n">solver_kwds</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">amg_kwds</span><span class="p">[</span><span class="n">kwd</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver_kwds</span><span class="p">[</span><span class="n">kwd</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">lobpcg_kwds</span><span class="p">[</span><span class="n">kwd</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">amg_kwds</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">lobpcg_kwds</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_symmetric</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;lobpcg requires symmetric matrices.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;AMG works better for sparse matrices&quot;</span><span class="p">)</span>
         <span class="c1"># Use AMG to get a preconditioner and speed up the eigenvalue problem.</span>
-        <span class="n">ml</span> <span class="o">=</span> <span class="n">smoothed_aggregation_solver</span><span class="p">(</span><span class="n">check_array</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;csr&#39;</span><span class="p">]))</span>
+        <span class="n">ml</span> <span class="o">=</span> <span class="n">smoothed_aggregation_solver</span><span class="p">(</span><span class="n">check_array</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">accept_sparse</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;csr&#39;</span><span class="p">]),</span><span class="o">**</span><span class="p">(</span><span class="n">amg_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">M</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">aspreconditioner</span><span class="p">()</span>
         <span class="n">n_find</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_components</span><span class="p">)</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="n">n_find</span><span class="p">)</span>
         <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">diagonal</span><span class="p">())</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">)</span>
+        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">lobpcg_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">sort_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
             <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
@@ -220,7 +238,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;lobpcg requires symmetric matrices.&quot;</span><span class="p">)</span>
         <span class="n">n_find</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">n_components</span><span class="p">)</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">,</span> <span class="n">n_find</span><span class="p">)</span>
-        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">)</span>
+        <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">lobpcg</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="n">largest</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">sort_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">largest</span><span class="p">:</span>
             <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[</span><span class="n">sort_order</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
@@ -234,9 +252,9 @@
         <span class="k">if</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">G</span><span class="p">):</span>
             <span class="n">G</span> <span class="o">=</span> <span class="n">G</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">is_symmetric</span><span class="p">:</span>
-            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">G</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eig</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+            <span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">eig</span><span class="p">(</span><span class="n">G</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="k">if</span> <span class="n">largest</span><span class="p">:</span><span class="c1"># eigh always returns eigenvalues in ascending order</span>
             <span class="n">lambdas</span> <span class="o">=</span> <span class="n">lambdas</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># reverse order the e-values</span>
             <span class="n">diffusion_map</span> <span class="o">=</span> <span class="n">diffusion_map</span><span class="p">[:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1"># reverse order the vectors</span>
@@ -245,8 +263,8 @@
     <span class="k">return</span> <span class="p">(</span><span class="n">lambdas</span><span class="p">,</span> <span class="n">diffusion_map</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="null_space"><a class="viewcode-back" href="../../../utils/API.html#megaman.utils.eigendecomp.null_space">[docs]</a><span class="k">def</span> <span class="nf">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;arpack&#39;</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1E-6</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-               <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<div class="viewcode-block" id="null_space"><a class="viewcode-back" href="../../../utils/API.html#megaman.utils.eigendecomp.null_space">[docs]</a><span class="k">def</span> <span class="nf">null_space</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">k_skip</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">eigen_solver</span><span class="o">=</span><span class="s1">&#39;arpack&#39;</span><span class="p">,</span>
+               <span class="n">random_state</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues</span>
 
@@ -276,23 +294,36 @@
 <span class="sd">        &#39;amg&#39; :</span>
 <span class="sd">            AMG requires pyamg to be installed. It can be faster on very large,</span>
 <span class="sd">            sparse problems, but may also lead to instabilities.</span>
-<span class="sd">    tol : float, optional</span>
-<span class="sd">        Tolerance for &#39;arpack&#39; method.</span>
-<span class="sd">        Not used if eigen_solver==&#39;dense&#39;.</span>
-<span class="sd">    max_iter : maximum number of iterations for &#39;arpack&#39; method</span>
-<span class="sd">        not used if eigen_solver==&#39;dense&#39;</span>
 <span class="sd">    random_state: numpy.RandomState or int, optional</span>
 <span class="sd">        The generator or seed used to determine the starting vector for arpack</span>
 <span class="sd">        iterations.  Defaults to numpy.random.</span>
+<span class="sd">    solver_kwds : any additional keyword arguments to pass to the selected eigen_solver</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    null_space : estimated k vectors of the null space</span>
 <span class="sd">    error : estimated error (sum of eigenvalues)</span>
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    dense solver key words: see</span>
+<span class="sd">        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html</span>
+<span class="sd">        for symmetric problems and </span>
+<span class="sd">        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig</span>
+<span class="sd">        for non symmetric problems.</span>
+<span class="sd">    arpack sovler key words: see</span>
+<span class="sd">        http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html</span>
+<span class="sd">        for symmetric problems and http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs</span>
+<span class="sd">        for non symmetric problems.</span>
+<span class="sd">    lobpcg solver keywords: see</span>
+<span class="sd">        http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lobpcg.html</span>
+<span class="sd">    amg solver keywords: see</span>
+<span class="sd">        http://pyamg.googlecode.com/svn/branches/1.0.x/Docs/html/pyamg.aggregation.html#module-pyamg.aggregation.aggregation</span>
+<span class="sd">        (Note amg solver uses lobpcg and also accepts lobpcg keywords)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span>
-                                      <span class="n">size</span><span class="o">=</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                      <span class="n">nvec</span><span class="o">=</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span><span class="p">)</span>
+    <span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span> <span class="o">=</span> <span class="n">check_eigen_solver</span><span class="p">(</span><span class="n">eigen_solver</span><span class="p">,</span> <span class="n">solver_kwds</span><span class="p">,</span>
+                                                   <span class="n">size</span><span class="o">=</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                   <span class="n">nvec</span><span class="o">=</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span><span class="p">)</span>
     <span class="n">random_state</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;arpack&#39;</span><span class="p">:</span>
@@ -300,8 +331,7 @@
         <span class="n">v0</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigsh</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-                                                <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">max_iter</span><span class="p">,</span>
-                                                <span class="n">v0</span><span class="o">=</span><span class="n">v0</span><span class="p">)</span>
+                                                <span class="n">v0</span><span class="o">=</span><span class="n">v0</span><span class="p">,</span><span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">msg</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Error in determining null-space with ARPACK. &quot;</span>
                              <span class="s2">&quot;Error message: &#39;</span><span class="si">%s</span><span class="s2">&#39;. &quot;</span>
@@ -315,7 +345,8 @@
     <span class="k">elif</span> <span class="n">eigen_solver</span> <span class="o">==</span> <span class="s1">&#39;dense&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s1">&#39;toarray&#39;</span><span class="p">):</span>
             <span class="n">M</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
-        <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eigvals</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="o">+</span><span class="n">k_skip</span><span class="p">),</span><span class="n">overwrite_a</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">eigvals</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="o">+</span><span class="n">k_skip</span><span class="p">),</span><span class="n">overwrite_a</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                           <span class="o">**</span><span class="p">(</span><span class="n">solver_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
         <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_vectors</span><span class="p">[:,</span> <span class="n">index</span><span class="p">]</span>
         <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
@@ -331,9 +362,10 @@
             <span class="n">n_components</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span>
                                                               <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span><span class="p">,</span>
-                                                              <span class="n">drop_first</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                                              <span class="n">largest</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                                              <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+                                                              <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+                                                              <span class="n">largest</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+                                                              <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                                                              <span class="n">solver_kwds</span><span class="o">=</span><span class="n">solver_kwds</span><span class="p">)</span>
             <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span> <span class="o">-</span><span class="mi">1</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
             <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
@@ -344,10 +376,11 @@
             <span class="n">M</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">sparse</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">M</span>
             <span class="n">n_components</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="n">k_skip</span> <span class="o">+</span> <span class="mi">10</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">eigen_values</span><span class="p">,</span> <span class="n">eigen_vectors</span> <span class="o">=</span> <span class="n">eigen_decomposition</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span>
-                                                              <span class="n">eigen_solver</span><span class="o">=</span><span class="n">eigen_solver</span><span class="p">,</span>
-                                                              <span class="n">drop_first</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                                              <span class="n">largest</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                                                              <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+                                                              <span class="n">eigen_solver</span> <span class="o">=</span> <span class="n">eigen_solver</span><span class="p">,</span>
+                                                              <span class="n">drop_first</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+                                                              <span class="n">largest</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span>
+                                                              <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                                                              <span class="n">solver_kwds</span><span class="o">=</span><span class="n">solver_kwds</span><span class="p">)</span>
             <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span> <span class="o">-</span> <span class="mi">2</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">eigen_values</span><span class="p">))</span>
             <span class="n">eigen_values</span> <span class="o">=</span> <span class="n">eigen_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
@@ -391,8 +424,8 @@
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
       
     </div>
 

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>megaman.geometry.geometry &mdash; megaman 0.1 documentation</title>
+    <title>megaman.geometry.geometry &mdash; megaman 0.2.dev0 documentation</title>
     
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.1',
+        VERSION:     '0.2.dev0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,14 +23,16 @@
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.1 documentation" href="../../../index.html" />
+    <link rel="top" title="megaman 0.2.dev0 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" />
    
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">  
+  <body role="document">
+  
 
     <div class="document">
       <div class="documentwrapper">
@@ -117,16 +119,32 @@
 <span class="sd">        see laplacian.py docmuentation for arguments for each method.</span>
 <span class="sd">        If new kwargs are passed to compute_laplacian_matrix then this</span>
 <span class="sd">        dictionary will be updated.</span>
+<span class="sd">    **kwargs :</span>
+<span class="sd">        additional arguments will be parsed and used to override values in</span>
+<span class="sd">        the above dictionaries. For example:</span>
+<span class="sd">        - `affinity_radius` will override `affinity_kwds[&#39;radius&#39;]`</span>
+<span class="sd">        - `adjacency_n_neighbors` will override `adjacency_kwds[&#39;n_neighbors&#39;]`</span>
+<span class="sd">        etc.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">adjacency_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
                  <span class="n">affinity_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">affinity_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
-                 <span class="n">laplacian_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span><span class="n">laplacian_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+                 <span class="n">laplacian_method</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span><span class="n">laplacian_kwds</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_method</span> <span class="o">=</span> <span class="n">adjacency_method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">adjacency_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">affinity_method</span> <span class="o">=</span> <span class="n">affinity_method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">affinity_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_method</span> <span class="o">=</span> <span class="n">laplacian_method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">laplacian_kwds</span> <span class="ow">or</span> <span class="p">{}))</span>
+
+        <span class="c1"># map extra keywords: e.g. affinity_radius -&gt; affinity_kwds[&#39;radius&#39;]</span>
+        <span class="n">dicts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">adjaceny</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">adjacency_kwds</span><span class="p">,</span>
+                     <span class="n">affinity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">affinity_kwds</span><span class="p">,</span>
+                     <span class="n">laplacian</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">laplacian_kwds</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">keysplit</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keysplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dicts</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;key `{0}` not valid&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="n">dicts</span><span class="p">[</span><span class="n">keysplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keysplit</span><span class="p">[</span><span class="mi">1</span><span class="p">:])]</span> <span class="o">=</span> <span class="n">val</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="bp">None</span>
@@ -374,8 +392,8 @@
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
       
     </div>
 

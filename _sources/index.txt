@@ -10,8 +10,8 @@
    :target: /megaman/images/word2vec
    
 
-megaman: Scalable manifold learning
-=================================
+megaman: Manifold Learning for Millions of Points
+=================================================
 
 megaman is a scalable manifold learning package implemented in
 python. It has a front-end API designed to be familiar
@@ -25,6 +25,12 @@ steps and indices to allow for fast re-computation with new parameters.
 
 For issues & contributions, see the source repository
 `on github <http://github.com/mmp2/megaman/>`_.
+
+For example notebooks see the index 
+`on github <https://github.com/mmp2/megaman/blob/master/examples/examples_index.ipynb>`_.
+
+You can also find our 
+`arXiv paper at <http://arxiv.org/abs/1603.02763>`_.
 
 Documentation
 =============

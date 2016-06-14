@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; megaman 0.1 documentation</title>
+    <title>API Documentation &mdash; megaman 0.2.dev0 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.1',
+        VERSION:     '0.2.dev0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,16 +23,18 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.1 documentation" href="../index.html" />
+    <link rel="top" title="megaman 0.2.dev0 documentation" href="../index.html" />
     <link rel="up" title="Utility tools for megaman (megaman.utils)" href="index.html" />
     <link rel="next" title="Figures from Megaman" href="../images/index.html" />
     <link rel="prev" title="Utility tools for megaman (megaman.utils)" href="index.html" />
    
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">  
+  <body role="document">
+  
 
     <div class="document">
       <div class="documentwrapper">
@@ -43,7 +45,7 @@
 <span id="api-documentation"></span><h1>API Documentation<a class="headerlink" href="#module-megaman.utils.eigendecomp" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="megaman.utils.eigendecomp.check_eigen_solver">
-<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">check_eigen_solver</code><span class="sig-paren">(</span><em>eigen_solver</em>, <em>size=None</em>, <em>nvec=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#check_eigen_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.check_eigen_solver" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">check_eigen_solver</code><span class="sig-paren">(</span><em>eigen_solver</em>, <em>solver_kwds</em>, <em>size=None</em>, <em>nvec=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#check_eigen_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.check_eigen_solver" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that the selected eigensolver is valid</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -73,7 +75,7 @@ eigen_solver == &#8216;auto&#8217; and <cite>size</cite> is specified.</p>
 
 <dl class="function">
 <dt id="megaman.utils.eigendecomp.eigen_decomposition">
-<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">eigen_decomposition</code><span class="sig-paren">(</span><em>G</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=0.0</em>, <em>drop_first=True</em>, <em>largest=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#eigen_decomposition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.eigen_decomposition" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">eigen_decomposition</code><span class="sig-paren">(</span><em>G</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>drop_first=True</em>, <em>largest=True</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#eigen_decomposition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.eigen_decomposition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Function to compute the eigendecomposition of a square matrix.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -122,10 +124,7 @@ to instabilities.</p>
 lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.
 By default, arpack is used.</p>
 </div></blockquote>
-<p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
-<blockquote>
-<div><p>Stopping criterion for eigendecomposition when using arpack eigen_solver</p>
-</div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>lambdas, diffusion_map</strong> : eigenvalues, eigenvectors</p>
@@ -137,7 +136,7 @@ By default, arpack is used.</p>
 
 <dl class="function">
 <dt id="megaman.utils.eigendecomp.null_space">
-<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">null_space</code><span class="sig-paren">(</span><em>M</em>, <em>k</em>, <em>k_skip=1</em>, <em>eigen_solver='arpack'</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#null_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.null_space" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.utils.eigendecomp.</code><code class="descname">null_space</code><span class="sig-paren">(</span><em>M</em>, <em>k</em>, <em>k_skip=1</em>, <em>eigen_solver='arpack'</em>, <em>random_state=None</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/utils/eigendecomp.html#null_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.utils.eigendecomp.null_space" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the null space of a matrix M: eigenvectors associated with 0 eigenvalues</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -182,20 +181,12 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
-<p><strong>tol</strong> : float, optional</p>
-<blockquote>
-<div><p>Tolerance for &#8216;arpack&#8217; method.
-Not used if eigen_solver==&#8217;dense&#8217;.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : maximum number of iterations for &#8216;arpack&#8217; method</p>
-<blockquote>
-<div><p>not used if eigen_solver==&#8217;dense&#8217;</p>
-</div></blockquote>
 <p><strong>random_state: numpy.RandomState or int, optional</strong></p>
 <blockquote>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.</p>
 </div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>null_space</strong> : estimated k vectors of the null space</p>
@@ -204,6 +195,23 @@ iterations.  Defaults to numpy.random.</p>
 </tr>
 </tbody>
 </table>
+<p class="rubric">Notes</p>
+<dl class="docutils">
+<dt>dense solver key words: see</dt>
+<dd><a class="reference external" href="http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html">http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html</a>
+for symmetric problems and 
+<a class="reference external" href="http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig">http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig</a>
+for non symmetric problems.</dd>
+<dt>arpack sovler key words: see</dt>
+<dd><a class="reference external" href="http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html">http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html</a>
+for symmetric problems and <a class="reference external" href="http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs">http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs</a>
+for non symmetric problems.</dd>
+<dt>lobpcg solver keywords: see</dt>
+<dd><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lobpcg.html">http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.lobpcg.html</a></dd>
+<dt>amg solver keywords: see</dt>
+<dd><a class="reference external" href="http://pyamg.googlecode.com/svn/branches/1.0.x/Docs/html/pyamg.aggregation.html#module-pyamg.aggregation.aggregation">http://pyamg.googlecode.com/svn/branches/1.0.x/Docs/html/pyamg.aggregation.html#module-pyamg.aggregation.aggregation</a>
+(Note amg solver uses lobpcg and also accepts lobpcg keywords)</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -252,8 +260,8 @@ iterations.  Defaults to numpy.random.</p>
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
       
       |
       <a href="../_sources/utils/API.txt"

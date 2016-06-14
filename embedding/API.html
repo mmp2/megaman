@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; megaman 0.1 documentation</title>
+    <title>API Documentation &mdash; megaman 0.2.dev0 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.1',
+        VERSION:     '0.2.dev0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,16 +23,18 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.1 documentation" href="../index.html" />
+    <link rel="top" title="megaman 0.2.dev0 documentation" href="../index.html" />
     <link rel="up" title="Tools for Embedding (megaman.embedding)" href="index.html" />
     <link rel="next" title="Utility tools for megaman (megaman.utils)" href="../utils/index.html" />
     <link rel="prev" title="Spectral Embedding" href="spectral_embedding.html" />
    
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">  
+  <body role="document">
+  
 
     <div class="document">
       <div class="documentwrapper">
@@ -44,7 +46,7 @@
 <p>Spectral Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.spectral_embedding.SpectralEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">SpectralEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>diffusion_time=0</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#SpectralEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.SpectralEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spectral embedding for non-linear dimensionality reduction.</p>
 <p>Forms an affinity matrix given by the specified function and
 applies spectral decomposition to the corresponding graph laplacian.
@@ -104,11 +106,6 @@ sparse problems, but may also lead to instabilities.</p>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
-<p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
-<blockquote>
-<div><p>Stopping criterion for eigendecomposition of the Laplacian matrix
-when using arpack eigen_solver.</p>
-</div></blockquote>
 <p><strong>drop_first</strong> : bool, optional, default=True</p>
 <blockquote>
 <div><p>Whether to drop the first eigenvector. For spectral embedding, this
@@ -117,9 +114,10 @@ connected graph, but for spectral clustering, this should be kept as
 False to retain the first eigenvector.</p>
 </div></blockquote>
 <p><strong>diffusion_map</strong> : boolean, optional. Whether to return the diffusion map</p>
-<blockquote class="last">
+<blockquote>
 <div><p>version by re-scaling the embedding by the eigenvalues.</p>
 </div></blockquote>
+<p class="last"><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 </tbody>
@@ -188,7 +186,7 @@ computed from samples.</p>
 
 <dl class="function">
 <dt id="megaman.embedding.spectral_embedding.spectral_embedding">
-<code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">spectral_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=0.0</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#spectral_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.spectral_embedding" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">spectral_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>diffusion_time=0</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#spectral_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.spectral_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Project the sample on the first eigen vectors of the graph Laplacian.</p>
 <p>The adjacency matrix is used to compute a normalized graph Laplacian
 whose spectrum (especially the eigen vectors associated to the
@@ -243,11 +241,6 @@ sparse problems, but may also lead to instabilities.</p>
 lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.
 By default, arpack is used.</p>
 </div></blockquote>
-<p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
-<blockquote>
-<div><p>Stopping criterion for eigendecomposition of the Laplacian matrix
-when using arpack eigen_solver.</p>
-</div></blockquote>
 <p><strong>drop_first</strong> : bool, optional, default=True</p>
 <blockquote>
 <div><p>Whether to drop the first eigenvector. For spectral embedding, this
@@ -257,8 +250,12 @@ False to retain the first eigenvector.</p>
 </div></blockquote>
 <p><strong>diffusion_map</strong> : boolean, optional. Whether to return the diffusion map</p>
 <blockquote>
-<div><p>version by re-scaling the embedding by the eigenvalues.</p>
+<div><p>version by re-scaling the embedding by the eigenvalues.
+NOTE: for the correct diffusion maps embedding of Coifman et. al.
+use laplacian_type = &#8216;geometric&#8217; or &#8216;renormalized&#8217; and provide the 
+renormalization_exponent value .</p>
 </div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>embedding</strong> : array, shape=(n_samples, n_components)</p>
@@ -286,7 +283,7 @@ Andrew V. Knyazev
 <span class="target" id="module-megaman.embedding.isomap"></span><p>ISOMAP</p>
 <dl class="class">
 <dt id="megaman.embedding.isomap.Isomap">
-<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.isomap.</code><code class="descname">Isomap</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>path_method='auto'</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#Isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.Isomap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Isomap Embedding</p>
 <p>Non-linear dimensionality reduction through Isometric Mapping</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -343,12 +340,12 @@ sparse problems, but may also lead to instabilities.</p>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
-<p><strong>eigen_tol</strong> : float, optional. Tolerance for &#8216;arpack&#8217; solver.</p>
 <p><strong>path_method</strong> : string, optionl. method for computing graph shortest path.</p>
-<blockquote class="last">
+<blockquote>
 <div><p>One of [&#8216;auto&#8217;, &#8216;D&#8217;, &#8216;FW&#8217;, &#8216;BF&#8217;, &#8216;J&#8217;].
 See <cite>scipy.sparse.csgraph.shortest_path</cite> for more information.</p>
 </div></blockquote>
+<p class="last"><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 </tbody>
@@ -418,7 +415,7 @@ but may also lead to instabilities.</p>
 
 <dl class="function">
 <dt id="megaman.embedding.isomap.isomap">
-<code class="descclassname">megaman.embedding.isomap.</code><code class="descname">isomap</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>eigen_tol=1e-12</em>, <em>path_method='auto'</em>, <em>distance_matrix=None</em>, <em>graph_distance_matrix=None</em>, <em>centered_matrix=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.isomap" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.isomap.</code><code class="descname">isomap</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>path_method='auto'</em>, <em>distance_matrix=None</em>, <em>graph_distance_matrix=None</em>, <em>centered_matrix=None</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/isomap.html#isomap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.isomap.isomap" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -461,11 +458,6 @@ sparse problems, but may also lead to instabilities.</p>
 lobpcg eigen vectors decomposition when eigen_solver == &#8216;amg&#8217;.
 By default, arpack is used.</p>
 </div></blockquote>
-<p><strong>eigen_tol</strong> : float, optional, default=0.0</p>
-<blockquote>
-<div><p>Stopping criterion for eigendecomposition of the Laplacian matrix
-when using arpack eigen_solver.</p>
-</div></blockquote>
 <p><strong>path_method</strong> : string, method for computing graph shortest path. One of :</p>
 <blockquote>
 <div><p>&#8216;auto&#8217;, &#8216;D&#8217;, &#8216;FW&#8217;, &#8216;BF&#8217;, &#8216;J&#8217;. See scipy.sparse.csgraph.shortest_path
@@ -483,6 +475,7 @@ for more information.</p>
 <blockquote>
 <div><p>graph_distance_matrix</p>
 </div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>embedding</strong> : array, shape=(n_samples, n_components)</p>
@@ -498,7 +491,7 @@ for more information.</p>
 <span class="target" id="module-megaman.embedding.locally_linear"></span><p>Locally Linear Embedding</p>
 <dl class="class">
 <dt id="megaman.embedding.locally_linear.LocallyLinearEmbedding">
-<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>reg=1000.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">LocallyLinearEmbedding</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>reg=1000.0</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#LocallyLinearEmbedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.LocallyLinearEmbedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Locally Linear Embedding</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -554,20 +547,12 @@ sparse problems, but may also lead to instabilities.</p>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
-<p><strong>tol</strong> : float, optional</p>
-<blockquote>
-<div><p>Tolerance for &#8216;arpack&#8217; method
-Not used if eigen_solver==&#8217;dense&#8217;.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : integer, optional</p>
-<blockquote>
-<div><p>maximum number of iterations for the arpack solver.</p>
-</div></blockquote>
 <p><strong>reg</strong> : float, optional</p>
-<blockquote class="last">
+<blockquote>
 <div><p>regularization constant, multiplies the trace of the local covariance
 matrix of the distances.</p>
 </div></blockquote>
+<p class="last"><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 </tbody>
@@ -647,7 +632,7 @@ default.</p>
 
 <dl class="function">
 <dt id="megaman.embedding.locally_linear.locally_linear_embedding">
-<code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">locally_linear_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>reg=0.001</em>, <em>max_iter=100</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#locally_linear_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.locally_linear_embedding" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.locally_linear.</code><code class="descname">locally_linear_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>reg=0.001</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/locally_linear.html#locally_linear_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.locally_linear.locally_linear_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform a Locally Linear Embedding analysis on the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -690,20 +675,12 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
-<p><strong>tol</strong> : float, optional</p>
-<blockquote>
-<div><p>Tolerance for &#8216;arpack&#8217; method
-Not used if eigen_solver==&#8217;dense&#8217;.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : integer</p>
-<blockquote>
-<div><p>maximum number of iterations for the arpack solver.</p>
-</div></blockquote>
 <p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
 <blockquote>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.</p>
 </div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Y</strong> : array-like, shape [n_samples, n_components]</p>
@@ -732,7 +709,7 @@ by locally linear embedding.  Science 290:2323 (2000).</td></tr>
 <span class="target" id="module-megaman.embedding.ltsa"></span><p>Local Tangent Space Alignment</p>
 <dl class="class">
 <dt id="megaman.embedding.ltsa.LTSA">
-<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">LTSA</code><span class="sig-paren">(</span><em>n_components=2</em>, <em>radius=None</em>, <em>geom=None</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#LTSA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.LTSA" title="Permalink to this definition">¶</a></dt>
 <dd><p>Local Tangent Space Alignment</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -788,15 +765,7 @@ sparse problems, but may also lead to instabilities.</p>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.RandomState</p>
 </div></blockquote>
-<p><strong>tol</strong> : float, optional</p>
-<blockquote>
-<div><p>Tolerance for &#8216;arpack&#8217; method
-Not used if eigen_solver==&#8217;dense&#8217;.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : integer</p>
-<blockquote class="last">
-<div><p>maximum number of iterations for the arpack solver.</p>
-</div></blockquote>
+<p class="last"><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 </tbody>
@@ -849,7 +818,7 @@ computed from samples.</p>
 
 <dl class="function">
 <dt id="megaman.embedding.ltsa.ltsa">
-<code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">ltsa</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>eigen_solver='auto'</em>, <em>tol=1e-06</em>, <em>max_iter=100</em>, <em>random_state=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#ltsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.ltsa" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">megaman.embedding.ltsa.</code><code class="descname">ltsa</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/ltsa.html#ltsa"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.ltsa.ltsa" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform a Local Tangent Space Alignment analysis on the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -887,20 +856,12 @@ sparse problems, but may also lead to instabilities.</p>
 </dd>
 </dl>
 </div></blockquote>
-<p><strong>tol</strong> : float, optional</p>
-<blockquote>
-<div><p>Tolerance for &#8216;arpack&#8217; method
-Not used if eigen_solver==&#8217;dense&#8217;.</p>
-</div></blockquote>
-<p><strong>max_iter</strong> : integer</p>
-<blockquote>
-<div><p>maximum number of iterations for the arpack solver.</p>
-</div></blockquote>
 <p><strong>random_state</strong> : numpy.RandomState or int, optional</p>
 <blockquote>
 <div><p>The generator or seed used to determine the starting vector for arpack
 iterations.  Defaults to numpy.random.</p>
 </div></blockquote>
+<p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>embedding</strong> : array-like, shape [n_samples, n_components]</p>
@@ -970,8 +931,8 @@ Journal of Shanghai Univ.  8:406 (2004)</li>
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
       
       |
       <a href="../_sources/embedding/API.txt"

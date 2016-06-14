@@ -9,10 +9,9 @@ Installation with Conda
 
 To install ``megaman`` and all its dependencies using conda_, run::
 
-    $ conda install --channel=jakevdp megaman
+    $ conda install megaman --channel=conda-forge
 
-Currently builds are available for OSX-64 and Linux-64,
-on Python 2.7, 3.4, and 3.5.
+Currently builds are available for OSX and Linux, on Python 2.7, 3.4, and 3.5.
 For other operating systems, see the full install instructions below.
 
 Installation from Source
