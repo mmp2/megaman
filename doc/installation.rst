@@ -62,3 +62,4 @@ or, outside the source directory once ``megaman`` is installed::
 .. _pyamg: http://pyamg.org/
 .. _pyflann: http://www.cs.ubc.ca/research/flann/
 .. _nose: https://nose.readthedocs.org/
+.. _cython: http://cython.org/

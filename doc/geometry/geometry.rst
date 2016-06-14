@@ -30,7 +30,7 @@ and Laplacian Matrix.
    neighborhood and affinity radius, laplacian type. Each of the three
    computed matrices (adjacency, affinity, laplacian) have their
    own keyword dictionaries which permit these methods to easily be extended.
-2. `set_[some]_matrix' : these functions allow you to assign a matrix of data
+2. `set_[some]_matrix` : these functions allow you to assign a matrix of data
    to the geometry object. In particular these are used to fit the geometry
    to your input data (which may be of the form data_matrix, adjacency_matrix,
    or affinity_matrix). You can also set a Laplacian matrix. 
@@ -43,7 +43,7 @@ and Laplacian Matrix.
    geom.adjacency_matrix, geom.laplacian_matrix. Raw data is stored as geom.X.
    If you want to query for these matrices without recomputing you should use
    these attributes e.g. my_affinity = geom.affinity_matrix. 
-5. 'delete_[some]_matrix' : if you are working with large data sets and choose
+5. `delete_[some]_matrix` : if you are working with large data sets and choose
     an algorithm (e.g. Isomap or Spectral Embedding) that do not require the
 	original data_matrix, these methods can be used to clear memory. 
 

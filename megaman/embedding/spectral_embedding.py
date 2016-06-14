@@ -77,7 +77,7 @@ def _graph_is_connected(graph):
 
 def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                        random_state=None, drop_first=True,
-                       diffusion_maps = False, diffusion_time =0, solver_kwds = None):
+                       diffusion_maps = False, diffusion_time = 0, solver_kwds = None):
     """
     Project the sample on the first eigen vectors of the graph Laplacian.
 
@@ -131,7 +131,17 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         version by re-scaling the embedding by the eigenvalues.
         NOTE: for the correct diffusion maps embedding of Coifman et. al.
         use laplacian_type = 'geometric' or 'renormalized' and provide the 
-        renormalization_exponent value . 
+        renormalization_exponent value. 
+    diffusion_time: use the diffusion_time (t) step transition matrix M^t
+        t not only serves as a time parameter, but also has the dual role of
+        scale parameter. One of the main ideas of diffusion framework is
+        that running the chain forward in time (taking larger and larger
+        powers of M) reveals the geometric structure of X at larger and
+        larger scales (the diffusion process).
+        t = 0 empirically provides a reasonable balance from a clustering
+        perspective. Specifically, the notion of a cluster in the data set
+        is quantified as a region in which the probability of escaping this
+        region is low (within a certain time t).
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
@@ -337,7 +347,7 @@ class SpectralEmbedding(BaseEmbedding):
     def fit(self, X, y=None, input_type='data'):
         """
         Fit the model from data in X.
-
+        
         Parameters
         ----------
         input_type : string, one of: 'data', 'distance' or 'affinity'.
@@ -347,14 +357,15 @@ class SpectralEmbedding(BaseEmbedding):
             and n_features is the number of features.
 
         If self.input_type is distance, or affinity:
+        
         X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph
             computed from samples.
 
         Returns
         -------
-        self : object
-            Returns the instance itself.
+        self : object 
+               Returns the instance itself.
         """
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)

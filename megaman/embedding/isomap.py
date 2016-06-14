@@ -192,7 +192,6 @@ class Isomap(BaseEmbedding):
             Interpret X as precomputed distance or adjacency graph
             computed from samples.
 
-
         eigen_solver : {None, 'arpack', 'lobpcg', or 'amg'}
             The eigenvalue decomposition strategy to use. AMG requires pyamg
             to be installed. It can be faster on very large, sparse problems,
@@ -203,6 +202,7 @@ class Isomap(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
+        
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
 
