@@ -21,8 +21,8 @@ matrix we explicitly set the diagonal to 1.0 for sparse matrices.
 We adopted the following convention:
    * affinity_matrix will NOT BE GUARANTEED symmetric
    * affinity_matrix will perform a symmetrization by default
-   * laplacian does NOT perform symmetrization by default,
-     only if symmetrize=True, and DOES NOT check symmetry
+   * laplacian performs symmetrization 
+     only if symmetrize_input=True (the default setting), and DOES NOT check symmetry
    * these conventions are the same for dense matrices, for consistency
 """
 
