@@ -76,3 +76,15 @@ def test_equal_original(almost_equal_decimals = 5):
     # numerical errors, as many of these 2x2 matrices are very poorly
     # conditioned. What to do? Perhaps generate another matlab test set
     # with better condition numbers...
+
+def test_lazy_rmetric(almost_equal_decimals=5):
+    """ Load results from matlab and check lazy rmetric gets the
+    same value as the full rmetric on a subset
+    """
+    
+    rad, L, Gtest, Htest, phi = _load_test_data()
+    n = phi.shape[0]
+    sample = np.random.choice(range(n), min(50, n), replace=False)
+    H = riemann_metric(phi, laplacian = L, n_dim = 2)[0]
+    Hlazy = riemann_metric_lazy(phi, sample=sample, laplacian=L, n_dim=2)[0]
+    assert_array_almost_equal( Hlazy, H[sample, :,:], almost_equal_decimals)

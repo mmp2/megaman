@@ -74,6 +74,65 @@ def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 's
 
     return h_dual_metric, riemann_metric, Hvv, Hsvals, Gsvals
 
+def riemann_metric_lazy( Y, sample,laplacian, n_dim, invert_h=False, mode_inv = 'svd'):
+    """
+    Parameters
+    ----------
+    Y: array-like, shape = (n_samples, mdimY )
+        The embedding coordinates of the points
+    sample : array-like, shape (n_samples)
+        array of indices over which to calculate the riemannian metric.
+    laplacian: array-like, shape = (n_samples, n_samples)
+        The Laplacian of the data. It is recommended to use the "geometric"
+        Laplacian (default) option from geometry.graph_laplacian()
+    n_dim : integer, optional
+        Use only the first n_dim <= mdimY dimensions.All dimensions
+        n_dim:mdimY are ignored.
+    invert_h: boolean, optional
+        if False, only the "dual Riemannian metric" is computed
+        if True, the dual metric matrices are inverted to obtain the
+        Riemannian metric G.
+    mode_inv: string, optional
+       How to compute the inverses of h_dual_metric, if invert_h
+        "inv", use numpy.inv()
+        "svd" (default), use numpy.linalg.svd(), then invert the eigenvalues
+        (possibly a more numerically stable method with H is symmetric and
+        ill conditioned)
+
+    Returns
+    -------
+    h_dual_metric : array, shape=(n_samples, n_dim, n_dim)
+    Optionally :
+    g_riemann_metric : array, shape=(n_samples, n_dim, n_dim )
+    Hvv : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )
+    Hsvals : singular values of H, shape = ( n_samples, n_dim )
+    Gsvals : singular values of G, shape = ( n_samples, n_dim )
+
+    Notes
+    -----
+    References
+    ----------
+    "Non-linear dimensionality reduction: Riemannian metric estimation and
+    the problem of geometric discovery",
+    Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255
+    """
+    n_samples = laplacian.shape[0]
+    laplacian = laplacian[sample,:]
+    h_dual_metric = np.zeros((len(sample), n_dim, n_dim))
+    for i in np.arange(n_dim ):
+        for j in np.arange(i,n_dim ):
+            yij = Y[:,i]*Y[:,j]
+            h_dual_metric[ :, i, j] = 0.5*(laplacian.dot(yij)-Y[sample,j]*laplacian.dot(Y[:,i])-Y[sample,i]*laplacian.dot(Y[:,j]))
+    for j in np.arange(n_dim-1):
+        for i in np.arange(j+1,n_dim):
+            h_dual_metric[ :,i,j] = h_dual_metric[:,j,i]
+ 
+    if( invert_h ):
+        riemann_metric, Hvv, Hsvals, Gsvals = compute_G_from_H( h_dual_metric )
+    else:
+        riemann_metric = Hvv = Hsvals = Gsvals = None
+   
+    return h_dual_metric,riemann_metric, Hvv, Hsvals, Gsvals
 
 def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):
     """
