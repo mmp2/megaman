@@ -90,5 +90,4 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 We have the following planned updates for upcoming releases:
 
 - Native support for K-Nearest Neighbors distance (in progress)
-- Lazy R-metric (only calcualte on selected points)
 - Make cover_plotter.py work more generally with rmetric.py
