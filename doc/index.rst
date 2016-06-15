@@ -23,8 +23,14 @@ to scale manifold learning algorithms to large data sets.
 It is designed for researchers and as such caches intermediary
 steps and indices to allow for fast re-computation with new parameters.
 
-For issues & contributions, see the source repository
-`on github <http://github.com/mmp2/megaman/>`_.
+For issues & contributions, see the source 
+`repository on github <http://github.com/mmp2/megaman/>`_.
+
+For example notebooks see the 
+`index on github <https://github.com/mmp2/megaman/blob/master/examples/examples_index.ipynb>`_.
+
+You can also read our 
+`arXiv paper <http://arxiv.org/abs/1603.02763>`_.
 
 Documentation
 =============

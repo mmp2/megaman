@@ -77,6 +77,72 @@ def test_spectral_embedding_two_components(seed=36):
     label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
     assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
 
+def test_diffusion_embedding_two_components_no_diffusion_time(seed=36):
+    """Test spectral embedding with two components"""
+    random_state = np.random.RandomState(seed)
+    n_sample = 100
+    affinity = np.zeros(shape=[n_sample * 2,
+                               n_sample * 2])
+    # first component
+    affinity[0:n_sample,
+             0:n_sample] = np.abs(random_state.randn(n_sample, n_sample)) + 2
+    # second component
+    affinity[n_sample::,
+             n_sample::] = np.abs(random_state.randn(n_sample, n_sample)) + 2
+    # connection
+    affinity[0, n_sample + 1] = 1
+    affinity[n_sample + 1, 0] = 1
+    affinity.flat[::2 * n_sample + 1] = 0
+    affinity = 0.5 * (affinity + affinity.T)
+
+    true_label = np.zeros(shape=2 * n_sample)
+    true_label[0:n_sample] = 1
+    geom_params = {'laplacian_method':'geometric'}
+    se_precomp = SpectralEmbedding(n_components=1,
+                                   random_state=np.random.RandomState(seed),
+                                   eigen_solver = 'arpack',
+                                   diffusion_maps = True,
+                                   geom = geom_params)
+    embedded_coordinate = se_precomp.fit_transform(affinity,
+                                                   input_type='affinity')
+
+    # thresholding on the first components using 0.
+    label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
+    assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
+
+def test_diffusion_embedding_two_components_diffusion_time_one(seed=36):
+    """Test spectral embedding with two components"""
+    random_state = np.random.RandomState(seed)
+    n_sample = 100
+    affinity = np.zeros(shape=[n_sample * 2,
+                               n_sample * 2])
+    # first component
+    affinity[0:n_sample,
+             0:n_sample] = np.abs(random_state.randn(n_sample, n_sample)) + 2
+    # second component
+    affinity[n_sample::,
+             n_sample::] = np.abs(random_state.randn(n_sample, n_sample)) + 2
+    # connection
+    affinity[0, n_sample + 1] = 1
+    affinity[n_sample + 1, 0] = 1
+    affinity.flat[::2 * n_sample + 1] = 0
+    affinity = 0.5 * (affinity + affinity.T)
+
+    true_label = np.zeros(shape=2 * n_sample)
+    true_label[0:n_sample] = 1
+    geom_params = {'laplacian_method':'geometric'}
+    se_precomp = SpectralEmbedding(n_components=1,
+                                   random_state=np.random.RandomState(seed),
+                                   eigen_solver = 'arpack',
+                                   diffusion_maps = True,
+                                   diffusion_time = 1.0,
+                                   geom = geom_params)
+    embedded_coordinate = se_precomp.fit_transform(affinity,
+                                                   input_type='affinity')
+
+    # thresholding on the first components using 0.
+    label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
+    assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
 
 def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
     """Test spectral embedding with precomputed kernel"""
