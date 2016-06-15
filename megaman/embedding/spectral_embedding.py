@@ -85,18 +85,24 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     Project the sample on the first eigen vectors of the graph Laplacian.
 
     The adjacency matrix is used to compute a normalized graph Laplacian
-    whose spectrum (especially the eigen vectors associated to the
-    smallest eigen values) has an interpretation in terms of minimal
-    number of cuts necessary to split the graph into comparably sized
-    components.
+    whose  principal eigenvectors (associated to the
+    smallest eigen values) represent the embedding coordinates of the data.
 
-    This embedding can also 'work' even if the ``adjacency`` variable is
-    not strictly the adjacency matrix of a graph but more generally
+    The ``adjacency`` variable is not strictly the adjacency matrix of a graph but more generally
     an affinity or similarity matrix between samples (for instance the
     heat kernel of a euclidean distance matrix or a k-NN matrix).
-
-    However care must taken to always make the affinity matrix symmetric
-    so that the eigen vector decomposition works as expected.
+    The Laplacian must be symmetric so that the eigen vector decomposition works as expected. 
+    This is ensured by the default setting (for more details,
+    see the documentation in geometry.py).
+    
+    The data and generic geometric parameters are passed via a Geometry object, which also
+    computes the Laplacian. By default, the 'geometric' Laplacian (or "debiased", or "renormalized" with
+    alpha=1) is used. This is the Laplacian construction defined in [Coifman and Lafon, 2006] (see also 
+    documentation in laplacian.py). Thus, with diffusion_maps=False, spectral embedding is a modification
+    of the Laplacian Eigenmaps algorithm of [Belkin and Nyiogi, 2002], with diffusion_maps=False, geom.laplacian_method
+    ='symmetricnormalized' it is exactly the Laplacian Eigenmaps, with diffusion_maps=True, diffusion_time>0 it
+    is the Diffusion Maps algorithm of [Coifman and Lafon 2006]; diffusion_maps=True and diffusion_time=0 is the same
+    as diffusion_maps=False and default geom.laplacian_method.
 
     Parameters
     ----------
@@ -131,17 +137,15 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         connected graph, but for spectral clustering, this should be kept as
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
-        version by re-scaling the embedding by the eigenvalues.
-        NOTE: for the correct diffusion maps embedding of Coifman et. al.
-        use laplacian_type = 'geometric' or 'renormalized' and provide the 
-        renormalization_exponent value. 
-    diffusion_time: use the diffusion_time (t) step transition matrix M^t
-        t not only serves as a time parameter, but also has the dual role of
-        scale parameter. One of the main ideas of diffusion framework is
-        that running the chain forward in time (taking larger and larger
-        powers of M) reveals the geometric structure of X at larger and
+        version by re-scaling the embedding coordinate by the eigenvalues to the power 
+        diffusion_time.
+    diffusion_time: if diffusion_map=True, the eigenvectors of the Laplacian are rescaled by 
+        (1-lambda)^diffusion_time, where lambda is the corresponding eigenvalue. 
+        diffusion_time has the role of scale parameter. One of the main ideas of diffusion framework is
+        that running the diffusion forward in time (taking larger and larger
+        powers of the Laplacian/transition matrix) reveals the geometric structure of X at larger and
         larger scales (the diffusion process).
-        t = 0 empirically provides a reasonable balance from a clustering
+        diffusion_time = 0 empirically provides a reasonable balance from a clustering
         perspective. Specifically, the notion of a cluster in the data set
         is quantified as a region in which the probability of escaping this
         region is low (within a certain time t).
