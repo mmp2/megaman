@@ -7,6 +7,9 @@
 #         after the scikit-learn version by
 #         Gael Varoquaux <gael.varoquaux@normalesup.org>
 #         Wei LI <kuantkid@gmail.com>
+#
+#         diffusion maps portion after:
+#         Satrajit Ghosh <satra@mit.edu> https://github.com/satra/mapalign/blob/master/mapalign/embed.py
 # License: BSD 3 clause
 
 import warnings
@@ -142,6 +145,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         perspective. Specifically, the notion of a cluster in the data set
         is quantified as a region in which the probability of escaping this
         region is low (within a certain time t).
+        Credit to Satrajit Ghosh (http://satra.cogitatum.org/) for description
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
     Returns
@@ -243,6 +247,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
     if diffusion_maps:
+        """ Credit to Satrajit Ghosh (http://satra.cogitatum.org/) for final steps """
         # Check that diffusion maps is using the correct laplacian, warn otherwise
         if lapl_type not in ['geometric', 'renormalized']:
             warnings.warn("for correct diffusion maps embedding use laplacian type 'geometric' or 'renormalized'.")
