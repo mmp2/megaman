@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; megaman 0.2.dev0 documentation</title>
+    <title>API Documentation &mdash; megaman 0.2 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.2.dev0',
+        VERSION:     '0.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,18 +23,16 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.2.dev0 documentation" href="../index.html" />
+    <link rel="top" title="megaman 0.2 documentation" href="../index.html" />
     <link rel="up" title="Tools for Embedding (megaman.embedding)" href="index.html" />
     <link rel="next" title="Utility tools for megaman (megaman.utils)" href="../utils/index.html" />
     <link rel="prev" title="Spectral Embedding" href="spectral_embedding.html" />
    
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">
-  
+  <body role="document">  
 
     <div class="document">
       <div class="documentwrapper">
@@ -189,16 +187,22 @@ computed from samples.</p>
 <code class="descclassname">megaman.embedding.spectral_embedding.</code><code class="descname">spectral_embedding</code><span class="sig-paren">(</span><em>geom</em>, <em>n_components=8</em>, <em>eigen_solver='auto'</em>, <em>random_state=None</em>, <em>drop_first=True</em>, <em>diffusion_maps=False</em>, <em>diffusion_time=0</em>, <em>solver_kwds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/embedding/spectral_embedding.html#spectral_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.embedding.spectral_embedding.spectral_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><p>Project the sample on the first eigen vectors of the graph Laplacian.</p>
 <p>The adjacency matrix is used to compute a normalized graph Laplacian
-whose spectrum (especially the eigen vectors associated to the
-smallest eigen values) has an interpretation in terms of minimal
-number of cuts necessary to split the graph into comparably sized
-components.</p>
-<p>This embedding can also &#8216;work&#8217; even if the <code class="docutils literal"><span class="pre">adjacency</span></code> variable is
-not strictly the adjacency matrix of a graph but more generally
+whose  principal eigenvectors (associated to the
+smallest eigen values) represent the embedding coordinates of the data.</p>
+<p>The <code class="docutils literal"><span class="pre">adjacency</span></code> variable is not strictly the adjacency matrix of a graph but more generally
 an affinity or similarity matrix between samples (for instance the
-heat kernel of a euclidean distance matrix or a k-NN matrix).</p>
-<p>However care must taken to always make the affinity matrix symmetric
-so that the eigen vector decomposition works as expected.</p>
+heat kernel of a euclidean distance matrix or a k-NN matrix).
+The Laplacian must be symmetric so that the eigen vector decomposition works as expected. 
+This is ensured by the default setting (for more details,
+see the documentation in geometry.py).</p>
+<p>The data and generic geometric parameters are passed via a Geometry object, which also
+computes the Laplacian. By default, the &#8216;geometric&#8217; Laplacian (or &#8220;debiased&#8221;, or &#8220;renormalized&#8221; with
+alpha=1) is used. This is the Laplacian construction defined in [Coifman and Lafon, 2006] (see also 
+documentation in laplacian.py). Thus, with diffusion_maps=False, spectral embedding is a modification
+of the Laplacian Eigenmaps algorithm of [Belkin and Nyiogi, 2002], with diffusion_maps=False, geom.laplacian_method
+=&#8217;symmetricnormalized&#8217; it is exactly the Laplacian Eigenmaps, with diffusion_maps=True, diffusion_time&gt;0 it
+is the Diffusion Maps algorithm of [Coifman and Lafon 2006]; diffusion_maps=True and diffusion_time=0 is the same
+as diffusion_maps=False and default geom.laplacian_method.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -250,10 +254,21 @@ False to retain the first eigenvector.</p>
 </div></blockquote>
 <p><strong>diffusion_map</strong> : boolean, optional. Whether to return the diffusion map</p>
 <blockquote>
-<div><p>version by re-scaling the embedding by the eigenvalues.
-NOTE: for the correct diffusion maps embedding of Coifman et. al.
-use laplacian_type = &#8216;geometric&#8217; or &#8216;renormalized&#8217; and provide the 
-renormalization_exponent value .</p>
+<div><p>version by re-scaling the embedding coordinate by the eigenvalues to the power 
+diffusion_time.</p>
+</div></blockquote>
+<p><strong>diffusion_time: if diffusion_map=True, the eigenvectors of the Laplacian are rescaled by</strong></p>
+<blockquote>
+<div><p>(1-lambda)^diffusion_time, where lambda is the corresponding eigenvalue. 
+diffusion_time has the role of scale parameter. One of the main ideas of diffusion framework is
+that running the diffusion forward in time (taking larger and larger
+powers of the Laplacian/transition matrix) reveals the geometric structure of X at larger and
+larger scales (the diffusion process).
+diffusion_time = 0 empirically provides a reasonable balance from a clustering
+perspective. Specifically, the notion of a cluster in the data set
+is quantified as a region in which the probability of escaping this
+region is low (within a certain time t).
+Credit to Satrajit Ghosh (<a class="reference external" href="http://satra.cogitatum.org/">http://satra.cogitatum.org/</a>) for description</p>
 </div></blockquote>
 <p><strong>solver_kwds</strong> : any additional keyword arguments to pass to the selected eigen_solver</p>
 </td>
@@ -931,8 +946,8 @@ Journal of Shanghai Univ.  8:406 (2004)</li>
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
       
       |
       <a href="../_sources/embedding/API.txt"

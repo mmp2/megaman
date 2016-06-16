@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>API Documentation &mdash; megaman 0.2.dev0 documentation</title>
+    <title>API Documentation &mdash; megaman 0.2 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.2.dev0',
+        VERSION:     '0.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,18 +23,16 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="megaman 0.2.dev0 documentation" href="../index.html" />
+    <link rel="top" title="megaman 0.2 documentation" href="../index.html" />
     <link rel="up" title="Tools for Geometric Analysis (megaman.geometry)" href="index.html" />
     <link rel="next" title="Tools for Embedding (megaman.embedding)" href="../embedding/index.html" />
     <link rel="prev" title="Geometry" href="geometry.html" />
    
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
   </head>
-  <body role="document">
-  
+  <body role="document">  
 
     <div class="document">
       <div class="documentwrapper">
@@ -61,10 +59,10 @@ matrix we explicitly set the diagonal to 1.0 for sparse matrices.</p>
 <dl class="docutils">
 <dt>We adopted the following convention:</dt>
 <dd><ul class="first last simple">
-<li>affinity_matrix will NOT BE GUARANTEED symmetric</li>
+<li>adjacency_matrix will NOT BE GUARANTEED symmetric</li>
 <li>affinity_matrix will perform a symmetrization by default</li>
-<li>laplacian does NOT perform symmetrization by default,
-only if symmetrize=True, and DOES NOT check symmetry</li>
+<li>laplacian performs symmetrization 
+only if symmetrize_input=True (the default setting), and DOES NOT check symmetry</li>
 <li>these conventions are the same for dense matrices, for consistency</li>
 </ul>
 </dd>
@@ -486,6 +484,67 @@ the problem of geometric discovery&#8221;,
 Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
 </dd></dl>
 
+<dl class="function">
+<dt id="megaman.geometry.rmetric.riemann_metric_lazy">
+<code class="descclassname">megaman.geometry.rmetric.</code><code class="descname">riemann_metric_lazy</code><span class="sig-paren">(</span><em>Y</em>, <em>sample</em>, <em>laplacian</em>, <em>n_dim</em>, <em>invert_h=False</em>, <em>mode_inv='svd'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/megaman/geometry/rmetric.html#riemann_metric_lazy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#megaman.geometry.rmetric.riemann_metric_lazy" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>Y: array-like, shape = (n_samples, mdimY )</strong></p>
+<blockquote>
+<div><p>The embedding coordinates of the points</p>
+</div></blockquote>
+<p><strong>sample</strong> : array-like, shape (n_samples)</p>
+<blockquote>
+<div><p>array of indices over which to calculate the riemannian metric.</p>
+</div></blockquote>
+<p><strong>laplacian: array-like, shape = (n_samples, n_samples)</strong></p>
+<blockquote>
+<div><p>The Laplacian of the data. It is recommended to use the &#8220;geometric&#8221;
+Laplacian (default) option from geometry.graph_laplacian()</p>
+</div></blockquote>
+<p><strong>n_dim</strong> : integer, optional</p>
+<blockquote>
+<div><p>Use only the first n_dim &lt;= mdimY dimensions.All dimensions
+n_dim:mdimY are ignored.</p>
+</div></blockquote>
+<p><strong>invert_h: boolean, optional</strong></p>
+<blockquote>
+<div><p>if False, only the &#8220;dual Riemannian metric&#8221; is computed
+if True, the dual metric matrices are inverted to obtain the
+Riemannian metric G.</p>
+</div></blockquote>
+<p><strong>mode_inv: string, optional</strong></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>How to compute the inverses of h_dual_metric, if invert_h</dt>
+<dd><p class="first last">&#8220;inv&#8221;, use numpy.inv()
+&#8220;svd&#8221; (default), use numpy.linalg.svd(), then invert the eigenvalues
+(possibly a more numerically stable method with H is symmetric and
+ill conditioned)</p>
+</dd>
+</dl>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>h_dual_metric</strong> : array, shape=(n_samples, n_dim, n_dim)</p>
+<p>Optionally :</p>
+<p><strong>g_riemann_metric</strong> : array, shape=(n_samples, n_dim, n_dim )</p>
+<p><strong>Hvv</strong> : singular vectors of H, transposed, shape = ( n_samples, n_dim, n_dim )</p>
+<p><strong>Hsvals</strong> : singular values of H, shape = ( n_samples, n_dim )</p>
+<p class="last"><strong>Gsvals</strong> : singular values of G, shape = ( n_samples, n_dim )</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p class="rubric">References</p>
+<p>&#8220;Non-linear dimensionality reduction: Riemannian metric estimation and
+the problem of geometric discovery&#8221;,
+Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
+</dd></dl>
+
 </div>
 
 
@@ -540,8 +599,8 @@ Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255</p>
       &copy;2015, James McQueen, Marina Meila.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
       
       |
       <a href="../_sources/geometry/API.txt"
