@@ -34,18 +34,10 @@ Here's a quick step-by-step for cutting a new release of megaman.
    $ make publish  # publish to github pages
    ```
 
-3. Publish the conda build (requires jakevdp's permissions)
-   (see [conda docs](http://conda.pydata.org/docs/build_tutorials/pkgs2.html) for more information)
-
-    1. update the version, commit tag, and build number in ``conda_recipes/megaman/meta.yml``
-    2. commit this to the repository
-    3. On both a Linux and OSX system, build the packages:
-       ```
-       $ cd conda_recipes
-       $ anaconda login  # login to anaconda cloud
-       $ conda config --set anaconda_upload yes  # auto upload good builds
-       $ conda build --py all megaman  # build on all python versions
-       ```
+3. Publish the conda build:
+   submit a PR to http://github.com/conda-forge/megaman-feedstock
+   updating recipe/meta.yaml with the appropriate version. Once merged,
+   then the conda install command will point to the new version.
 
 ## Post-release
 
