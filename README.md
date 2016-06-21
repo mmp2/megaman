@@ -87,7 +87,7 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 
 ## Other Contributors 
 
-- [Xiao Wang](wang19@uw.edu): lazy rmetric, Nystrom Extension
+- Xiao Wang: lazy rmetric, Nystrom Extension
 
 ## Future Work
 
