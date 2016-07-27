@@ -80,6 +80,7 @@ class BallTreeAdjacency(BruteForceAdjacency):
 class CyFLANNAdjacency(Adjacency):
     name = 'cyflann'
 
+
     def __init__(self, radius=None, n_neighbors=None, flann_index=None,
                  target_precision=None, cyflann_kwds=None):
         self.flann_index = flann_index
@@ -98,9 +99,23 @@ class CyFLANNAdjacency(Adjacency):
         cyindex.buildIndex()
         return cyindex
 
+
+    def build_index(self, X):
+        return _get_built_index(X)
+
+
+    def radius_adjacency(self, index, queries):
+        return index.radius_neighbors_graph(queries, self.radius)
+
+
+    def knn_addjacency(self, index, queries):
+        return index.knn_neighbors_graph(queries, self.n_neighbors)
+
+
     def radius_adjacency(self, X):
         cyindex = self._get_built_index(X)
         return cyindex.radius_neighbors_graph(X, self.radius)
+
 
     def knn_adjacency(self, X):
         cyindex = self._get_built_index(X)
