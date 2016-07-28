@@ -101,7 +101,7 @@ class CyFLANNAdjacency(Adjacency):
 
 
     def build_index(self, X):
-        return _get_built_index(X)
+        return self._get_built_index(X)
 
 
     def radius_adjacency(self, index, queries):
