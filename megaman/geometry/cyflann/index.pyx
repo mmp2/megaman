@@ -38,6 +38,7 @@ cdef class Index:
             self._thisptr = new CyflannIndex(dataset.flatten(),
                     dataset.shape[1], saved_index)
         elif index_type is not None:
+            index_type = index_type.encode('utf-8')
             self._thisptr = new CyflannIndex(dataset.flatten(),
                     dataset.shape[1], index_type, num_trees, branching,
                     iterations, cb_index)
