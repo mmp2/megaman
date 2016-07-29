@@ -1,3 +1,4 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 from .adjacency import CyFLANNAdjacency, compute_adjacency_matrix
 from scipy.sparse import vstack, hstack
 

@@ -227,3 +227,17 @@ def test_connectivity(seed=36):
     assert_equal(_graph_is_connected(graph), True)
     assert_equal(_graph_is_connected(csr_matrix(graph)), True)
     assert_equal(_graph_is_connected(csc_matrix(graph)), True)
+
+def test_predict_size(seed=36):
+    """Test the predict function returns appropriate size data"""
+    # test that it returns values of the appropriate shape
+    # test both with and without diffusion maps
+    assert(True)
+    
+def test_predict_error_not_fitted():
+    """ Test predict function raises an error when .fit() has not been called"""
+    assert(True)
+
+def test_predict_error_no_data():
+    """ Test predict raises an error when X is originally passed as adjacency or affinity"""
+    assert(True)

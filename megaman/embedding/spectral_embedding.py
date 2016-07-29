@@ -19,7 +19,14 @@ from scipy.sparse.csgraph import connected_components
 from ..embedding.base import BaseEmbedding
 from ..utils.validation import check_random_state
 from ..utils.eigendecomp import eigen_decomposition, check_eigen_solver
+from ..geometry.complete_adjacency_matrix import complete_adjacency_matrix
+from ..geometry.affinity import compute_affinity_matrix
+from ..geometry.laplacian import compute_laplacian_matrix
+from ..utils.nystrom_extension import nystrom_extension
 
+def check_fitted(estimator, attribute):
+    if not hasattr(estimator, embedding):
+        raise RuntimeError('the .fit() function must be called before the .predict() function')
 
 def _graph_connected_component(graph, node_id):
     """
@@ -77,6 +84,24 @@ def _graph_is_connected(graph):
         # dense graph, find all connected components start from node 0
         return _graph_connected_component(graph, 0).sum() == graph.shape[0]
 
+def compute_diffusion_maps(lapl_type, diffusion_map, lambdas, diffusion_time):
+    """ Credit to Satrajit Ghosh (http://satra.cogitatum.org/) for final steps """
+    # Check that diffusion maps is using the correct laplacian, warn otherwise
+    if lapl_type not in ['geometric', 'renormalized']:
+        warnings.warn("for correct diffusion maps embedding use laplacian type 'geometric' or 'renormalized'.")
+    # Step 5 of diffusion maps:
+    vectors = diffusion_map.copy()
+    psi = vectors/vectors[:,[0]]
+    diffusion_times = diffusion_time
+    if diffusion_time == 0:
+        lambdas = np.abs(lambdas)
+        diffusion_times = np.exp(1. -  np.log(1 - lambdas[1:])/np.log(lambdas[1:]))
+        lambdas = lambdas / (1 - lambdas)
+    else:
+        lambdas = np.abs(lambdas)
+        lambdas = lambdas ** float(diffusion_time)
+    diffusion_map = psi * lambdas
+    return diffusion_map
 
 def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                        random_state=None, drop_first=True,
@@ -250,28 +275,15 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
     diffusion_map = diffusion_map[:, ind]
+    eigenvalues = lambdas.copy()
+    eigenvectors = lambdas.copy()
     if diffusion_maps:
-        """ Credit to Satrajit Ghosh (http://satra.cogitatum.org/) for final steps """
-        # Check that diffusion maps is using the correct laplacian, warn otherwise
-        if lapl_type not in ['geometric', 'renormalized']:
-            warnings.warn("for correct diffusion maps embedding use laplacian type 'geometric' or 'renormalized'.")
-        # Step 5 of diffusion maps:
-        vectors = diffusion_map
-        psi = vectors/vectors[:,[0]]
-        diffusion_times = diffusion_time
-        if diffusion_time == 0:
-            lambdas = np.abs(lambdas)
-            diffusion_times = np.exp(1. -  np.log(1 - lambdas[1:])/np.log(lambdas[1:]))
-            lambdas = lambdas / (1 - lambdas)
-        else:
-            lambdas = np.abs(lambdas)
-            lambdas = lambdas ** float(diffusion_time)
-        diffusion_map = psi * lambdas
+        diffusion_map = compute_diffusion_maps(lapl_type, diffusion_map, lambdas, diffusion_time)
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
     else:
         embedding = diffusion_map[:, :n_components]
-    return embedding
+    return embedding, eigenvalues, eigenvectors
 
 
 class SpectralEmbedding(BaseEmbedding):
@@ -379,7 +391,7 @@ class SpectralEmbedding(BaseEmbedding):
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)
-        self.embedding_ = spectral_embedding(self.geom_,
+        self.embedding_, self.eigenvalues_, self.eigenvectors_ = spectral_embedding(self.geom_,
                                              n_components = self.n_components,
                                              eigen_solver = self.eigen_solver,
                                              random_state = random_state,
@@ -391,3 +403,57 @@ class SpectralEmbedding(BaseEmbedding):
         self.laplacian_matrix_ = self.geom_.laplacian_matrix
         self.laplacian_matrix_type_ = self.geom_.laplacian_method
         return self
+
+    def predict(self, X_test, y=None):
+        """
+        Predict embedding on new data X_test given the existing embedding on training data
+        
+        Uses the Nystrom Extension to estimate the eigenvectors.
+        
+        Currently only works with input_type data (i.e. not affinity or distance)
+        """
+        if not hasattr(self.geom_.X):
+            raise NotImplementedError('method only implemented when X passed as data')
+        check_fitted(self, 'embedding_')
+        # Complete the adjacency matrix
+        if self.geom_.adjacency_method == 'cyflann':
+            adjacency_kwds = self.geom_.adjacency_kwds
+        else:
+            adjacency_kwds = {}
+        total_adjacency_matrix = complete_adjacency_matrix(self.geom_.adjacency_matrix, 
+                                                           self.geom_.X,
+                                                           X_test, **adjacency_kwds)
+        # Compute the affinity matrix, check method and kwds
+        if self.geom_.affinity_kwds is not None:
+            affinity_kwds = self.geom_.affinity_kwds
+        else:
+            affinity_kwds = {}
+        if self.geom_.affinity_method is not None:
+            affinity_method = self.geom_.affinity_method
+        else:
+            affinity_method = 'auto'
+        total_affinity_matrix = compute_affinity_matrix(total_adjacency_matrix, affinity_method,
+                                                       **affinity_kwds)
+        # Compute the affinity matrix, check method and kwds
+        if self.geom_.laplacian_kwds is not None:
+            laplacian_kwds = self.geom_.laplacian_kwds
+        else:
+            laplacian_kwds = {}
+        if self.geom_.laplacian_method is not None:
+            laplacian_method = self.geom_.laplacian_method
+        else:
+            self.laplacian_method = 'auto'
+        total_laplacian_matrix = compute_laplacian_matrix(total_affinity_matrix, laplacian_method,
+                                                       **laplacian_kwds)
+        # Take the columns of Laplacian and existing embedding and pass to Nystrom Extension
+        (n_sample_train) = self.geom_.adjacency_matrix.shape[0]
+        C = total_laplacian_matrix[:n_sample_train, :]
+        eigenvalues, eigenvectors = nystrom_extension(C, self.eigenvalues_, self.eigenvectors_)
+        # If diffusion maps compute diffusion time etc
+        if self.diffusion_maps:
+            embedding = compute_diffusion_maps(laplacian_method, eigenvectors, eigenvalues, self.diffusion_time)
+        else:
+            embedding = eigenvectors
+        (n_sample_test) = X_test.shape[0]
+        embedding_test=embedding[-n_sample_test, :]
+        return embedding_test, embedding

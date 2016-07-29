@@ -1,3 +1,4 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jun 21 11:11:40 2016
