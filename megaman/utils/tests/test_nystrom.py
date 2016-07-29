@@ -9,7 +9,7 @@ def test_nystrom_extension(seed=123):
     """ Test Nystrom Extension: low rank approximation is exact when
     G is itself low rank
     """
-    n = 5
+    n = 10
     s = 2
     rng = np.random.RandomState(seed)
     X = rng.randn(n, s)

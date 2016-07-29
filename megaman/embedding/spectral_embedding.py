@@ -24,10 +24,6 @@ from ..geometry.affinity import compute_affinity_matrix
 from ..geometry.laplacian import compute_laplacian_matrix
 from ..utils.nystrom_extension import nystrom_extension
 
-def check_fitted(estimator, attribute):
-    if not hasattr(estimator, embedding):
-        raise RuntimeError('the .fit() function must be called before the .predict() function')
-
 def _graph_connected_component(graph, node_id):
     """
     Find the largest graph connected components the contains one
@@ -274,15 +270,19 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     # sort the eigenvalues 
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
-    diffusion_map = diffusion_map[:, ind]
+    diffusion_map = diffusion_map[:, ind]        
     eigenvalues = lambdas.copy()
-    eigenvectors = lambdas.copy()
+    eigenvectors = diffusion_map.copy()
     if diffusion_maps:
         diffusion_map = compute_diffusion_maps(lapl_type, diffusion_map, lambdas, diffusion_time)
     if drop_first:
         embedding = diffusion_map[:, 1:(n_components+1)]
+        eigenvectors = eigenvectors[:, 1:(n_components+1)]
+        eigenvalues = eigenvalues[1:(n_components+1)]
     else:
         embedding = diffusion_map[:, :n_components]
+        eigenvectors = eigenvectors[:, :(n_components)]
+        eigenvalues = eigenvalues[:(n_components)]
     return embedding, eigenvalues, eigenvectors
 
 
@@ -412,17 +412,20 @@ class SpectralEmbedding(BaseEmbedding):
         
         Currently only works with input_type data (i.e. not affinity or distance)
         """
-        if not hasattr(self.geom_.X):
+        if not hasattr(self, 'geom_'):
+            raise RuntimeError('the .fit() function must be called before the .predict() function')
+        if self.geom_.X is None:
             raise NotImplementedError('method only implemented when X passed as data')
-        check_fitted(self, 'embedding_')
         # Complete the adjacency matrix
+        adjacency_kwds = self.geom_.adjacency_kwds
         if self.geom_.adjacency_method == 'cyflann':
-            adjacency_kwds = self.geom_.adjacency_kwds
-        else:
-            adjacency_kwds = {}
+            if 'cyflann_kwds' in adjacency_kwds.keys():
+                cyflann_kwds = adjacency_kwds['cyflann_kwds']
+            else:
+                cyflann_kwds = {}
         total_adjacency_matrix = complete_adjacency_matrix(self.geom_.adjacency_matrix, 
                                                            self.geom_.X,
-                                                           X_test, **adjacency_kwds)
+                                                           X_test,adjacency_kwds)
         # Compute the affinity matrix, check method and kwds
         if self.geom_.affinity_kwds is not None:
             affinity_kwds = self.geom_.affinity_kwds
@@ -447,13 +450,15 @@ class SpectralEmbedding(BaseEmbedding):
                                                        **laplacian_kwds)
         # Take the columns of Laplacian and existing embedding and pass to Nystrom Extension
         (n_sample_train) = self.geom_.adjacency_matrix.shape[0]
-        C = total_laplacian_matrix[:n_sample_train, :]
-        eigenvalues, eigenvectors = nystrom_extension(C, self.eigenvalues_, self.eigenvectors_)
+        total_laplacian_matrix = total_laplacian_matrix.tocsr()
+        C = total_laplacian_matrix[:, :n_sample_train]
+        # warnings.warn(str(C.shape))
+        eigenvalues, eigenvectors = nystrom_extension(C, self.eigenvectors_, self.eigenvalues_)
         # If diffusion maps compute diffusion time etc
         if self.diffusion_maps:
             embedding = compute_diffusion_maps(laplacian_method, eigenvectors, eigenvalues, self.diffusion_time)
         else:
             embedding = eigenvectors
         (n_sample_test) = X_test.shape[0]
-        embedding_test=embedding[-n_sample_test, :]
+        embedding_test=embedding[-n_sample_test:, :]
         return embedding_test, embedding

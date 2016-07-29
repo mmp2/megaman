@@ -14,7 +14,8 @@ def test_complete_adjacency():
     D_true = squareform(pdist(Xtotal))
     D_true[D_true > radius] = 0
     
+    adjacency_kwds = {'radius':radius}
     Dtrain = compute_adjacency_matrix(X, method='cyflann', radius = radius)
-    this_D = complete_adjacency_matrix(Dtrain, X, Xtest, radius = radius)
+    this_D = complete_adjacency_matrix(Dtrain, X, Xtest, adjacency_kwds)
     
-    assert_allclose(this_D.toarray(), D_true, rtol=1E-5)
+    assert_allclose(this_D.toarray(), D_true, rtol=1E-4)
