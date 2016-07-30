@@ -262,7 +262,7 @@ def test_predict_error_not_fitted(seed=36):
     assert_raise_message(RuntimeError, msg, se.predict, S_test)
 
 def test_predict_error_no_data(seed=36):
-    """ Test predict raises an error when data X are not passed"
+    """ Test predict raises an error when data X are not passed"""
     radius = 4.0
     se = SpectralEmbedding(n_components=2,
                            random_state=np.random.RandomState(seed))
