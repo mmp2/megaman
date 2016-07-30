@@ -235,7 +235,7 @@ def test_predict_size(seed=36):
         radius = 4.0
         geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
                     'laplacian_method':'geometric'}
-        se = SpectralEmbedding(n_components=2,eigen_solver="amg",
+        se = SpectralEmbedding(n_components=2,eigen_solver="arpack",
                                random_state=np.random.RandomState(seed), geom = geom_params)
         S_train = S[:900,:]
         S_test = S[-100:, :]
