@@ -8,7 +8,7 @@ import numpy as np
 import random 
 
 class Kmeans():
-    def __init__(self, K)
+    def __init__(self, K):
         self.K = K
 
     def fit(data):
@@ -91,8 +91,8 @@ def new_orthogonal_center(X,data_norms,centroids,center_norms=None):
     if center_norms is None:
         center_norms = np.linalg.norm(centroids, axis=1)
     cosine = np.inner(X,centroids) # cosine[i, j] = np.dot(X[i, :],centroids[j,:])
-    cosine /= center_norms # divide each column by the center norm
-    cosine /= data_norms[:,np.newaxis] # divide each row by the data norm  
+    cosine = cosine/center_norms # divide each column by the center norm
+    cosine = cosine / data_norms[:,np.newaxis] # divide each row by the data norm  
     max_cosine = np.abs(np.max(cosine, 1)) # the largest (absolute) cosine for each data point 
 
     # then we find the index of the new center:

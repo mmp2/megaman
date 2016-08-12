@@ -34,7 +34,8 @@ def test_adjacency_input_validation():
 
 
 def test_adjacency():
-    X = np.random.rand(100, 3)
+    rng = np.random.RandomState(36)
+    X = rng.rand(100, 3)
     Gtrue = {}
 
     exact_methods = [m for m in Adjacency.methods()
@@ -130,7 +131,7 @@ def test_cyflann_index_type():
         cyflann_kwds = {'index_type':index_type}
         adjacency_kwds = {'radius':radius, 'cyflann_kwds':cyflann_kwds}
         this_D = compute_adjacency_matrix(X=X, method = 'cyflann', **adjacency_kwds)
-        assert_allclose(this_D.toarray(), D_true, rtol=1E-5)
+        assert_allclose(this_D.toarray(), D_true, rtol=1E-5, atol=1E-5)
     
     for index_type in ['kmeans', 'kdtrees']:
         yield check_index_type, index_type

@@ -7,17 +7,12 @@
 
 import numpy as np
 from eigendecomp import eigen_decomposition
-from scipy.sparse import isspmatrix 
-from sklearn.cluster import KMeans
-from megaman.clustering.k_means import k_means_clustering
+from scipy.sparse import isspmatrix, identity
+from megaman.utils.k_means_clustering import k_means_clustering
+from megaman.embedding.base import BaseEmbedding
+from megaman.utils.validation import check_random_state
 
-'''
-* Implement P and L matrices in laplacian
-* Use geometry class for inputting data -- copy from embedding functions
-* Implement eigenvector rotation 
-'''
-
-class SpectralClustering():
+class SpectralClustering(BaseEmbedding):
     """
     Spectral clustering for find K clusters by using the eigenvectors of a 
     matrix which is derived from a set of similarities S.
@@ -51,14 +46,18 @@ class SpectralClustering():
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver    
     """    
     def __init__(self,K,eigen_solver='auto', 
-                 random_state=None, solver_kwds = None):
+                 random_state=None, solver_kwds = None,
+                 geom = None, radius = None, renormalize = True, stabalize = True):
         self.eigen_solver = eigen_solver
         self.random_state = random_state             
         self.K = K
         self.solver_kwds = solver_kwds 
+        self.geom = geom
+        self.radius = radius
+        self.renormalize = renormalize
+        self.stabalize = stabalize
      
-     
-    def fit(self, X, y=None, input_type='similarity'):
+    def fit(self, X, y=None, input_type='affinity'):
         """
         Fit the model from data in X.
 
@@ -73,19 +72,19 @@ class SpectralClustering():
         If self.input_type is similarity:
         X : array-like, shape (n_samples, n_samples),
             copy the similarity matrix X to S.    
-        """    
-        if input_type == 'data':
-            print('not working')
-        elif input_type == 'distance':
-            print('not working')
-        elif input_type == 'similarity':
-            S = X
-        else:
-            print('input_type is not recognized')
-            
-        spectral_clustering(S, K = self.K, eigen_solver = self.eigen_solver, random_state = self.random_state, solver_kwds = self.solver_kwds)   
+        """
+        X = self._validate_input(X, input_type)
+        self.fit_geometry(X, input_type)
+        random_state = check_random_state(self.random_state)            
+        self.embedding_, self.eigen_vectors_ = spectral_clustering(self.geom_, K = self.K, 
+                                                                   eigen_solver = self.eigen_solver, 
+                                                                   random_state = self.random_state, 
+                                                                   solver_kwds = self.solver_kwds,
+                                                                   renormalize = self.renormalize,
+                                                                   stabalize = self.stabalize)   
                 
-def spectral_clustering(S, K, eigen_solver = 'auto', random_state = None, solver_kwds = None, renormalize = False):
+def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, solver_kwds = None, 
+                        renormalize = True, stabalize = True):
     """
     Spectral clustering for find K clusters by using the eigenvectors of a 
     matrix which is derived from a set of similarities S.
@@ -123,25 +122,42 @@ def spectral_clustering(S, K, eigen_solver = 'auto', random_state = None, solver
     Returns
     -------
     labels: array-like, shape (1,n_samples)
-    """    
-# *Afterwards*: step 0: compute S matrix given a data set X
-
-# Step 1:
-    
-    d = np.asarray(S.sum(1)).squeeze()
-    P = S.copy()
-    if isspmatrix(P):
-        P = P.tocoo()
-        P.data /= d[P.row]
+    """ 
+    # Step 1: get similarity matrix
+    if geom.affinity_matrix is None:
+        S = geom.compute_affinity_matrix()
     else:
-        P /= d[:, np.newaxis]
+        S = geom.affinity_matrix
         
-    # Step 2 & 3: 
-    (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=K-1, eigen_solver=eigen_solver, random_state=random_state, solver_kwds=solver_kwds)
+    # Check for stability method, symmetric solvers require this
+    if eigen_solver in ['lobpcg', 'amg']:
+        stabalize = True
+    if stabalize:
+        geom.laplacian_type = 'symmetricnormalized'
+        return_lapsym = True
+    else:
+        geom.laplacian_type = 'randomwalk'
+        return_lapsym = False
+    
+    # Step 2: get the Laplacian matrix
+    P = geom.compute_laplacian_matrix(return_lapsym = return_lapsym)
+    # by default the Laplacian is subtracted from the Identify matrix (this step may not be needed)
+    P += identity(P.shape[0])        
+    
+    # Step 3: Compute the top K eigenvectors
+    (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=K-1, eigen_solver=eigen_solver, 
+                                                   random_state=random_state, solver_kwds=solver_kwds)
+    # If stability method chosen, adjust eigenvectors
+    if stabalize:
+        w = np.array(geom.laplacian_weights)
+        eigen_vectors /= np.sqrt(w[:,np.newaxis])
+        eigen_vectors /= np.linalg.norm(eigen_vectors, axis = 0)    
+    
+    # If renormalize: set each data point to unit length
     if renormalize:
         norms = np.linalg.norm(eigen_vectors, axis=1)
-        eigen_vectors /= norms
-    # Step 4: *afterwards*: write own K-means w/ orthogonal initialization
-    labels =  k_means_clustering(eigen_vectors,K)
+        eigen_vectors /= norms[:,np.newaxis]
     
-    return labels 
+    # Step 4: run k-means clustering
+    labels =  k_means_clustering(eigen_vectors,K)    
+    return labels, eigen_vectors
