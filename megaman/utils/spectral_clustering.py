@@ -44,6 +44,10 @@ class SpectralClustering(BaseEmbedding):
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState    
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver    
+    renormalize : (bool) whether or not to set the rows of the eigenvectors to have norm 1 
+                 this can improve label quality
+    stabalize : (bool) whether or not to compute the (more stable) eigenvectors of L = D^-1/2*S*D^-1/2
+                instead of P = D^-1*S 
     """    
     def __init__(self,K,eigen_solver='auto', 
                  random_state=None, solver_kwds = None,
@@ -147,6 +151,7 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
     # Step 3: Compute the top K eigenvectors
     (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=K-1, eigen_solver=eigen_solver, 
                                                    random_state=random_state, solver_kwds=solver_kwds)
+                                                   
     # If stability method chosen, adjust eigenvectors
     if stabalize:
         w = np.array(geom.laplacian_weights)
