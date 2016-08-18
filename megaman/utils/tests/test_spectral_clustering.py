@@ -1,6 +1,7 @@
 from sklearn import neighbors
 import numpy as np 
 
+from megaman.utils.eigendecomp import EIGEN_SOLVERS
 from megaman.utils.spectral_clustering import SpectralClustering
 
 def test_spectral_clustering():
@@ -26,5 +27,5 @@ def test_spectral_clustering():
             
     for stabalize in [True, False]:
         for renormalize in [True, False]:
-            for solver in ['dense', 'arpack', 'amg', 'lobpcg']:
+            for solver in EIGEN_SOLVERS:
                 yield check_labels, stabalize, renormalize, solver

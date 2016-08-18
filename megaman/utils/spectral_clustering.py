@@ -7,7 +7,7 @@
 
 import numpy as np
 import warnings
-from eigendecomp import eigen_decomposition
+from megaman.utils.eigendecomp import eigen_decomposition
 from scipy.sparse import isspmatrix, identity
 from megaman.utils.k_means_clustering import k_means_clustering
 from megaman.embedding.base import BaseEmbedding
@@ -161,7 +161,7 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
     P += identity(P.shape[0])        
     
     # Step 3: Compute the top K eigenvectors and drop the first 
-    if eigen_solver in ['amg', 'lobpcg']:
+    if eigen_solver in ['auto', 'amg', 'lobpcg']:
         n_components = 2*int(np.log(P.shape[0]))*K + 1
         n_components += int(additional_vectors)
     else:
@@ -171,7 +171,7 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
                                                    random_state=random_state, drop_first = True,
                                                    solver_kwds=solver_kwds)
     # the first vector is usually uninformative 
-    if eigen_solver in ['lobpcg', 'amg']:
+    if eigen_solver in ['auto', 'lobpcg', 'amg']:
         if np.abs(lambdas[0] - 1) > 1e-4:
             warnings.warn("largest eigenvalue not equal to 1. Results may be poor. Try increasing additional_vectors parameter")
     eigen_vectors = eigen_vectors[:, 1:K]
