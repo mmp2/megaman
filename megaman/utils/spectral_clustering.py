@@ -6,6 +6,7 @@
 
 
 import numpy as np
+import warnings
 from eigendecomp import eigen_decomposition
 from scipy.sparse import isspmatrix, identity
 from megaman.utils.k_means_clustering import k_means_clustering
@@ -51,7 +52,8 @@ class SpectralClustering(BaseEmbedding):
     """    
     def __init__(self,K,eigen_solver='auto', 
                  random_state=None, solver_kwds = None,
-                 geom = None, radius = None, renormalize = True, stabalize = True):
+                 geom = None, radius = None, renormalize = True, stabalize = True,
+                 additional_vectors=0):
         self.eigen_solver = eigen_solver
         self.random_state = random_state             
         self.K = K
@@ -60,6 +62,7 @@ class SpectralClustering(BaseEmbedding):
         self.radius = radius
         self.renormalize = renormalize
         self.stabalize = stabalize
+        self.additional_vectors = 0
      
     def fit(self, X, y=None, input_type='affinity'):
         """
@@ -80,15 +83,16 @@ class SpectralClustering(BaseEmbedding):
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
         random_state = check_random_state(self.random_state)            
-        self.embedding_, self.eigen_vectors_ = spectral_clustering(self.geom_, K = self.K, 
+        self.embedding_, self.eigen_vectors_, self.P_ = spectral_clustering(self.geom_, K = self.K, 
                                                                    eigen_solver = self.eigen_solver, 
                                                                    random_state = self.random_state, 
                                                                    solver_kwds = self.solver_kwds,
                                                                    renormalize = self.renormalize,
-                                                                   stabalize = self.stabalize)   
+                                                                   stabalize = self.stabalize,
+                                                                   additional_vectors = self.additional_vectors)   
                 
 def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, solver_kwds = None, 
-                        renormalize = True, stabalize = True):
+                        renormalize = True, stabalize = True, additional_vectors = 0):
     """
     Spectral clustering for find K clusters by using the eigenvectors of a 
     matrix which is derived from a set of similarities S.
@@ -122,7 +126,15 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState    
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver 
-    renormalize : bool
+    renormalize : (bool) whether or not to set the rows of the eigenvectors to have norm 1 
+                 this can improve label quality
+    stabalize : (bool) whether or not to compute the (more stable) eigenvectors of L = D^-1/2*S*D^-1/2
+                instead of P = D^-1*S 
+    additional_vectors : (int) compute additional eigen vectors when computing eigen decomposition.
+        When eigen_solver = 'amg' or 'lopcg' often if a small number of eigen values is sought the
+        largest eigenvalue returned is *not* equal to 1 (it should be). This can usually be fixed
+        by requesting more than K eigenvalues until the first eigenvalue is close to 1 and then
+        omitted. The remaining K-1 eigenvectors should be informative. 
     Returns
     -------
     labels: array-like, shape (1,n_samples)
@@ -148,10 +160,21 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
     # by default the Laplacian is subtracted from the Identify matrix (this step may not be needed)
     P += identity(P.shape[0])        
     
-    # Step 3: Compute the top K eigenvectors
-    (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=K-1, eigen_solver=eigen_solver, 
-                                                   random_state=random_state, solver_kwds=solver_kwds)
-                                                   
+    # Step 3: Compute the top K eigenvectors and drop the first 
+    if eigen_solver in ['amg', 'lobpcg']:
+        n_components = min(2*int(np.log(P.shape[0]))*K + 1, P.shape[0])
+    else:
+        n_components = K
+    n_components += int(additional_vectors)
+    (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=n_components, eigen_solver=eigen_solver, 
+                                                   random_state=random_state, drop_first = True,
+                                                   solver_kwds=solver_kwds)
+    # the first vector is usually uninformative 
+    if np.abs(lambdas[0] - 1) > 1e-4:
+        warnings.warn("largest eigenvalue not equal to 1. Results may be poor. Try increasing additional_vectors parameter")
+    eigen_vectors = eigen_vectors[:, 1:K]
+    lambdas = lambdas[1:K]
+    
     # If stability method chosen, adjust eigenvectors
     if stabalize:
         w = np.array(geom.laplacian_weights)
@@ -165,4 +188,4 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
     
     # Step 4: run k-means clustering
     labels =  k_means_clustering(eigen_vectors,K)    
-    return labels, eigen_vectors
+    return labels, eigen_vectors, P

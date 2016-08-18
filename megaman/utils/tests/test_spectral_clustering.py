@@ -5,13 +5,19 @@ from megaman.utils.spectral_clustering import SpectralClustering
 
 def test_spectral_clustering():
     K = 3
-    num_per_cluster = 50
+    num_per_cluster = 200
     c = np.array([[1,0,0], [0,1,0], [0,0,1]])
     X = np.repeat(c, np.repeat(num_per_cluster, K), axis = 0)
     radius = 5 
     
-    def check_labels(stabalize, renormalize):
-        SC = SpectralClustering(K=K, radius=radius, stabalize=stabalize, renormalize=renormalize)
+    def check_labels(stabalize, renormalize, eigen_solver):
+        if eigen_solver in ['dense', 'auto']:
+            solver_kwds = {}
+        else:
+            solver_kwds = {}
+        SC = SpectralClustering(K=K, radius=radius, stabalize=stabalize, renormalize=renormalize,
+                                eigen_solver = eigen_solver, solver_kwds=solver_kwds,
+                                additional_vectors = 100)
         labels = SC.fit_transform(X, input_type= 'data')
         for k in range(K):        
             cluster_labs = labels[range((k*num_per_cluster),((k+1)*num_per_cluster))] 
@@ -20,4 +26,5 @@ def test_spectral_clustering():
             
     for stabalize in [True, False]:
         for renormalize in [True, False]:
-            yield check_labels, stabalize, renormalize
+            for solver in ['dense', 'arpack', 'amg', 'lobpcg']:
+                yield check_labels, stabalize, renormalize, solver
