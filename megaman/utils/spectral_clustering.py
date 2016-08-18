@@ -162,16 +162,18 @@ def spectral_clustering(geom, K, eigen_solver = 'dense', random_state = None, so
     
     # Step 3: Compute the top K eigenvectors and drop the first 
     if eigen_solver in ['amg', 'lobpcg']:
-        n_components = min(2*int(np.log(P.shape[0]))*K + 1, P.shape[0])
+        n_components = 2*int(np.log(P.shape[0]))*K + 1
+        n_components += int(additional_vectors)
     else:
         n_components = K
-    n_components += int(additional_vectors)
+    n_components = min(n_components, P.shape[0])
     (lambdas, eigen_vectors) = eigen_decomposition(P, n_components=n_components, eigen_solver=eigen_solver, 
                                                    random_state=random_state, drop_first = True,
                                                    solver_kwds=solver_kwds)
     # the first vector is usually uninformative 
-    if np.abs(lambdas[0] - 1) > 1e-4:
-        warnings.warn("largest eigenvalue not equal to 1. Results may be poor. Try increasing additional_vectors parameter")
+    if eigen_solver in ['lobpcg', 'amg']:
+        if np.abs(lambdas[0] - 1) > 1e-4:
+            warnings.warn("largest eigenvalue not equal to 1. Results may be poor. Try increasing additional_vectors parameter")
     eigen_vectors = eigen_vectors[:, 1:K]
     lambdas = lambdas[1:K]
     
