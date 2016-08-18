@@ -56,7 +56,11 @@ def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 's
     the problem of geometric discovery",
     Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255
     """
-    n_samples = laplacian.shape[0]
+    #Temporary fix that won't break anything.
+    try:
+       n_samples = laplacian.shape[0]
+    except TypeError:
+       print "Unexpected error: Missing laplacian."
     h_dual_metric = np.zeros((n_samples, n_dim, n_dim ))
     for i in np.arange(n_dim ):
         for j in np.arange(i,n_dim ):
