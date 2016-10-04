@@ -23,6 +23,7 @@ steps and indices to allow for fast re-computation with new parameters.
 Package documentation can be found at http://mmp2.github.io/megaman/
 
 If you use our software please cite the following JMLR paper: 
+
 McQueen, Meila, VanderPlas & Zhang, "Megaman: Scalable Manifold Learning in Python",
 Journal of Machine Learning Research, Vol 17 no. 14, 2016.
 http://jmlr.org/papers/v17/16-109.html
