@@ -28,7 +28,9 @@ before_install:
 - conda config --set always_yes yes
 - conda update conda
 - conda info -a
-- conda install -c $CONDA_CHANNEL python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS $EXTRA_DEPS
+- conda create testenv python=$TRAVIS_PYTHON_VERSION
+- source activate testenv
+- conda install -c $CONDA_CHANNEL $CONDA_DEPS $EXTRA_DEPS
 - travis_retry pip install $PIP_DEPS
 
 install:
