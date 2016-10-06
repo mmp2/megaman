@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import subprocess
+import importlib.machinery
 
 
 def read(path, encoding='utf-8'):
