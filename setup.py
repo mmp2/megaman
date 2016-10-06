@@ -6,7 +6,11 @@ import os
 import re
 import sys
 import subprocess
-import importlib.machinery
+
+PY2 = sys.version_info[0] == 2
+PY3 = not PY2
+if PY3:
+    import importlib.machinery
 
 
 def read(path, encoding='utf-8'):
