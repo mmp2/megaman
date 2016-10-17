@@ -67,12 +67,13 @@ void CyflannIndex::buildIndex(){
 int CyflannIndex::knnSearch(const std::vector<float>& queries,
         std::vector< std::vector<int> >& indices,
         std::vector< std::vector<float> >& dists,
-        int knn, int num_dims) {
+        int knn, int num_dims, int num_checks) {
     int num_pts = queries.size() / num_dims;
     float* array = new float[queries.size()];
     std::copy(queries.begin(), queries.end(), array);
     Matrix<float> qpts(array, num_pts, num_dims);
-    int res = index_->knnSearch(qpts, indices, dists, knn, SearchParams());
+    int res = index_->knnSearch(qpts, indices, dists, knn,
+        SearchParams(num_checks));
     delete[] array;
     return res;
 }
@@ -80,12 +81,13 @@ int CyflannIndex::knnSearch(const std::vector<float>& queries,
 int CyflannIndex::radiusSearch(const std::vector<float>& queries,
         std::vector< std::vector<int> >& indices,
         std::vector< std::vector<float> >& dists,
-        float radius, int num_dims) {
+        float radius, int num_dims, int num_checks) {
     int num_pts = queries.size() / num_dims;
     float* array = new float[queries.size()];
     std::copy(queries.begin(), queries.end(), array);
     Matrix<float> dataset(array, num_pts, num_dims);
-    int res = index_->radiusSearch(dataset, indices, dists, radius, SearchParams());
+    int res = index_->radiusSearch(dataset, indices, dists, radius,
+        SearchParams(num_checks));
     delete[] array;
     return res;
 }

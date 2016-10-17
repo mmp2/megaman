@@ -26,11 +26,11 @@ cdef extern from "cyflann_index.h":
         int knnSearch(const vector[dtype_t]& queries,
             vector[vector[dtypei_t]]& indices,
             vector[vector[dtype_t]]& dists,
-            dtypei_t knn, dtypei_t num_dims)
+            dtypei_t knn, dtypei_t num_dims, dtypei_t num_checks)
         int radiusSearch(const vector[dtype_t]& queries,
             vector[vector[dtypei_t]]& indices,
             vector[vector[dtype_t]]& dists,
-            dtype_t radius, dtypei_t num_dims)
+            dtype_t radius, dtypei_t num_dims, dtypei_t num_checks)
         void save(string filename)
         int veclen()
         int size()

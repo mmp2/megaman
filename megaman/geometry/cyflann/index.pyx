@@ -54,7 +54,8 @@ cdef class Index:
         """
         self._thisptr.buildIndex()
 
-    def knn_neighbors_graph(self, np.ndarray[double, ndim=2] X, int knn):
+    def knn_neighbors_graph(self, np.ndarray[double, ndim=2] X, int knn,
+            int num_checks=32):
         if knn < 1:
             raise ValueError('neighbors_radius must be >=0.')
         cdef int nsam, ndim
@@ -64,7 +65,7 @@ cdef class Index:
         cdef vector[vector[dtypei_t]] indices;
         cdef vector[vector[dtype_t]] dists;
         cdef int res = self._thisptr.knnSearch(X.flatten(), indices, dists,
-                knn, ndim)
+                knn, ndim, num_checks)
         lengths = [len(nghbr_idx) for nghbr_idx in indices]
         indpts = list(np.cumsum(lengths))
         indpts.insert(0,0)
@@ -83,7 +84,7 @@ cdef class Index:
         return graph
 
     def radius_neighbors_graph(self, np.ndarray[double, ndim=2] X,
-            float radius):
+            float radius, int num_checks=32):
         """
         Constructs a sparse distance matrix called graph in csr
         format.
@@ -98,6 +99,9 @@ cdef class Index:
 
             Attention when converting to dense: The rest of the distances
             should not be considered 0, but "large".
+        num_checks: specifying the number of times the tree(s) in the index
+            should be recursively traversed. A higher value for this parameter
+            would give better search precision, but also take more time.
 
         Returns
         -------
@@ -119,7 +123,7 @@ cdef class Index:
         cdef vector[vector[dtypei_t]] indices;
         cdef vector[vector[dtype_t]] dists;
         cdef int res = self._thisptr.radiusSearch(X.flatten(), indices, dists,
-                radius, ndim)
+                radius, ndim, num_checks)
         lengths = [len(nghbr_idx) for nghbr_idx in indices]
         indpts = list(np.cumsum(lengths))
         indpts.insert(0,0)
