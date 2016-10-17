@@ -9,6 +9,7 @@ from sklearn.utils.validation import check_random_state
 
 from .validation import check_array
 
+
 EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg']
 BAD_EIGEN_SOLVERS = {}
 AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse']

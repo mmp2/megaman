@@ -1,3 +1,4 @@
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jun 21 11:11:40 2016
@@ -6,6 +7,8 @@ Created on Tue Jun 21 11:11:40 2016
 """
 from __future__ import division 
 import numpy as np
+import warnings
+from scipy.sparse import isspmatrix
 def nystrom_extension(C, e_vec, e_val):
     """
     Parameters
@@ -29,15 +32,18 @@ def nystrom_extension(C, e_vec, e_val):
       These are the corresponding eig vectors to eval_nystrom
       
     """
-    n,l = C.shape    
+    n,l = C.shape
     W = C[0:l, :]
     eval_nystrom = (n/l)*e_val
     eval_inv = e_val.copy()
-    e_nonzero = [i for i, e in enumerate(e_val) if e != 0] #np.nonzero(a)[0]
+    e_nonzero = np.where(e_val != 0)
+    # e_nonzero = [i for i, e in enumerate(e_val) if e != 0] #np.nonzero(a)[0]
     eval_inv[e_nonzero] = 1.0/e_val[e_nonzero]
     
-    evec_nystrom = np.dot(C,e_vec)*eval_inv
-    evec_nystrom = np.sqrt(l/n)*evec_nystrom
+    if isspmatrix(C):
+        evec_nystrom = np.sqrt(l/n)*C.dot(e_vec)*eval_inv
+    else:
+        evec_nystrom = np.sqrt(l/n)*np.dot(C,e_vec)*eval_inv
     return eval_nystrom,evec_nystrom
     
     

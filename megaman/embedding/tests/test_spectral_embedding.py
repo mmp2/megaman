@@ -19,6 +19,7 @@ import megaman.geometry.geometry as geom
 
 from sklearn.metrics import normalized_mutual_info_score
 from sklearn.datasets.samples_generator import make_blobs
+from megaman.utils.testing import assert_raise_message
 
 
 # non centered, sparse centers to check the
@@ -227,3 +228,49 @@ def test_connectivity(seed=36):
     assert_equal(_graph_is_connected(graph), True)
     assert_equal(_graph_is_connected(csr_matrix(graph)), True)
     assert_equal(_graph_is_connected(csc_matrix(graph)), True)
+
+def test_predict_size(seed=36):
+    """Test the predict function returns appropriate size data"""
+    def check_size(diffusion_maps):
+        radius = 4.0
+        geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
+                    'laplacian_method':'geometric'}
+        se = SpectralEmbedding(n_components=2,eigen_solver="arpack",
+                               random_state=np.random.RandomState(seed), geom = geom_params)
+        S_train = S[:900,:]
+        S_test = S[-100:, :]
+        embed_train= se.fit_transform(S_train)
+        embed_test, embed_total = se.predict(S_test)
+        assert(embed_test.shape[0] == S_test.shape[0])
+        assert(embed_test.shape[1] == embed_train.shape[1])
+        assert(embed_total.shape[0] == S.shape[0])
+        assert(embed_total.shape[1] == embed_train.shape[1])
+    
+    for diffusion_maps in [False, True]:
+        yield check_size, diffusion_maps
+
+def test_predict_error_not_fitted(seed=36):
+    """ Test predict function raises an error when .fit() has not been called"""
+    radius = 4.0
+    geom_params = {'affinity_kwds':{'radius':radius}, 'adjacency_kwds':{'radius':radius}, 'adjacency_method':'brute',
+                'laplacian_method':'geometric'}
+    se = SpectralEmbedding(n_components=2,eigen_solver="arpack",
+                           random_state=np.random.RandomState(seed), geom = geom_params)
+    S_train = S[:900,:]
+    S_test = S[-100:, :]
+    msg = 'the .fit() function must be called before the .predict() function'
+    assert_raise_message(RuntimeError, msg, se.predict, S_test)
+
+def test_predict_error_no_data(seed=36):
+    """ Test predict raises an error when data X are not passed"""
+    radius = 4.0
+    se = SpectralEmbedding(n_components=2,
+                           random_state=np.random.RandomState(seed))
+    G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':radius},
+                      affinity_kwds = {'radius':radius})
+    G.set_data_matrix(S)
+    S_test = S[-100:, :]
+    A = G.compute_affinity_matrix()
+    embed = se.fit_transform(A, input_type = 'affinity')
+    msg = 'method only implemented when X passed as data'
+    assert_raise_message(NotImplementedError, msg, se.predict, S_test)

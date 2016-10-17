@@ -7,6 +7,11 @@ import re
 import sys
 import subprocess
 
+PY2 = sys.version_info[0] == 2
+PY3 = not PY2
+if PY3:
+    import importlib.machinery
+
 
 def read(path, encoding='utf-8'):
     path = os.path.join(os.path.dirname(__file__), path)

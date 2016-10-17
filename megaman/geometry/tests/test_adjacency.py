@@ -34,7 +34,8 @@ def test_adjacency_input_validation():
 
 
 def test_adjacency():
-    X = np.random.rand(100, 3)
+    rng = np.random.RandomState(36)
+    X = rng.rand(100, 3)
     Gtrue = {}
 
     exact_methods = [m for m in Adjacency.methods()
@@ -117,3 +118,20 @@ def test_custom_adjacency():
     assert_allclose(D, cdist(X, X))
 
     Adjacency._remove_from_registry("custom")
+
+def test_cyflann_index_type():
+    rand = np.random.RandomState(36)
+    X = rand.randn(10, 2)
+    D_true = squareform(pdist(X))
+    D_true[D_true > 1.5] = 0
+    
+    def check_index_type(index_type):
+        method = 'cyflann'
+        radius = 1.5
+        cyflann_kwds = {'index_type':index_type}
+        adjacency_kwds = {'radius':radius, 'cyflann_kwds':cyflann_kwds}
+        this_D = compute_adjacency_matrix(X=X, method = 'cyflann', **adjacency_kwds)
+        assert_allclose(this_D.toarray(), D_true, rtol=1E-5, atol=1E-5)
+    
+    for index_type in ['kmeans', 'kdtrees']:
+        yield check_index_type, index_type

@@ -16,7 +16,7 @@ from scipy import sparse
 from numpy.linalg import eigh, svd, inv
 
 
-def riemann_metric( Y, laplacian=None, n_dim=None, invert_h=False, mode_inv = 'svd'):
+def riemann_metric( Y, laplacian, n_dim=None, invert_h=False, mode_inv = 'svd'):
     """
     Parameters
     ----------
