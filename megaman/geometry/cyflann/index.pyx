@@ -56,7 +56,7 @@ cdef class Index:
         self._thisptr.buildIndex()
 
     def knn_neighbors_graph(self, np.ndarray[double, ndim=2] X, int knn,
-            int num_checks=32):
+            int num_checks=48):
         if knn < 1:
             raise ValueError('neighbors_radius must be >=0.')
         cdef int nsam, ndim
