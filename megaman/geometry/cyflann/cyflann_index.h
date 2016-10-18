@@ -32,12 +32,12 @@ public:
     int knnSearch(const std::vector<float>& queries,
             std::vector< std::vector<int> >& indices,
             std::vector< std::vector<float> >& dists,
-            int knn, int num_dims);
+            int knn, int num_dims, int num_checks);
 
     int radiusSearch(const std::vector<float>& queries,
             std::vector< std::vector<int> >& indices,
             std::vector< std::vector<float> >& dists,
-            float radius, int num_dims);
+            float radius, int num_dims, int num_checks);
 
     void save(std::string filename);
 
