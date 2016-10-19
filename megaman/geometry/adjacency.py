@@ -21,7 +21,7 @@ def compute_adjacency_matrix(X, method='auto', **kwargs):
             method = 'cyflann'
         else:
             method = 'kd_tree'
-    return Adjacency.init(method, **kwargs).adjacency_graph(X)
+    return Adjacency.init(method, **kwargs).adjacency_graph(X.astype('float'))
 
 
 def adjacency_methods():
@@ -86,6 +86,15 @@ class CyFLANNAdjacency(Adjacency):
         self.flann_index = flann_index
         self.target_precision = target_precision
         self.cyflann_kwds = cyflann_kwds
+        if cyflann_kwds is not None:
+            if 'num_checks' in cyflann_kwds.keys():
+                self.check_kwds = {'num_checks':self.cyflann_kwds['num_checks']}
+                del cyflann_kwds['num_checks']
+            else:
+                self.check_kwds = {}
+        else:
+            self.check_kwds = {}
+            
         super(CyFLANNAdjacency, self).__init__(radius=radius,
                                                n_neighbors=n_neighbors,
                                                mode='distance')
@@ -105,7 +114,7 @@ class CyFLANNAdjacency(Adjacency):
 
 
     def radius_adjacency(self, index, queries):
-        return index.radius_neighbors_graph(queries, self.radius)
+        return index.radius_neighbors_graph(queries, self.radius, **self.check_kwds)
 
 
     def knn_addjacency(self, index, queries):
@@ -114,7 +123,7 @@ class CyFLANNAdjacency(Adjacency):
 
     def radius_adjacency(self, X):
         cyindex = self._get_built_index(X)
-        return cyindex.radius_neighbors_graph(X, self.radius)
+        return cyindex.radius_neighbors_graph(X, self.radius, **self.check_kwds)
 
 
     def knn_adjacency(self, X):
