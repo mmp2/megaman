@@ -64,7 +64,7 @@ To install megaman from source requires the following:
 Optional requirements include
 
 - [pyamg](http://pyamg.org/), which allows for faster decompositions of large matrices
-- [pysamg](http://sca i.fraunhofer.de/samg/), which allows for even faster decompositions of large matrices. This needs and is included in the commercial Fraunhofer SAMG.  For licensing (including test or educational licenses) contact samg@scai.fraunhofer.de
+- [pysamg](http://scai.fraunhofer.de/samg/), which allows for even faster decompositions of large matrices. This needs and is included in the commercial software Fraunhofer SAMG.  For licensing (including test or educational licenses) contact samg@scai.fraunhofer.de
 - [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [nose](https://nose.readthedocs.org/) for running the unit tests
 

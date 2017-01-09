@@ -12,7 +12,8 @@ from .validation import check_array
 
 EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'samg']
 BAD_EIGEN_SOLVERS = {}
-AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse', 'samg_param']
+AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse',
+            'samg_param']
 
 try:
     from pyamg import smoothed_aggregation_solver
@@ -233,19 +234,28 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
             warnings.warn("AMG works better for sparse matrices")
 
         ### Use SAMG to get a preconditioner and speed up the eigenvalue problem.
-        G = check_array(G, accept_sparse = ['csr']) # Ensure we're dealing with CSR matrix
+        G = check_array(G, accept_sparse = ['csr']) # Ensure we're dealing with
+                                                    # CSR matrix
 
-        ## Determine if the matrix may be too dense for standard SAMG parameters (only if the user didn't supply own SAMG parameters)
-        if 'samg_param' not in amg_kwds or all(x not in amg_kwds['samg_param'] for x in ['ncg','ecg','a_cmplx','g_cmplx','w_avrge','nwt']):
+        ## Determine if the matrix may be too dense for standard SAMG parameters
+        ## (only if the user didn't supply own SAMG parameters)
+        if ('samg_param' not in amg_kwds or all(x not in amg_kwds['samg_param']
+                    for x in ['ncg','ecg','a_cmplx','g_cmplx','w_avrge','nwt'])):
             density = G.getnnz()/G.shape[0] # Calculate the entries per row
             if density >= 40:
-                warnings.warn("The given matrix has more than 40 entries per row: switching to a more agressive coarsening to prevent overuse of memory.")
+                warnings.warn("The given matrix has more than 40 entries per "
+                              "row: switching to a more agressive coarsening to"
+                              "prevent overuse of memory.")
                 if 'samg_param' not in amg_kwds:
                     amg_kwds['samg_param'] = dict()
-                amg_kwds['samg_param'].update({'ncg':171, 'ecg':21.9, 'a_cmplx':4.5, 'g_cmplx':1.3, 'w_avrge':1.7, 'nwt':1}) # aggregative coarsening
+                # aggregative coarsening
+                amg_kwds['samg_param'].update({'ncg':171, 'ecg':21.9,
+                                               'a_cmplx':4.5, 'g_cmplx':1.3,
+                                               'w_avrge':1.7, 'nwt':1})
 
             elif density >= 20:
-                warnings.warn("The given matrix has more than 20 entries per row: standard SAMG parameters may use to much memory.")
+                warnings.warn("The given matrix has more than 20 entries per row:"
+                              "standard SAMG parameters may use to much memory.")
 
         s = SAMG.Solver(G, **(amg_kwds or {}))
         M = s.aspreconditioner()
@@ -311,7 +321,8 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
             algorithm will attempt to choose the best method for input data
         'dense' :
             use standard dense matrix operations for the eigenvalue decomposition.
-            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
+            For this method, M must be an array or matrix type.
+            This method should be avoided for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
