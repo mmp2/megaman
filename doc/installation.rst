@@ -30,10 +30,11 @@ To install ``megaman`` from source requires the following:
 Optional requirements include:
 
 - pyamg_, which provides fast decompositions of large sparse matrices
+- pysamg_, which  provides fast decompositions of large sparse matrices. This needs and is included in the commercial software Fraunhofer SAMG.
 - pyflann_, which offers an alternative FLANN interface for computing distance matrices (this is bundled with the FLANN source code)
 - nose_ for running the unit tests
 
-These requirements can be installed on Linux and MacOSX using the following conda command::
+These requirements (except SAMG) can be installed on Linux and MacOSX using the following conda command::
 
     $ conda install --channel=jakevdp pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
 
@@ -60,6 +61,7 @@ or, outside the source directory once ``megaman`` is installed::
 .. _scikit-learn: http://scikit-learn.org
 .. _FLANN: http://www.cs.ubc.ca/research/flann/
 .. _pyamg: http://pyamg.org/
+.. _pysamg: http://scai.fraunhofer.de/samg/
 .. _pyflann: http://www.cs.ubc.ca/research/flann/
 .. _nose: https://nose.readthedocs.org/
 .. _cython: http://cython.org/

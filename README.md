@@ -22,7 +22,7 @@ steps and indices to allow for fast re-computation with new parameters.
 
 Package documentation can be found at http://mmp2.github.io/megaman/
 
-If you use our software please cite the following JMLR paper: 
+If you use our software please cite the following JMLR paper:
 
 McQueen, Meila, VanderPlas, & Zhang, "Megaman: Scalable Manifold Learning in Python",
 Journal of Machine Learning Research, Vol 17 no. 14, 2016.
@@ -64,10 +64,11 @@ To install megaman from source requires the following:
 Optional requirements include
 
 - [pyamg](http://pyamg.org/), which allows for faster decompositions of large matrices
+- [pysamg](http://sca i.fraunhofer.de/samg/), which allows for even faster decompositions of large matrices. This needs and is included in the commercial Fraunhofer SAMG.  For licensing (including test or educational licenses) contact samg@scai.fraunhofer.de
 - [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [nose](https://nose.readthedocs.org/) for running the unit tests
 
-These requirements can be installed on Linux and MacOSX using the following conda command:
+These requirements(except for SAMG) can be installed on Linux and MacOSX using the following conda command:
 
 ```
 $ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
@@ -91,7 +92,7 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 - [Zhongyue Zhang](https://github.com/Jerryzcn)
 - [Jake VanderPlas](http://www.vanderplas.com)
 
-## Other Contributors 
+## Other Contributors
 
 - Xiao Wang: lazy rmetric, Nystrom Extension
 

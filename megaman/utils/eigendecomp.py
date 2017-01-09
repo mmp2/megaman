@@ -10,9 +10,9 @@ from sklearn.utils.validation import check_random_state
 from .validation import check_array
 
 
-EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg']
+EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'samg']
 BAD_EIGEN_SOLVERS = {}
-AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse']
+AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse', 'samg_param']
 
 try:
     from pyamg import smoothed_aggregation_solver
@@ -23,6 +23,18 @@ except ImportError:
     BAD_EIGEN_SOLVERS['amg'] = """The eigen_solver was set to 'amg',
     but pyamg is not available. Please either
     install pyamg or use another method."""
+
+try:
+    from pysamg import SAMG
+    SAMG_LOADED = True
+    EIGEN_SOLVERS.append('samg')
+except ImportError:
+    SAMG_LOADED = False
+    BAD_EIGEN_SOLVERS['samg'] = """The eigen_solver was set to 'samg',
+    but SAMG is not available. Please either
+    install SAMG or use another method. For more information and
+    licensing (including test or educational licenses)
+    contact samg@scai.fraunhofer.de """
 
 
 def check_eigen_solver(eigen_solver, solver_kwds, size=None, nvec=None):
@@ -59,7 +71,10 @@ def check_eigen_solver(eigen_solver, solver_kwds, size=None, nvec=None):
 
         elif eigen_solver == 'auto':
             if size > 200 and nvec < 10:
-                if PYAMG_LOADED:
+                if SAMG_LOADED:
+                    eigen_solver = 'samg'
+                    solver_kwds = None
+                elif PYAMG_LOADED:
                     eigen_solver = 'amg'
                     solver_kwds = None
                 else:
@@ -92,7 +107,7 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
         The square matrix for which to compute the eigen-decomposition.
     n_components : integer, optional
         The number of eigenvectors to return
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             attempt to choose the best method for input data (default)
         'dense' :
@@ -112,9 +127,17 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
             Algebraic Multigrid solver (requires ``pyamg`` to be installed)
             It can be faster on very large, sparse problems, but may also lead
             to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
-        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
+        lobpcg eigen vectors decomposition when eigen_solver == 'amg'
+        or eigen_solver == 'samg'.
         By default, arpack is used.
     solver_kwds : any additional keyword arguments to pass to the selected eigen_solver
 
@@ -192,6 +215,54 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
             diffusion_map = diffusion_map[:, sort_order]
         lambdas = lambdas[:n_components]
         diffusion_map = diffusion_map[:, :n_components]
+    elif eigen_solver == 'samg':
+        # separate samg & lobpcg keywords:
+        if solver_kwds is not None:
+            amg_kwds = {}
+            lobpcg_kwds = solver_kwds.copy()
+            for kwd in AMG_KWDS:
+                if kwd in solver_kwds.keys():
+                    amg_kwds[kwd] = solver_kwds[kwd]
+                    del lobpcg_kwds[kwd]
+        else:
+            amg_kwds = dict() # Not None, because we may need it later, see below
+            lobpcg_kwds = None
+        if not is_symmetric:
+            raise ValueError("lobpcg requires symmetric matrices.")
+        if not sparse.issparse(G):
+            warnings.warn("AMG works better for sparse matrices")
+
+        ### Use SAMG to get a preconditioner and speed up the eigenvalue problem.
+        G = check_array(G, accept_sparse = ['csr']) # Ensure we're dealing with CSR matrix
+
+        ## Determine if the matrix may be too dense for standard SAMG parameters (only if the user didn't supply own SAMG parameters)
+        if 'samg_param' not in amg_kwds or all(x not in amg_kwds['samg_param'] for x in ['ncg','ecg','a_cmplx','g_cmplx','w_avrge','nwt']):
+            density = G.getnnz()/G.shape[0] # Calculate the entries per row
+            if density >= 40:
+                warnings.warn("The given matrix has more than 40 entries per row: switching to a more agressive coarsening to prevent overuse of memory.")
+                if 'samg_param' not in amg_kwds:
+                    amg_kwds['samg_param'] = dict()
+                amg_kwds['samg_param'].update({'ncg':171, 'ecg':21.9, 'a_cmplx':4.5, 'g_cmplx':1.3, 'w_avrge':1.7, 'nwt':1}) # aggregative coarsening
+
+            elif density >= 20:
+                warnings.warn("The given matrix has more than 20 entries per row: standard SAMG parameters may use to much memory.")
+
+        s = SAMG.Solver(G, **(amg_kwds or {}))
+        M = s.aspreconditioner()
+
+        n_find = min(n_nodes, 5 + 2*n_components)
+        X = random_state.rand(n_nodes, n_find)
+        X[:, 0] = (G.diagonal()).ravel()
+        lambdas, diffusion_map = lobpcg(G, X, M=M, largest=largest,**(lobpcg_kwds or {}))
+        sort_order = np.argsort(lambdas)
+        if largest:
+            lambdas = lambdas[sort_order[::-1]]
+            diffusion_map = diffusion_map[:, sort_order[::-1]]
+        else:
+            lambdas = lambdas[sort_order]
+            diffusion_map = diffusion_map[:, sort_order]
+        lambdas = lambdas[:n_components]
+        diffusion_map = diffusion_map[:, :n_components]
     elif eigen_solver == "lobpcg":
         if not is_symmetric:
             raise ValueError("lobpcg requires symmetric matrices.")
@@ -235,7 +306,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
         Number of eigenvalues/vectors to return
     k_skip : integer, optional
         Number of low eigenvalues to skip.
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
@@ -253,6 +324,13 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state: numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
@@ -262,12 +340,12 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
     -------
     null_space : estimated k vectors of the null space
     error : estimated error (sum of eigenvalues)
-    
+
     Notes
     -----
     dense solver key words: see
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html
-        for symmetric problems and 
+        for symmetric problems and
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig
         for non symmetric problems.
     arpack sovler key words: see
@@ -314,7 +392,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
             # M, eigvals=(k_skip, k + k_skip - 1), overwrite_a=True)
         # index = np.argsort(np.abs(eigen_values))
         # return eigen_vectors[:, index], np.sum(eigen_values)
-    elif (eigen_solver == 'amg' or eigen_solver == 'lobpcg'):
+    elif (eigen_solver == 'amg' or eigen_solver == 'samg' or eigen_solver == 'lobpcg'):
         # M should be positive semi-definite. Add 1 to make it pos. def.
         try:
             M = sparse.identity(M.shape[0]) + M
