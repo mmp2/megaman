@@ -8,7 +8,11 @@ from large_sparse_functions import *
 from scipy.io import loadmat, mmread
 from scipy.sparse import issparse, csr_matrix
 import multiprocessing as mp
+import time
 
+# GLOBALS
+DIST = None
+X = None
 
 def compute_laplacian_by_row(A, sample, radius):
     d = A.sum(0)
@@ -67,18 +71,19 @@ def distortion(X, L, sample, PS, nbrs, n, d):
     return distortion
     
 def evaluate_radius(radius, d, sample):
-    global Dists
+    global DIST
     global X
+    
     t0 = time.time()
-    D = Dists.copy()
+    D = DIST.copy()
     (n, dim) = X.shape
     D.data[D.data > radius] = 0.0
     D.eliminate_zeros()    
-    r = radius / 3.0
-    affinity_kwds = {'radius':r}
+    h = np.sqrt(2)*radius / 3.0
+    affinity_kwds = {'radius':h}
     A = compute_affinity_matrix(D, 'gaussian', **affinity_kwds)
     (PS, nbrs) = compute_nbr_wts(A, sample)
-    L = compute_laplacian_matrix(A, method = 'geometric', scaling_epps = r)
+    L = compute_laplacian_matrix(A, method = 'geometric', scaling_epps = h)
     L = L.tocsr()
     e_dist = distortion(X, L, sample, PS, nbrs, n, d)
     t1 = time.time()
@@ -99,55 +104,61 @@ def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes):
     results = [pool.apply_async(evaluate_radius, args = (r,d,sample)) for r in radii]
     results = [p.get() for p in results]
     results.sort()
-    return(results)
+    return(np.array(results))
     
-if __name__ == '__main__':
-    # turn this into a main function 
+def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel):
+    """
+    This function is used to estimate the bandwidth, h, of the Gaussian Kernel:
+        exp(-||x_i - x_j||/2h^2)
+        
     
-    import time
-    from numpy.random import RandomState
+    The "radius" refers to the truncation constant which we take to be 3*h 
+    and this is the parameter over which we will iterate.     
     
-    # see the random choice
-    rng = RandomState(98107)
+    We use the method of: https://arxiv.org/abs/1406.0118    
+
+    Parameters
+    ----------
+    data : numpy array,
+        Original data set for which we are estimating the bandwidth
+    dists : scipy.csr_matrix,
+        A CSR matrix containing pairwise distances from data up to rmax 
+    sample : np.array,
+        subset of data points over which to evaluate the radii 
+    d : int,
+        dimension over which to evaluate the radii (smaller usually better)
+    rmin : float,
+        smallest radius ( = 3 * bandwidth) to consider 
+    rmax : float,
+        largest radius ( = 3 * bandwidth) to consider 
+    ntry : int,
+        number of radii between rmax and rmin to try 
+    run_parallel : bool,
+        whether to run the analysis in parallel over radii 
+        
+    Returns
+    -------
+    results : np.array (2d)
+        first column is the set of radii and the second column is the distortion 
+        (smaller is better)
     
-    # parameters:
-    d = 3
-    rmin = 40
-    rmax = 400
-    ntry = 20
-    multi = True
-    fbase = '/homes/jmcq/astro/'
-    
-    nsam = int(200)
-    print('using real data...')
-    fname = fbase + 'combined_spectra_distance_radius_35000_trees_100.mat'
-    print("loading in distances...")
-    Dists = loadmat(fname)
-    Dists = Dists['distmatrix']
-    Dists = Dists.tocsr()
-    Dists.data[Dists.data > rmax] = 0.0
-    Dists.eliminate_zeros()    
-    sample_info = loadmat('spectra_pc_data.mat')
-    pc_points = sample_info['pc_points_all_index'].flatten()
-    # sample = np.random.choice(pc_points, nsam, replace = False) # choose from principal curves 
-    sample = rng.choice(pc_points, nsam, replace = False) # choose from principal curves 
-    print("reading in data...")
-    fname = 'combined_spectra_clean.mtx'
-    X = mmread(fname)
-    if issparse(X):
-        X = X.todense()
+    """    
+    # declare global variables
+    global DIST
+    global X
+
+    # process distance matrix 
+    dists = dists.tocsr()
+    dists.data[dists.data > rmax] = 0.0
+    dists.eliminate_zeros()    
+
+    # Assign global variables
+    DIST = dists
+    X = data
+
     n, dim = X.shape
-    
-    '''
-    print('using artificial data...')
-    X = rng.randn(1000, 10)
-    from scipy.spatial.distance import squareform, pdist
-    Dists = csr_matrix(squareform(pdist(X)))
-    sample = range(100)
-    '''
-    print('using d = ' + str(d))
     t0 = time.time()
-    if multi:
+    if run_parallel:
         ncpu = mp.cpu_count() # 32 for Newton
         processes = int(min(ntry, ncpu))
         print('using ' + str(processes) + ' processes to perform asynchronous parallel radius search')
@@ -156,5 +167,4 @@ if __name__ == '__main__':
         results = radius_search(d, sample, rmin, rmax, ntry)
     t1 = time.time()
     print('analysis took: ' + str(t1 - t0) + ' seconds to complete.')
-    print(results)
-    cPickle.dump(results, open(fbase + 'radius_search_d_3.p', 'wb'))
+    return(results)
