@@ -1,14 +1,9 @@
 import numpy as np
-import cPickle
-import sys
+import sys, time
 from megaman.geometry.rmetric import riemann_metric_lazy
 from megaman.geometry.affinity import compute_affinity_matrix
 from megaman.geometry.laplacian import compute_laplacian_matrix
-from large_sparse_functions import * 
-from scipy.io import loadmat, mmread
-from scipy.sparse import issparse, csr_matrix
 import multiprocessing as mp
-import time
 
 # GLOBALS
 DIST = None

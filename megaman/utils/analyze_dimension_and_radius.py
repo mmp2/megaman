@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 from __future__ import division 
-import sys, time, pickle
+import sys, time, matplotlib
 import numpy as np
-import scipy.io, scipy
-from scipy.sparse.csgraph import connected_components
-import cPickle
 
-import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pylab import polyfit
