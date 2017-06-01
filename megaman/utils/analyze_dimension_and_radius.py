@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 from __future__ import division 
-import sys, time, matplotlib
+try:
+    import matplotlib
+    MATPLOTLIB_LOADED = True
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+except ImportError:
+    MATPLOTLIB_LOADED = False
+
+import sys, time
 import numpy as np
 
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from pylab import polyfit
+from numpy import polyfit
 
 from megaman.geometry.adjacency import compute_adjacency_matrix
 
@@ -63,21 +69,22 @@ def find_dimension_plot(avg_neighbors, radii, fit_range, savefig=False, fname='d
     except:
         m = 0
         b = 0
-    plt.scatter(radii, avg_neighbors)
-    plt.plot(radii, avg_neighbors, color='red')
-    plt.plot(radii[fit_range], np.exp(b)*radii[fit_range]**m, color='blue')
-    plt.yscale('log')
-    plt.xscale('log')
-    plt.xlabel('radius')
-    plt.ylabel('neighbors')
-    plt.title('data dim='+repr(m)[:4] + "\nRadius = [" + str(np.min(radii)) + ", " + str(np.max(radii)) + "]")
-    plt.xlim([np.min(radii), np.max(radii)])
-    plt.xticks(np.round(radii[tickrange], 1), np.round(radii[tickrange], 1))
-    plt.grid(b=True,which='minor')
-    print('dim=', m )
-    plt.show()
-    if savefig:
-        plt.savefig(fname, format='png')  
+    if MATPLOTLIB_LOADED:
+        plt.scatter(radii, avg_neighbors)
+        plt.plot(radii, avg_neighbors, color='red')
+        plt.plot(radii[fit_range], np.exp(b)*radii[fit_range]**m, color='blue')
+        plt.yscale('log')
+        plt.xscale('log')
+        plt.xlabel('radius')
+        plt.ylabel('neighbors')
+        plt.title('data dim='+repr(m)[:4] + "\nRadius = [" + str(np.min(radii)) + ", " + str(np.max(radii)) + "]")
+        plt.xlim([np.min(radii), np.max(radii)])
+        plt.xticks(np.round(radii[tickrange], 1), np.round(radii[tickrange], 1))
+        plt.grid(b=True,which='minor')
+        print('dim=', m )
+        plt.show()
+        if savefig:
+            plt.savefig(fname, format='png')  
     return(m)
     
 def run_analyze_dimension_and_radius(data, rmin, rmax, nradii, adjacency_method='brute', adjacency_kwds = {}, 
