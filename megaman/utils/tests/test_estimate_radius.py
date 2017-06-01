@@ -5,7 +5,7 @@ from megaman.utils.estimate_radius import run_estimate_radius
 from scipy.sparse import csr_matrix
 from numpy.testing import assert_array_almost_equal
 
-def test_radius_serial_parallel(seed=1234):
+def test_radius_serial_vs_parallel(seed=1234):
     rng = RandomState(seed)
     X = rng.randn(100, 10)
     dists = csr_matrix(squareform(pdist(X)))

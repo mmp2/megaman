@@ -10,32 +10,21 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from pylab import polyfit
-from large_sparse_functions import *
 
 from megaman.geometry.adjacency import compute_adjacency_matrix
 
-def compute_largest_radius_distance(X, rad, num_checks, num_trees, fbase, nparts):
+def compute_largest_radius_distance(X, rad, adjacency_method, adjacency_kwds):
     print('computing distance matrix...')
-    # adjacency_method = 'cyflann'
-    # cyflann_kwds = {'index_type':'kdtrees', 'num_trees':num_trees, 'num_checks':num_checks}
-    # kwds = {'radius':rad, 'cyflann_kwds':cyflann_kwds} 
-    print('using brute force...')
-    adjacency_method = 'brute'
-    kwds = {'radius':rad} 
+    adjacency_kwds['radius'] = rad
     t0 = time.time()
-    dists = compute_adjacency_matrix(X,adjacency_method,**kwds)
+    dists = compute_adjacency_matrix(X,adjacency_method,**adjacency_kwds)
     print("Symmetrizing distance matrix...")
     dists = (dists + dists.T) # symmetrize, removes zero on diagonal
     dists.data = 0.5 * dists.data 
     print("largest distance found: " + str(np.max(dists.data)))
-    # fname = fbase + 'dists_radius' + str(rad) + '_num_trees_' + str(num_trees)+'_num_checks_' + str(num_checks)
-    fname = fbase + 'dists_radius' + str(rad) + '_brute_force'
-    # save in parts: 
-    print("saving distance matrix...")
-    save_sparse_in_k_parts(dists, fname, nparts)
     return(dists)
 
-def neighborhood_analysis(dists, radii, fbase):
+def neighborhood_analysis(dists, radii):
     n_samples = dists.shape[0]; nradii = len(radii)
     avg_neighbors = np.zeros(nradii); num_no_nbrs = np.zeros(nradii); 
     max_neighbors = np.zeros(nradii); min_neighbors = np.zeros(nradii)
@@ -69,10 +58,9 @@ def neighborhood_analysis(dists, radii, fbase):
                'max_neighbors':max_neighbors,
                'num_no_neighbors':num_no_nbrs,
                'radii':radii}
-    scipy.io.savemat(fbase + 'results_find_dim_and_radius.mat', results)
     return(results)
 
-def find_dimension_plot(avg_neighbors, radii, fit_range, fname):
+def find_dimension_plot(avg_neighbors, radii, fit_range, savefig=False, fname='dimension_plot.png'):
     tickrange = np.append(np.arange(0, len(radii)-1, 10), len(radii)-1)
     try:
         m,b = polyfit(np.log(radii[fit_range]), np.log(avg_neighbors[fit_range]), 1)
@@ -91,32 +79,58 @@ def find_dimension_plot(avg_neighbors, radii, fit_range, fname):
     plt.xticks(np.round(radii[tickrange], 1), np.round(radii[tickrange], 1))
     plt.grid(b=True,which='minor')
     print('dim=', m )
-    plt.savefig(fname, format='png')  
+    plt.show()
+    if savefig:
+        plt.savefig(fname, format='png')  
     return(m)
+    
+def run_analyze_dimension_and_radius(data, rmin, rmax, nradii, adjacency_method='brute', adjacency_kwds = {}, 
+                                     fit_range=None, savefig=False, plot_name = 'dimension_plot.png'):
+    """
+    This function is used to estimate the doubling dimension (approximately equal to the intrinsic
+    dimension) by computing a graph of neighborhood radius versus average number of neighbors.
+    
+    The "radius" refers to the truncation constant where all distances greater than
+    a specified radius are taken to be infinite. This is used for example in the
+    truncated Gaussian kernel in estimate_radius.py
+    
 
-if __name__ == '__main__':
-    # turn this into a main function 
-    fbase = '/homes/jmcq/molecule_analysis/clean/results/normed_subset_'
-    print('reading in data...')
-    fname = 'chembl_22_clean_1575727_ipam_2K_embedding_csc_sparse_col_normed_subset.pkl'
-    with open(fname, 'rb') as f:
-        X = cPickle.load(f).toarray()
-    n, D = X.shape
-    rmin = 2
-    rmax = 200
-    radii = 10**(np.linspace(np.log10(rmin), np.log10(rmax)))
-    # num_trees = 8
-    # num_checks = 2048
-    # print("performing radius analysis...")
-    # nparts = 5
-    # dists = compute_largest_radius_distance(X, rmax, num_checks, num_trees, fbase, nparts)
-    # results = neighborhood_analysis(dists, radii, fbase)
-    results = scipy.io.loadmat('/homes/jmcq/molecule_analysis/clean/results/normed_subset_results_find_dim_and_radius.mat')
+    Parameters
+    ----------
+    data : numpy array,
+        Original data set for which we are estimating the bandwidth
+    rmin : float,
+        smallest radius to consider 
+    rmax : float,
+        largest radius to consider 
+    nradii : int,
+        number of radii between rmax and rmin to consider 
+    adjacency_method : string,
+        megaman adjacency method to use, default 'brute' see geometry.py for details
+    adjacency_kwds : dict,
+        dictionary of keywords for adjacency method
+    fit_range : list of ints,
+        range of radii to consider default is range(nradii), i.e. all of them 
+    savefig: bool,
+        whether to save the radius vs. neighbors figure 
+    plot_name: string,
+        filename of the figure to be saved as. 
+        
+    Returns
+    -------
+    results : dictionary
+        contains the radii, average nieghbors, min and max number of neighbors and number
+        of points with no neighbors. 
+    dim : float,
+        estimated doubling dimension (used as an estimate of the intrinsic dimension)        
+    """
+    n, D = data.shape
+    radii = 10**(np.linspace(np.log10(rmin), np.log10(rmax), nradii))
+    dists = compute_largest_radius_distance(data, rmax, adjacency_method, adjacency_kwds)
+    results = neighborhood_analysis(dists, radii)
     avg_neighbors = results['avg_neighbors'].flatten()
     radii = results['radii'].flatten()
-    fit_range = range(len(radii))
-    fit_range = np.where((radii > 20) & (radii < 30))[0]
-    fname = fbase + 'neighbors_dimension_rad_' + str(rmin) + '_' + str(rmax) + '.png'
-    print("building dimension plot...")
-    dim = find_dimension_plot(avg_neighbors, radii, fit_range, fname)
-    print("job complete.")
+    if fit_range is None:
+        fit_range = range(len(radii))
+    dim = find_dimension_plot(avg_neighbors, radii, fit_range, savefig, plot_name)
+    return(results, dim)
