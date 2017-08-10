@@ -1,8 +1,6 @@
 # megaman: Manifold Learning for Millions of Points
 
-<img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/word2vec_rmetric_plot_no_digits.png" height=210>
-<img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_D4000.png" height=210>
-<img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_Halpha.png" height=210>
+<img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/word2vec_rmetric_plot_no_digits.png" height=200><img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_D4000.png" height=200><img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_Halpha.png" height=200>
 
 [![build status](http://img.shields.io/travis/mmp2/megaman/master.svg?style=flat)](https://travis-ci.org/mmp2/megaman)
 [![version status](http://img.shields.io/pypi/v/megaman.svg?style=flat)](https://pypi.python.org/pypi/megaman)
