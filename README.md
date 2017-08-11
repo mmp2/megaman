@@ -2,6 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/word2vec_rmetric_plot_no_digits.png" height=200><img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_D4000.png" height=200><img src="https://raw.githubusercontent.com/mmp2/megaman/master/doc/images/spectra_Halpha.png" height=200>
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/megaman/badges/downloads.svg)](https://anaconda.org/conda-forge/megaman)
 [![build status](http://img.shields.io/travis/mmp2/megaman/master.svg?style=flat)](https://travis-ci.org/mmp2/megaman)
 [![version status](http://img.shields.io/pypi/v/megaman.svg?style=flat)](https://pypi.python.org/pypi/megaman)
 [![license](http://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/mmp2/megaman/blob/master/LICENSE)
