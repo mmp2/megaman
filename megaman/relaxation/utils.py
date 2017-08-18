@@ -4,6 +4,7 @@ import time, os
 default_basedir = os.path.join(os.getcwd(), 'backup')
 
 def split_kwargs(relaxation_kwds):
+    """Split relaxation keywords to keywords for optimizer and others"""
     optimizer_keys_list = [
         'step_method',
         'linesearch',
@@ -18,8 +19,49 @@ def split_kwargs(relaxation_kwds):
     return optimizer_kwargs, relaxation_kwds
 
 
-# TODO: It should be make into OOP but not now.
 def initialize_kwds(relaxation_kwds, n_samples, n_components, intrinsic_dim):
+    """
+    Initialize relaxation keywords.
+
+    Parameters
+    ----------
+    relaxation_kwds : dict
+        weights : numpy array, the weights
+        step_method : string { 'fixed', 'momentum' }
+            which optimizers to use
+        linesearch : bool
+            whether to do linesearch in search for eta in optimization
+        verbose : bool
+            whether to print reports to I/O when doing relaxation
+        niter : int
+            number of iterations to run.
+        niter_trace : int
+            number of iterations to be traced.
+        presave : bool
+            whether to store precomputed keywords to files or not.
+        sqrd : bool
+            whether to use squared norm in loss function. Default : True
+        alpha : float
+            shrinkage rate for previous gradient. Default : 0
+        projected : bool
+            whether or not to optimize via projected gradient descent on differences S
+        lossf : string { 'epsilon', 'rloss' }
+            which loss function to optimize.
+            Default : 'rloss' if n == d, otherwise 'epsilon'
+        subset : numpy array
+            Subset to do relaxation on.
+        sub_dir : string
+            sub_dir used to store the outputs.
+        backup_base_dir : string
+            base directory used to store outputs
+            Final path will be backup_base_dir/sub_dir
+        saveiter : int
+            save backup on every saveiter iterations
+        printiter : int
+            print report on every printiter iterations
+        save_init : bool
+            whether to save Y0 and L before running relaxation.
+    """
     new_relaxation_kwds = {
         'weights': np.array([],dtype=np.float64),
         'step_method': 'fixed',
@@ -27,7 +69,6 @@ def initialize_kwds(relaxation_kwds, n_samples, n_components, intrinsic_dim):
         'verbose': False,
         'niter': 2000,
         'niter_trace': 0,
-        'preload': False,
         'presave': False,
         'sqrd': True,
         'alpha': 0,
@@ -35,17 +76,13 @@ def initialize_kwds(relaxation_kwds, n_samples, n_components, intrinsic_dim):
         'lossf': 'epsilon' if n_components > intrinsic_dim else 'rloss',
         'subset': np.arange(n_samples),
         'sub_dir': current_time_str(),
+        'backup_base_dir': default_basedir,
         'saveiter': 10,
         'printiter': 1,
-        'savebackup': True,
-        'backup_base_dir': default_basedir,
         'save_init': False,
     }
 
-    # TODO: add to choose not save!
     new_relaxation_kwds.update(relaxation_kwds)
-    # new_results_dir = os.path.join(new_relaxation_kwds['base_dir'], new_relaxation_kwds['sub_dir'])
-    # new_relaxation_kwds.setdefault('results_dir', new_results_dir)
 
     backup_dir = os.path.join(new_relaxation_kwds['backup_base_dir'], new_relaxation_kwds['sub_dir'])
     new_relaxation_kwds['backup_dir'] = backup_dir

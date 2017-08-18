@@ -30,7 +30,7 @@ def _regression_test(if_epsilon):
             for idx,H in enumerate(var.H_list):
                 rr.H = H
                 rr.Y = np.copy(var.Y_list[idx])
-                calculated_DL_list.append(rr.DL_global_subset())
+                calculated_DL_list.append(rr.compute_gradient())
 
             for idx,grad in enumerate(var.grad_list):
                 rr.grad = grad
@@ -39,7 +39,7 @@ def _regression_test(if_epsilon):
                 if if_epsilon:
                     rr.H = rr.compute_dual_rmetric()
                     rr.UU, rr.IUUEPS = compute_principal_plane(rr.H,rr.epsI,var.d)
-                rr.make_step_global_subset(first_iter=(idx == 0))
+                rr.make_optimization_step(first_iter=(idx == 0))
                 calculated_Y_list.append(rr.Y)
 
             np.testing.assert_allclose(

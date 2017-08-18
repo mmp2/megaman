@@ -10,7 +10,6 @@ basic_kwds = {
     'verbose': False,
     'niter': 2000,
     'niter_trace': 0,
-    'preload': False,
     'presave': False,
     'sqrd': True,
     'alpha': 0,

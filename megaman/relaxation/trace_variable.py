@@ -4,6 +4,10 @@ import os, pickle, pprint, copy
 from .utils import *
 
 class TracingVariable(object):
+    """
+    The TracingVariable is the class to store the variables to trace and
+    print relaxation reports in each 'printiter' iteration.
+    """
     def __init__(self,n,s,relaxation_kwds,precomputed_kwds,**kwargs):
         self.niter_trace = relaxation_kwds['niter_trace']
         self.niter = relaxation_kwds['niter']
@@ -27,6 +31,7 @@ class TracingVariable(object):
         return copy.deepcopy(self)
 
     def report_and_save_keywords(self,relaxation_kwds,precomputed_kwds):
+        """Save relaxation keywords to .txt and .pyc file"""
         report_name = os.path.join(self.backup_dir,'relaxation_keywords.txt')
         pretty_relax_kwds = pprint.pformat(relaxation_kwds,indent=4)
         with open(report_name,'w') as wf:
@@ -45,6 +50,7 @@ class TracingVariable(object):
             po.close()
 
     def update(self,iiter,H,Y,eta,loss):
+        """Update the trace_var in new iteration"""
         if iiter <= self.niter_trace+1:
             self.H[iiter] = H
             self.Y[iiter] = Y
@@ -78,12 +84,12 @@ class TracingVariable(object):
 
     @classmethod
     def save(cls,instance,filename):
-        # TODO: test with protocol issue...
+        """Class method save for saving TracingVariable."""
         filename = cls.correct_file_extension(filename)
         try:
             with open(filename,'wb') as f:
                 pickle.dump(instance,f,protocol=pickle.HIGHEST_PROTOCOL)
-        # HACK: use the method belows to solve saving the issue temperarily.
+        # HACK: use the method belows to solve the MemoryError issue temperarily.
         except MemoryError as e:
             print ('{} occurred, will downsampled the saved file by 20.'.format(type(e).__name__))
             copy_instance = instance.copy()
@@ -94,6 +100,7 @@ class TracingVariable(object):
 
     @classmethod
     def load(cls,filename):
+        """Load from stored files"""
         filename = cls.correct_file_extension(filename)
         with open(filename,'rb') as f:
             return pickle.load(f)

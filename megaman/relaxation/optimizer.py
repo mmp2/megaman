@@ -5,6 +5,20 @@ def init_optimizer(**kwargs):
     return BaseOptimizer.init(optimizer, **kwargs)
 
 class BaseOptimizer(RegisterSubclasses):
+    """
+    Base class for the optimizer.
+
+    Parameters
+    ----------
+    linesearch : bool
+        If use linesearch to search for optima eta.
+    eta_max : float
+        (Linesearch mode) The maximum eta to start search with in linesearch mode.
+    eta : float
+        (Non linesearch mode) The eta to use in non linsearch mode
+    linesearch_first : bool
+        (Linesearch mode)  If do linesearch at first iteration.
+    """
     def __init__(self,linesearch=False, eta_max=None, eta=None, linesearch_first=False, **kwargs):
         self.linesearch = linesearch
         if self.linesearch:
@@ -25,11 +39,6 @@ class BaseOptimizer(RegisterSubclasses):
             return self._apply_linesearch_optimzation(update_embedding_with,grad,**kwargs)
         else:
             return self._apply_fixed_optimization(update_embedding_with,grad,**kwargs)
-
-    def _apply_fixed_optimization(self,update_embedding_with,grad,**kwargs):
-        delta = self._calc_delta(grad)
-        update_embedding_with(delta=delta)
-        return delta
 
     def _apply_linesearch_optimzation(self,update_embedding_with,grad,calc_loss,loss,**kwargs):
         self.eta = self.eta_max
@@ -52,15 +61,22 @@ class BaseOptimizer(RegisterSubclasses):
         self.eta /= 2
         return loss_diff, temp_embedding, delta
 
+    def _apply_fixed_optimization(self,update_embedding_with,grad,**kwargs):
+        delta = self._calc_delta(grad)
+        update_embedding_with(delta=delta)
+        return delta
+
     def _calc_delta(self,grad,**kwargs):
         raise NotImplementedError()
 
 class FixedOptimizer(BaseOptimizer):
+    """Optimizer for fixed method."""
     name='fixed'
     def _calc_delta(self,grad,**kwargs):
         return -self.eta*grad
 
 class MomentumOptimizer(BaseOptimizer):
+    """Optimizer for momentum method."""
     name='momentum'
     def __init__(self,momentum,**kwargs):
         BaseOptimizer.__init__(**kwargs)

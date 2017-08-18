@@ -24,6 +24,23 @@ def run_riemannian_relaxation(laplacian,initial_guess,intrinsic_dim,relaxation_k
     return RiemannianRelaxation.init(lossf,laplacian,initial_guess,intrinsic_dim,relaxation_kwds)
 
 class RiemannianRelaxation(RegisterSubclasses):
+    """
+    The RiemannianRelaxation class is an interface for doing reimannian relaxation.
+    The RiemannianRelaxation class stores loss function, tracing variables and optimizers.
+
+    Parameters
+    ----------
+    laplacian : (n x n) sparse matrix
+        The laplacian matrix of the embedding genereated from
+        other manifold learning algorithms.
+    initial_guess : (n x s) array
+        embedding genereated by other manifold learning algorithms
+    intrinsic_dim : int
+        intrinsic dimension of the manifold
+    relaxation_kwds : dict
+        Contains keyword arguments for RiemannianRelaxation,
+        see relaxation/utils.py for arguments for each method.
+    """
     def __init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
         laplacian = sp.sparse.csc_matrix(laplacian)
         self.laplacian_matrix = laplacian
@@ -46,6 +63,26 @@ class RiemannianRelaxation(RegisterSubclasses):
     def _init_precomp(self):
         raise NotImplementedError()
 
+    def relax_isometry(self):
+        for ii in range(self.relaxation_kwds['niter']):
+            self.H = self.compute_dual_rmetric()
+
+            self.loss = self.rieman_loss()
+            self.trace_var.update(ii,self.H,self.Y,self.eta,self.loss)
+            self.trace_var.print_report(ii)
+            self.trace_var.save_backup(ii)
+
+            self.compute_gradient()
+
+            self.make_optimization_step(first_iter=(ii == 0))
+
+        self.H = self.compute_dual_rmetric()
+
+        self.trace_var.update(-1,self.H,self.Y,self.eta,self.loss)
+        self.trace_var.print_report(ii)
+        tracevar_path = os.path.join(self.trace_var.backup_dir, 'results.pyc')
+        TracingVariable.save(self.trace_var,tracevar_path)
+
     def calc_loss(self,embedding):
         Hnew = self.compute_dual_rmetric(Ynew=embedding)
         return self.rieman_loss(Hnew=Hnew)
@@ -55,45 +92,14 @@ class RiemannianRelaxation(RegisterSubclasses):
         rieman_metric = RiemannMetric(usedY, self.laplacian_matrix)
         return rieman_metric.get_dual_rmetric()
 
-    def relax_isometry(self):
-        for ii in range(self.relaxation_kwds['niter']):
-            self.ii = ii
-            self.H = self.compute_dual_rmetric()
+    def rieman_loss(self,Hnew=None):
+        raise NotImplementedError()
 
-            self.loss = self.rieman_loss()
-            self.trace_var.update(ii,self.H,self.Y,self.eta,self.loss)
-            self.trace_var.print_report(ii)
-            self.trace_var.save_backup(ii)
-
-            self.DL_global_subset()
-
-            self.make_step_global_subset(first_iter=(ii == 0))
-
-        self.H = self.compute_dual_rmetric()
-
-        self.trace_var.update(-1,self.H,self.Y,self.eta,self.loss)
-        self.trace_var.print_report(ii)
-        tracevar_path = os.path.join(self.trace_var.backup_dir, 'results.pyc')
-        TracingVariable.save(self.trace_var,tracevar_path)
-
-    # TODO: try to merge the below two function.
-    # TODO: also remove the method_args stuffs.
-
-    def make_step_global_subset(self,first_iter=False):
-        self.optimizer.apply_optimization(
-            lambda **kwargs: self.update_embedding_with(**kwargs),
-            self.grad,
-            calc_loss=lambda embedding: self.calc_loss(embedding),
-            loss=self.loss,
-            first_iter=first_iter,
-        )
-        self.eta = self.optimizer.eta
-
-    def DL_global_subset(self):
+    def compute_gradient(self):
         self.grad = self.relaxation_kwds['alpha']*self.grad
         orig_grad = np.copy(self.grad)
         for idx in self.relaxation_kwds['subset']:
-            dLk = self.compute_dLk(idx)
+            dLk = self._compute_dLk(idx)
             dLk_full = np.zeros((self.grad.shape[0],dLk.shape[1]))
             sidx = self.precomputed_kwds['si_map'][idx]
             dLk_full[self.precomputed_kwds['nbk'][sidx],:] += dLk
@@ -103,17 +109,24 @@ class RiemannianRelaxation(RegisterSubclasses):
             self.grad += dLk_full
         return self.grad - orig_grad
 
-    def compute_dLk(self,k):
+    def _compute_dLk(self,k):
         raise NotImplementedError()
 
-    def part_dLk(self,Vk,nbk):
+    def _part_dLk(self,Vk,nbk):
         raise NotImplementedError()
 
-    def rieman_loss(self,Hnew=None):
+    def _get_Vk_nbk(self,k):
         raise NotImplementedError()
 
-    def get_Vk_nbk(self,k):
-        raise NotImplementedError()
+    def make_optimization_step(self,first_iter=False):
+        self.optimizer.apply_optimization(
+            lambda **kwargs: self.update_embedding_with(**kwargs),
+            self.grad,
+            calc_loss=lambda embedding: self.calc_loss(embedding),
+            loss=self.loss,
+            first_iter=first_iter,
+        )
+        self.eta = self.optimizer.eta
 
     def update_embedding_with(self,**kwargs):
         delta = kwargs.get('delta', None)
@@ -139,7 +152,7 @@ class ProjectedClass(RiemannianRelaxation):
         self.n_S = self.S.shape[0]
         self.grad = np.zeros((self.n_S, self.s))
 
-    def get_Vk_nbk(self,k):
+    def _get_Vk_nbk(self,k):
         return self.precomputed_kwds['RK'][k], self.precomputed_kwds['nbk'][k]
 
     def _update_with_delta(self,delta,copy=False):
@@ -161,7 +174,7 @@ class NonProjectedClass(RiemannianRelaxation):
         self.grad = np.zeros((self.n, self.s))
         self.Y -= np.mean(self.Y, axis=0)
 
-    def get_Vk_nbk(self,k):
+    def _get_Vk_nbk(self,k):
         try:
             sidx = self.precomputed_kwds['si_map'][k]
         except Exception as e:
@@ -178,7 +191,7 @@ class NonProjectedClass(RiemannianRelaxation):
         self.Y = embedding
         return embedding
 
-class EpisonRiemannianRelaxation(RiemannianRelaxation):
+class EpsilonRiemannianRelaxation(RiemannianRelaxation):
     name_suffix = 'epsilon'
     def __init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
         RiemannianRelaxation.__init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds)
@@ -197,25 +210,25 @@ class EpisonRiemannianRelaxation(RiemannianRelaxation):
         loss = np.mean(err) if not self.relaxation_kwds['weights'].shape[0] == self.n else self.relaxation_kwds['weights'].T.dot(err)
         return loss
 
-    def compute_dLk(self,k):
+    def _compute_dLk(self,k):
         Uk = principal_space(self.H[k], self.d)
         self.UU[k], self.IUUEPS[k], self.HUU[k] = epsilon_norm(self.H[k],Uk,self.epsI)
-        Vk, nbk = self.get_Vk_nbk(k)
-        argmax_eig_vec, fact, lambda_max_abs_v = DM(self.HUU[k])
+        Vk, nbk = self._get_Vk_nbk(k)
+        argmax_eig_vec, fact, lambda_max_abs_v = matrix_derivative(self.HUU[k])
         v = self.IUUEPS[k].dot(argmax_eig_vec)
-        dLK = self.part_dLk(Vk,nbk).dot( np.tensordot(v, v,axes=0) )*fact
+        dLK = self._part_dLk(Vk,nbk).dot( np.tensordot(v, v,axes=0) )*fact
         if self.relaxation_kwds['sqrd']:
             dLK = 2*lambda_max_abs_v*dLK
         return dLK
 
-class ProjectedEpsilonRiemannianRelaxation(EpisonRiemannianRelaxation,ProjectedClass):
-    name='{}_{}'.format(ProjectedClass.name_prefix,EpisonRiemannianRelaxation.name_suffix)
-    def part_dLk(self,Vk,nbk):
+class ProjectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,ProjectedClass):
+    name='{}_{}'.format(ProjectedClass.name_prefix,EpsilonRiemannianRelaxation.name_suffix)
+    def _part_dLk(self,Vk,nbk):
         return np.multiply(Vk.reshape(-1,1),self.S[nbk,:])
 
-class NonprojectedEpsilonRiemannianRelaxation(EpisonRiemannianRelaxation,NonProjectedClass):
-    name='{}_{}'.format(NonProjectedClass.name_prefix,EpisonRiemannianRelaxation.name_suffix)
-    def part_dLk(self,Vk,nbk):
+class NonprojectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,NonProjectedClass):
+    name='{}_{}'.format(NonProjectedClass.name_prefix,EpsilonRiemannianRelaxation.name_suffix)
+    def _part_dLk(self,Vk,nbk):
         return Vk.dot(self.Y[nbk,:])
 
 class RLossRiemannianRelaxation(RiemannianRelaxation):
@@ -233,29 +246,28 @@ class RLossRiemannianRelaxation(RiemannianRelaxation):
         loss = np.mean(err) if self.relaxation_kwds['weights'].shape[0] != self.n else self.relaxation_kwds['weights'].T.dot(err)
         return loss
 
-    def compute_dLk(self,k):
-        argmax_eig_vec, fact, lambda_max_abs_v = DM(self.H[k] - self.Id)
-        Vk, nbk = self.get_Vk_nbk(k)
-        dLk = self.part_dLk(Vk,nbk).dot( np.tensordot(argmax_eig_vec, argmax_eig_vec,axes=0) )*fact
+    def _compute_dLk(self,k):
+        argmax_eig_vec, fact, lambda_max_abs_v = matrix_derivative(self.H[k] - self.Id)
+        Vk, nbk = self._get_Vk_nbk(k)
+        dLk = self._part_dLk(Vk,nbk).dot( np.tensordot(argmax_eig_vec, argmax_eig_vec,axes=0) )*fact
         if self.relaxation_kwds['sqrd']:
             dLk = 2*lambda_max_abs_v*dLk
         return dLk
 
 class ProjectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,ProjectedClass):
     name='{}_{}'.format(ProjectedClass.name_prefix,RLossRiemannianRelaxation.name_suffix)
-    def part_dLk(self,Vk,nbk):
+    def _part_dLk(self,Vk,nbk):
         return np.multiply(Vk.reshape(-1,1),self.S[nbk,:])
 
 class NonprojectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,NonProjectedClass):
     name='{}_{}'.format(NonProjectedClass.name_prefix,RLossRiemannianRelaxation.name_suffix)
-    def part_dLk(self,Vk,nbk):
+    def _part_dLk(self,Vk,nbk):
         return Vk.dot(self.Y[nbk,:])
 
 
-def DM(U):
+def matrix_derivative(U):
     eig_vals, eigen_vecs = np.linalg.eigh(U)
     argmax_eig = np.argmax(np.absolute(eig_vals))
-    # TODO: why need this?
     fact = -1 if eig_vals[argmax_eig] < 0 else 1
     argmax_eig_vec = eigen_vecs[:,argmax_eig]
     return argmax_eig_vec,fact,np.absolute(eig_vals[argmax_eig])
@@ -268,7 +280,6 @@ def epsilon_norm(Hk,Uk,epsI):
 
 def compute_principal_plane(H, epsI, intrinsic_dim):
     n_samples, n_components = H.shape[:2]
-    # UU and IUUEPS here is global member, need to change it later.
     UU = np.zeros((n_samples, n_components, n_components))
     IUUEPS = np.zeros((n_samples, n_components, n_components))
     for k in range(n_samples):
