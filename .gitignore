@@ -79,3 +79,7 @@ Untitled*.ipynb
 
 # pyenv
 .python-version
+
+# macos DS_Store
+.DS_Store
+**/*/.DS_Store
