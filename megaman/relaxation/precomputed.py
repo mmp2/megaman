@@ -106,7 +106,6 @@ def compute_Rk(L,A,n_samples):
     row,column = laplacian_matrix.nonzero()
     nnz_val = np.squeeze(np.asarray(laplacian_matrix.T[(row,column)]))
     sorted_col_args = np.argsort(column)
-    # TODO: check whether it works or not.
     sorted_col_vals = column[sorted_col_args]
 
     breaks_row_A = np.diff(row_A).nonzero()[0]

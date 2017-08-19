@@ -2,7 +2,7 @@ from megaman.relaxation.utils import *
 from nose.tools import assert_raises
 import numpy as np
 import numpy.testing
-import shutil
+import shutil, warnings
 
 n, s, d = 1000, 3, 2
 
@@ -103,6 +103,12 @@ def test_backup_dir_function():
     backup_dir = calculated_kwds['backup_dir']
     assert tmp_dir in backup_dir
     assert os.path.exists(tmp_dir)
+
+def test_not_int_warnings():
+    with warnings.catch_warnings(record=True) as w:
+        calculated_kwds = initialize_kwds(dict(printiter=1.3),n,s,d)
+        assert issubclass(w[-1].category, RuntimeWarning), \
+               'Should raise RuntimeWarning when input is not integer'
 
 def tearDownModule():
     tmp_dir = '/tmp/test_backup'

@@ -79,7 +79,3 @@ class TestAkRkNbkFromToyLaplacian(BaseTestARkNeighbors):
         return generate_toy_laplacian(n=200)
     def setup_message(self):
         print ('Tesking Rk properties for toy laplacian.')
-
-# TODO: the testing is so slow... think of ways to speed it up. multi-core.
-# TODO: test ATAinv is the inverse mapping from pairs to original
-# TODO: how to test Rk?

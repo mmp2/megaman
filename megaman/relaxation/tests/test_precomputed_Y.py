@@ -145,13 +145,7 @@ class TestLkWithHalfIncrementalSubset(TestLkWithWholeSubset):
 
 class TestLkWithQuarterRandomSubset(TestLkWithWholeSubset):
     def generate_subset(self,n):
-        size = round(n/4)
+        size = int(round(n/4))
         return np.random.choice(np.arange(n), size, replace=False)
     def setup_message(self):
         print ('Testing Lk properties with a quarter random generated subset')
-
-# TODO: test rk?? think about it!
-# TODO: test it is the row neighbors if the input laplacian is m*n where m<n matrix.
-
-# TODO: regression test:
-# TODO: get data from matlab...

@@ -1,5 +1,5 @@
 import numpy as np
-import time, os
+import time, os, warnings
 
 default_basedir = os.path.join(os.getcwd(), 'backup')
 
@@ -88,10 +88,11 @@ def initialize_kwds(relaxation_kwds, n_samples, n_components, intrinsic_dim):
     new_relaxation_kwds['backup_dir'] = backup_dir
     create_output_dir(backup_dir)
 
+    new_relaxation_kwds = convert_to_int(new_relaxation_kwds)
+
     if new_relaxation_kwds['weights'].shape[0] != 0:
-        new_relaxation_kwds['weights'] = np.absolute(new_relaxation_kwds['weights'])
-        weight_norm = np.sum(new_relaxation_kwds['weights'])
-        new_relaxation_kwds['weights'] = new_relaxation_kwds['weights'] / weight_norm
+        weights = np.absolute(new_relaxation_kwds['weights']).astype(np.float64)
+        new_relaxation_kwds['weights'] = weights / np.sum(weights)
 
     if new_relaxation_kwds['lossf'] == 'epsilon':
         new_relaxation_kwds.setdefault('eps_orth', 0.1)
@@ -121,6 +122,16 @@ def initialize_kwds(relaxation_kwds, n_samples, n_components, intrinsic_dim):
 
     return new_relaxation_kwds
 
+
+def convert_to_int(kwds):
+    keys_to_convert = ['printiter', 'saveiter', 'niter', 'niter_trace']
+    for k in keys_to_convert:
+        if type(kwds[k]) != int:
+            kwds[k] = int(round(kwds[k]))
+            warnings.warn('The input value of key {} should be an integer, ' + \
+                          'will round to integer automatically'.format(k),
+                          RuntimeWarning )
+    return kwds
 
 def current_time_str():
     rand_str = generate_random_str()
