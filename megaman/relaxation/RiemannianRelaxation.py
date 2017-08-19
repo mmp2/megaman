@@ -44,7 +44,8 @@ class RiemannianRelaxation(RegisterSubclasses):
     def __init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
         laplacian = sp.sparse.csc_matrix(laplacian)
         self.laplacian_matrix = laplacian
-        self.n, self.s, self.d = *initial_guess.shape, intrinsic_dim
+        self.n, self.s = initial_guess.shape
+        self.d = intrinsic_dim
 
         self.relaxation_kwds = relaxation_kwds
         self.Y = initial_guess

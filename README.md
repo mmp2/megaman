@@ -21,7 +21,7 @@ steps and indices to allow for fast re-computation with new parameters.
 
 Package documentation can be found at http://mmp2.github.io/megaman/
 
-If you use our software please cite the following JMLR paper: 
+If you use our software please cite the following JMLR paper:
 
 McQueen, Meila, VanderPlas, & Zhang, "Megaman: Scalable Manifold Learning in Python",
 Journal of Machine Learning Research, Vol 17 no. 14, 2016.
@@ -69,7 +69,7 @@ Optional requirements include
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
 ```
-$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg
+$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg h5py
 ```
 
 Finally, within the source repository, run this command to install the ``megaman`` package itself:
@@ -90,7 +90,7 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 - [Zhongyue Zhang](https://github.com/Jerryzcn)
 - [Jake VanderPlas](http://www.vanderplas.com)
 
-## Other Contributors 
+## Other Contributors
 
 - Xiao Wang: lazy rmetric, Nystrom Extension
 
