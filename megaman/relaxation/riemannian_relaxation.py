@@ -111,10 +111,7 @@ class RiemannianRelaxation(RegisterSubclasses):
         for idx in self.relaxation_kwds['subset']:
             dLk = self._compute_dLk(idx)
             dLk_full = np.zeros((self.grad.shape[0],dLk.shape[1]))
-            # TODO: need to fix this, si_map is not valid for projected class.
-            # TODO: also need to add more test cases for projected class.
-            # TODO: regression test!
-            sidx = self.precomputed_kwds['si_map'][idx]
+            sidx = self._compute_sidx(idx)
             dLk_full[self.precomputed_kwds['nbk'][sidx],:] += dLk
             dLk_full = dLk_full * self.relaxation_kwds['weights'][idx] \
                 if self.relaxation_kwds['weights'].shape[0] == self.n \
@@ -123,6 +120,9 @@ class RiemannianRelaxation(RegisterSubclasses):
         return self.grad - orig_grad
 
     def _compute_dLk(self,k):
+        raise NotImplementedError()
+
+    def _compute_sidx(self,idx):
         raise NotImplementedError()
 
     def _part_dLk(self,Vk,nbk):
@@ -184,6 +184,9 @@ class ProjectedClass(RiemannianRelaxation):
         self.Y = embedding
         self.S = self.precomputed_kwds['A'].dot(self.Y)
 
+    def _compute_sidx(self,idx):
+        return idx
+
 class NonProjectedClass(RiemannianRelaxation):
     name_prefix='nonprojected'
     def _init_precomp(self):
@@ -209,6 +212,9 @@ class NonProjectedClass(RiemannianRelaxation):
     def _update_with_embedding(self,embedding):
         self.Y = embedding
         return embedding
+
+    def _compute_sidx(self,idx):
+        return self.precomputed_kwds['si_map'][idx]
 
 class EpsilonRiemannianRelaxation(RiemannianRelaxation):
     name_suffix = 'epsilon'
