@@ -12,21 +12,25 @@ from .utils import *
 
 import os
 
-def run_riemannian_relaxation(laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
+def run_riemannian_relaxation(laplacian, initial_guess,
+                              intrinsic_dim, relaxation_kwds):
+    """Helper function for creating a RiemannianRelaxation class."""
     n, s = initial_guess.shape
     relaxation_kwds = initialize_kwds(relaxation_kwds, n, s, intrinsic_dim)
     if relaxation_kwds['save_init']:
         directory = relaxation_kwds['backup_dir']
         np.save(os.path.join(directory, 'Y0.npy'),initial_guess)
-        sp.io.mmwrite(os.path.join(directory, 'L_used.mtx'), sp.sparse.csc_matrix(laplacian))
+        sp.io.mmwrite(os.path.join(directory, 'L_used.mtx'),
+                      sp.sparse.csc_matrix(laplacian))
 
     lossf = relaxation_kwds['lossf']
-    return RiemannianRelaxation.init(lossf,laplacian,initial_guess,intrinsic_dim,relaxation_kwds)
+    return RiemannianRelaxation.init(lossf, laplacian, initial_guess,
+                                     intrinsic_dim, relaxation_kwds)
 
 class RiemannianRelaxation(RegisterSubclasses):
     """
-    The RiemannianRelaxation class is an interface for doing reimannian relaxation.
-    The RiemannianRelaxation class stores loss function, tracing variables and optimizers.
+    The RiemannianRelaxation class is an interface for reimannian relaxation,
+    which stores loss function, tracing variables and optimizers.
 
     Parameters
     ----------
@@ -55,16 +59,19 @@ class RiemannianRelaxation(RegisterSubclasses):
 
         self.Id = np.identity(self.d)
 
-        self.trace_var = TracingVariable(self.n,self.s,self.relaxation_kwds,self.precomputed_kwds)
+        self.trace_var = TracingVariable(self.n, self.s, self.relaxation_kwds,
+                                         self.precomputed_kwds)
         self.eta = 0
 
-        optimizer_kwargs, self.relaxation_kwds = split_kwargs(self.relaxation_kwds)
+        optimizer_kwargs, self.relaxation_kwds = \
+            split_kwargs(self.relaxation_kwds)
         self.optimizer = init_optimizer(**optimizer_kwargs)
 
     def _init_precomp(self):
         raise NotImplementedError()
 
     def relax_isometry(self):
+        """Main function for doing riemannian relaxation."""
         for ii in range(self.relaxation_kwds['niter']):
             self.H = self.compute_dual_rmetric()
 
@@ -84,11 +91,13 @@ class RiemannianRelaxation(RegisterSubclasses):
         tracevar_path = os.path.join(self.trace_var.backup_dir, 'results.pyc')
         TracingVariable.save(self.trace_var,tracevar_path)
 
-    def calc_loss(self,embedding):
+    def calc_loss(self, embedding):
+        """Helper function to calculate rieman loss given new embedding"""
         Hnew = self.compute_dual_rmetric(Ynew=embedding)
         return self.rieman_loss(Hnew=Hnew)
 
     def compute_dual_rmetric(self,Ynew=None):
+        """Helper function to calculate the """
         usedY = self.Y if Ynew is None else Ynew
         rieman_metric = RiemannMetric(usedY, self.laplacian_matrix)
         return rieman_metric.get_dual_rmetric()
@@ -102,6 +111,9 @@ class RiemannianRelaxation(RegisterSubclasses):
         for idx in self.relaxation_kwds['subset']:
             dLk = self._compute_dLk(idx)
             dLk_full = np.zeros((self.grad.shape[0],dLk.shape[1]))
+            # TODO: need to fix this, si_map is not valid for projected class.
+            # TODO: also need to add more test cases for projected class.
+            # TODO: regression test!
             sidx = self.precomputed_kwds['si_map'][idx]
             dLk_full[self.precomputed_kwds['nbk'][sidx],:] += dLk
             dLk_full = dLk_full * self.relaxation_kwds['weights'][idx] \
@@ -147,7 +159,8 @@ class RiemannianRelaxation(RegisterSubclasses):
 class ProjectedClass(RiemannianRelaxation):
     name_prefix='projected'
     def _init_precomp(self):
-        self.precomputed_kwds = precompute_optimzation_S(self.laplacian_matrix,self.n,self.relaxation_kwds)
+        self.precomputed_kwds = precompute_optimzation_S(
+            self.laplacian_matrix, self.n, self.relaxation_kwds)
         print ('Finish computing S')
         self.S = self.precomputed_kwds['A'].dot(self.Y)
         self.n_S = self.S.shape[0]
@@ -158,7 +171,10 @@ class ProjectedClass(RiemannianRelaxation):
 
     def _update_with_delta(self,delta,copy=False):
         ST = self.S + delta
-        YT= np.asarray(self.precomputed_kwds['ATAinv'].dot( self.precomputed_kwds['A'].T.dot(ST) ))
+        YT = np.asarray(
+            self.precomputed_kwds['ATAinv']
+            .dot(self.precomputed_kwds['A'].T.dot(ST))
+        )
         if not copy:
             self.S = ST
             self.Y = YT
@@ -171,7 +187,8 @@ class ProjectedClass(RiemannianRelaxation):
 class NonProjectedClass(RiemannianRelaxation):
     name_prefix='nonprojected'
     def _init_precomp(self):
-        self.precomputed_kwds = precompute_optimzation_Y(self.laplacian_matrix,self.n,self.relaxation_kwds)
+        self.precomputed_kwds = precompute_optimzation_Y(
+            self.laplacian_matrix,self.n,self.relaxation_kwds)
         self.grad = np.zeros((self.n, self.s))
         self.Y -= np.mean(self.Y, axis=0)
 
@@ -180,7 +197,8 @@ class NonProjectedClass(RiemannianRelaxation):
             sidx = self.precomputed_kwds['si_map'][k]
         except Exception as e:
             raise ValueError('the index k should be in the subset.')
-        return self.precomputed_kwds['Lk'][sidx], self.precomputed_kwds['nbk'][sidx]
+        return self.precomputed_kwds['Lk'][sidx], \
+               self.precomputed_kwds['nbk'][sidx]
 
     def _update_with_delta(self,delta,copy=False):
         YT = self.Y + delta
@@ -195,7 +213,8 @@ class NonProjectedClass(RiemannianRelaxation):
 class EpsilonRiemannianRelaxation(RiemannianRelaxation):
     name_suffix = 'epsilon'
     def __init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
-        RiemannianRelaxation.__init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds)
+        RiemannianRelaxation.__init__(self, laplacian, initial_guess,
+                                      intrinsic_dim, relaxation_kwds)
         self.epsI = self.relaxation_kwds['eps_orth']*np.identity(self.s)
         self.H = self.compute_dual_rmetric()
         self.UU, self.IUUEPS = compute_principal_plane(self.H, self.epsI, self.d)
@@ -208,12 +227,15 @@ class EpsilonRiemannianRelaxation(RiemannianRelaxation):
         for k in subset:
             U = self.IUUEPS[k].dot( used_H[k]-self.UU[k] ).dot(self.IUUEPS[k])
             err[k] = np.linalg.norm(U,ord=2)
-        loss = np.mean(err) if not self.relaxation_kwds['weights'].shape[0] == self.n else self.relaxation_kwds['weights'].T.dot(err)
+        loss = np.mean(err) \
+               if not self.relaxation_kwds['weights'].shape[0] == self.n \
+               else self.relaxation_kwds['weights'].T.dot(err)
         return loss
 
     def _compute_dLk(self,k):
         Uk = principal_space(self.H[k], self.d)
-        self.UU[k], self.IUUEPS[k], self.HUU[k] = epsilon_norm(self.H[k],Uk,self.epsI)
+        self.UU[k], self.IUUEPS[k], self.HUU[k] = \
+            epsilon_norm(self.H[k],Uk,self.epsI)
         Vk, nbk = self._get_Vk_nbk(k)
         argmax_eig_vec, fact, lambda_max_abs_v = matrix_derivative(self.HUU[k])
         v = self.IUUEPS[k].dot(argmax_eig_vec)
@@ -222,20 +244,25 @@ class EpsilonRiemannianRelaxation(RiemannianRelaxation):
             dLK = 2*lambda_max_abs_v*dLK
         return dLK
 
-class ProjectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,ProjectedClass):
-    name='{}_{}'.format(ProjectedClass.name_prefix,EpsilonRiemannianRelaxation.name_suffix)
+class ProjectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,
+                                           ProjectedClass):
+    name='{}_{}'.format(ProjectedClass.name_prefix,
+                        EpsilonRiemannianRelaxation.name_suffix)
     def _part_dLk(self,Vk,nbk):
         return np.multiply(Vk.reshape(-1,1),self.S[nbk,:])
 
-class NonprojectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,NonProjectedClass):
-    name='{}_{}'.format(NonProjectedClass.name_prefix,EpsilonRiemannianRelaxation.name_suffix)
+class NonprojectedEpsilonRiemannianRelaxation(EpsilonRiemannianRelaxation,
+                                              NonProjectedClass):
+    name='{}_{}'.format(NonProjectedClass.name_prefix,
+                        EpsilonRiemannianRelaxation.name_suffix)
     def _part_dLk(self,Vk,nbk):
         return Vk.dot(self.Y[nbk,:])
 
 class RLossRiemannianRelaxation(RiemannianRelaxation):
     name_suffix = 'rloss'
     def __init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds):
-        RiemannianRelaxation.__init__(self,laplacian,initial_guess,intrinsic_dim,relaxation_kwds)
+        RiemannianRelaxation.__init__(self, laplacian, initial_guess,
+                                      intrinsic_dim,relaxation_kwds)
 
     def rieman_loss(self,Hnew=None):
         used_H = self.H if Hnew is None else Hnew
@@ -244,24 +271,32 @@ class RLossRiemannianRelaxation(RiemannianRelaxation):
         for k in subset:
             U = used_H[k] - self.Id
             err[k] = np.linalg.norm(U,ord=2)
-        loss = np.mean(err) if self.relaxation_kwds['weights'].shape[0] != self.n else self.relaxation_kwds['weights'].T.dot(err)
+        loss = np.mean(err) \
+               if self.relaxation_kwds['weights'].shape[0] != self.n \
+               else self.relaxation_kwds['weights'].T.dot(err)
         return loss
 
     def _compute_dLk(self,k):
-        argmax_eig_vec, fact, lambda_max_abs_v = matrix_derivative(self.H[k] - self.Id)
+        argmax_eig_vec, fact, lambda_max_abs_v = \
+            matrix_derivative(self.H[k] - self.Id)
         Vk, nbk = self._get_Vk_nbk(k)
-        dLk = self._part_dLk(Vk,nbk).dot( np.tensordot(argmax_eig_vec, argmax_eig_vec,axes=0) )*fact
+        dLk = self._part_dLk(Vk,nbk)\
+              .dot( np.tensordot(argmax_eig_vec, argmax_eig_vec,axes=0) )*fact
         if self.relaxation_kwds['sqrd']:
             dLk = 2*lambda_max_abs_v*dLk
         return dLk
 
-class ProjectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,ProjectedClass):
-    name='{}_{}'.format(ProjectedClass.name_prefix,RLossRiemannianRelaxation.name_suffix)
+class ProjectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,
+                                         ProjectedClass):
+    name='{}_{}'.format(ProjectedClass.name_prefix,
+                        RLossRiemannianRelaxation.name_suffix)
     def _part_dLk(self,Vk,nbk):
         return np.multiply(Vk.reshape(-1,1),self.S[nbk,:])
 
-class NonprojectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,NonProjectedClass):
-    name='{}_{}'.format(NonProjectedClass.name_prefix,RLossRiemannianRelaxation.name_suffix)
+class NonprojectedRLossRiemannianRelaxation(RLossRiemannianRelaxation,
+                                            NonProjectedClass):
+    name='{}_{}'.format(NonProjectedClass.name_prefix,
+                        RLossRiemannianRelaxation.name_suffix)
     def _part_dLk(self,Vk,nbk):
         return Vk.dot(self.Y[nbk,:])
 
