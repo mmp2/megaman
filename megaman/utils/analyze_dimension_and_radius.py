@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from __future__ import division 
+from __future__ import division
 try:
     import matplotlib
     MATPLOTLIB_LOADED = True
@@ -22,13 +22,13 @@ def compute_largest_radius_distance(X, rad, adjacency_method, adjacency_kwds):
     dists = compute_adjacency_matrix(X,adjacency_method,**adjacency_kwds)
     print("Symmetrizing distance matrix...")
     dists = (dists + dists.T) # symmetrize, removes zero on diagonal
-    dists.data = 0.5 * dists.data 
+    dists.data = 0.5 * dists.data
     print("largest distance found: " + str(np.max(dists.data)))
     return(dists)
 
 def neighborhood_analysis(dists, radii):
     n_samples = dists.shape[0]; nradii = len(radii)
-    avg_neighbors = np.zeros(nradii); num_no_nbrs = np.zeros(nradii); 
+    avg_neighbors = np.zeros(nradii); num_no_nbrs = np.zeros(nradii);
     max_neighbors = np.zeros(nradii); min_neighbors = np.zeros(nradii)
     dists = dists.tocsr()
     for ii in range(nradii):
@@ -40,7 +40,7 @@ def neighborhood_analysis(dists, radii):
         print("radius: " + str(radii[ii]))
         print("censoring distance matrix...")
         dists.data[dists.data > rad] = 0.0
-        dists.eliminate_zeros()   
+        dists.eliminate_zeros()
         print(dists.nnz)
         avg_neighbors[ii] = dists.nnz/n_samples
         print('finding neighbors per point...')
@@ -84,48 +84,48 @@ def find_dimension_plot(avg_neighbors, radii, fit_range, savefig=False, fname='d
         print('dim=', m )
         plt.show()
         if savefig:
-            plt.savefig(fname, format='png')  
+            plt.savefig(fname, format='png')
     return(m)
-    
-def run_analyze_dimension_and_radius(data, rmin, rmax, nradii, adjacency_method='brute', adjacency_kwds = {}, 
+
+def run_analyze_dimension_and_radius(data, rmin, rmax, nradii, adjacency_method='brute', adjacency_kwds = {},
                                      fit_range=None, savefig=False, plot_name = 'dimension_plot.png'):
     """
     This function is used to estimate the doubling dimension (approximately equal to the intrinsic
     dimension) by computing a graph of neighborhood radius versus average number of neighbors.
-    
+
     The "radius" refers to the truncation constant where all distances greater than
     a specified radius are taken to be infinite. This is used for example in the
     truncated Gaussian kernel in estimate_radius.py
-    
+
 
     Parameters
     ----------
     data : numpy array,
         Original data set for which we are estimating the bandwidth
     rmin : float,
-        smallest radius to consider 
+        smallest radius to consider
     rmax : float,
-        largest radius to consider 
+        largest radius to consider
     nradii : int,
-        number of radii between rmax and rmin to consider 
+        number of radii between rmax and rmin to consider
     adjacency_method : string,
         megaman adjacency method to use, default 'brute' see geometry.py for details
     adjacency_kwds : dict,
         dictionary of keywords for adjacency method
     fit_range : list of ints,
-        range of radii to consider default is range(nradii), i.e. all of them 
+        range of radii to consider default is range(nradii), i.e. all of them
     savefig: bool,
-        whether to save the radius vs. neighbors figure 
+        whether to save the radius vs. neighbors figure
     plot_name: string,
-        filename of the figure to be saved as. 
-        
+        filename of the figure to be saved as.
+
     Returns
     -------
     results : dictionary
         contains the radii, average nieghbors, min and max number of neighbors and number
-        of points with no neighbors. 
+        of points with no neighbors.
     dim : float,
-        estimated doubling dimension (used as an estimate of the intrinsic dimension)        
+        estimated doubling dimension (used as an estimate of the intrinsic dimension)
     """
     n, D = data.shape
     radii = 10**(np.linspace(np.log10(rmin), np.log10(rmax), nradii))

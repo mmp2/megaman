@@ -1,7 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from plotly.offline import iplot
-import plotly.graph_objs as go
 
 from .utils import *
 from .scatter_3d import scatter_plot3d_plotly, scatter_plot3d_matplotlib
@@ -9,6 +6,8 @@ from .covar_plotter3 import covar_plotter3d_plotly, covar_plotter3d_matplotlib
 
 def plot_with_plotly( embedding, rieman_metric, nstd=2,
                       color_by_ratio=True, if_ellipse=False ):
+    from plotly.offline import iplot
+    import plotly.graph_objs as go
     sigma_norms = get_top_two_sigma_norm(rieman_metric, color_by_ratio)
     colors, colorscale = generate_colors_and_colorscale('gist_rainbow',
                                                         sigma_norms)
@@ -30,6 +29,7 @@ def plot_embedding_with_plotly(trace_var,idx,if_ellipse=False):
 
 def plot_with_matplotlib(embedding, rieman_metric, nstd=2,
                          color_by_ratio=True, if_ellipse=False):
+    import matplotlib.pyplot as plt
     sigma_norms = get_top_two_sigma_norm(rieman_metric, color_by_ratio)
     colors, _ncor = get_colors_array('gist_rainbow', sigma_norms, base255=False)
     fig,ax = scatter_plot3d_matplotlib(embedding, sigma_norms)

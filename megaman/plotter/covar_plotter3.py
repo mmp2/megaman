@@ -19,12 +19,19 @@ def plot_ellipse_matplotlib(cov, pos, ax, nstd=2, **kwargs):
     Plot 2d ellipse in 3d using matplotlib backend
     """
     ellipse_param, normal = calc_2d_ellipse_properties(cov,nstd)
-    ellip = Ellipse(xy=(0,0), **ellipse_param, **kwargs)
+    ellipse_kwds = merge_keywords(ellipse_param, kwargs)
+    ellip = Ellipse(xy=(0,0), **ellipse_kwds)
     ax.add_patch(ellip)
 
     ellip = pathpatch_2d_to_3d(ellip, normal=normal)
     ellip = pathpatch_translate(ellip,pos)
     return ellip
+
+def merge_keywords(x,y):
+    """Given two dicts, merge them into a new dict as a shallow copy."""
+    z = x.copy()
+    z.update(y)
+    return z
 
 def pathpatch_2d_to_3d(pathpatch, z = 0, normal = 'z'):
     """
