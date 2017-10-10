@@ -44,9 +44,11 @@ class TracingVariable(object):
         ro.close()
 
         if relaxation_kwds['presave']:
-            precomp_kwds_name = os.path.join(self.backup_dir,'precomputed_keywords.pyc')
+            precomp_kwds_name = os.path.join(self.backup_dir,
+                                             'precomputed_keywords.pyc')
             with open(precomp_kwds_name, 'wb') as po:
-                pickle.dump(precomputed_kwds,po,protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(precomputed_kwds, po,
+                            protocol=pickle.HIGHEST_PROTOCOL)
             po.close()
 
     def update(self,iiter,H,Y,eta,loss):
@@ -69,8 +71,10 @@ class TracingVariable(object):
         if self.verbose and iiter % self.printiter == 0:
             print ('Iteration number: {}'.format(iiter))
             print ('Last step size eta: {}'.format(self.etas[iiter]))
-            print ('current loss (before gradient step): {}'.format(self.loss[iiter]))
-            print ('minimum loss: {}, at iteration: {}\n'.format(self.lmin, self.miniter))
+            print ('current loss (before gradient step): {}'
+                   .format(self.loss[iiter]))
+            print ('minimum loss: {}, at iteration: {}\n'
+                   .format(self.lmin, self.miniter))
 
     def save_backup(self,iiter):
         if iiter % self.saveiter == 0 and iiter != 0:
@@ -89,9 +93,9 @@ class TracingVariable(object):
         try:
             with open(filename,'wb') as f:
                 pickle.dump(instance,f,protocol=pickle.HIGHEST_PROTOCOL)
-        # HACK: use the method belows to solve the MemoryError issue temperarily.
         except MemoryError as e:
-            print ('{} occurred, will downsampled the saved file by 20.'.format(type(e).__name__))
+            print ('{} occurred, will downsampled the saved file by 20.'
+                   .format(type(e).__name__))
             copy_instance = instance.copy()
             copy_instance.H = copy_instance.H[::20,:,:]
             copy_instance.Y = copy_instance.Y[::20,:]
