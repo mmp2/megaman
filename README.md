@@ -59,17 +59,19 @@ To install megaman from source requires the following:
 - [FLANN](http://www.cs.ubc.ca/research/flann/)
 - [cython](http://cython.org/)
 - a C++ compiler such as ``gcc``/``g++``
+- [plotly](https://plot.ly) an graphing library for interactive plot
 
 Optional requirements include
 
 - [pyamg](http://pyamg.org/), which allows for faster decompositions of large matrices
 - [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [nose](https://nose.readthedocs.org/) for running the unit tests
+- [h5py](http://www.h5py.org) for reading testing .mat files
 
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
 ```
-$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg h5py
+$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg h5py plotly
 ```
 
 Finally, within the source repository, run this command to install the ``megaman`` package itself:
