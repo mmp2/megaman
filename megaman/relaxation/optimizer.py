@@ -71,7 +71,7 @@ class BaseOptimizer(RegisterSubclasses):
 
     def _apply_linesearch_optimzation(self, update_embedding_with, grad,
                                       calc_loss, loss, **kwargs):
-        self.eta = self.eta_max
+        self.eta = float(self.eta_max)
         if kwargs.get('first_iter',False) and not self.linesearch_first:
             self.eta = kwargs.get('eta_first',1)
         loss_diff = 1
