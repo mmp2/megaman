@@ -1,3 +1,7 @@
+# Author: Yu-Chia Chen <yuchaz@uw.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
+from __future__ import division
 from megaman.geometry.utils import RegisterSubclasses
 
 def init_optimizer(**kwargs):
@@ -71,7 +75,7 @@ class BaseOptimizer(RegisterSubclasses):
 
     def _apply_linesearch_optimzation(self, update_embedding_with, grad,
                                       calc_loss, loss, **kwargs):
-        self.eta = float(self.eta_max)
+        self.eta = self.eta_max
         if kwargs.get('first_iter',False) and not self.linesearch_first:
             self.eta = kwargs.get('eta_first',1)
         loss_diff = 1

@@ -1,18 +1,29 @@
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import art3d, Axes3D
-import plotly.graph_objs as go
-import numpy as np
+# Author: Yu-Chia Chen <yuchaz@uw.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+import numpy as np
+from .utils import _check_backend
+
+@_check_backend('matplotlib')
 def scatter_plot3d_matplotlib(embedding, coloring=None, fig=None):
+    from mpl_toolkits.mplot3d import art3d, Axes3D
     if fig is None:
+        import matplotlib.pyplot as plt
         fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.set_aspect('equal')
     s = [2 for i in range(embedding.shape[0])]
     x,y,z = embedding[:,:3].T
-    coloring = x if coloring is None else coloring
-    sc = ax.scatter(x,y,z,c=coloring,cmap='gist_rainbow',s=s)
-    fig.colorbar(sc)
+
+    if isinstance(coloring, str) and coloring.lower() in 'xyz':
+        color_idx = 'xyz'.find(coloring)
+        coloring = embedding[:,color_idx].flatten()
+
+    if coloring is None:
+        ax.scatter(x,y,z,s=s)
+    else:
+        sc = ax.scatter(x,y,z,c=coloring,cmap='gist_rainbow',s=s)
+        fig.colorbar(sc)
 
     max_range = np.array([x.max()-x.min(), y.max()-y.min(), z.max()-z.min()]).max() / 2.0
 
@@ -25,9 +36,13 @@ def scatter_plot3d_matplotlib(embedding, coloring=None, fig=None):
 
     return fig, ax
 
-def scatter_plot3d_plotly(embedding, coloring=None, colorscale='Rainbow'):
+@_check_backend('plotly')
+def scatter_plot3d_plotly(embedding, coloring=None, colorscale='Rainbow', marker=None):
+    import plotly.graph_objs as go
     x,y,z = embedding[:,:3].T
-    coloring = x if coloring is None else coloring
+    if isinstance(coloring, str) and coloring.lower() in 'xyz':
+        color_idx = 'xyz'.find(coloring)
+        coloring = embedding[:,color_idx].flatten()
     scatter_plot = go.Scatter3d(
         x=x,
         y=y,
@@ -36,10 +51,16 @@ def scatter_plot3d_plotly(embedding, coloring=None, colorscale='Rainbow'):
         marker=dict(
             size=2,
             opacity=0.8,
-            color=coloring,
-            colorscale=colorscale,
-            showscale=True,
         ),
         name='Embedding'
     )
+    if coloring is not None:
+        scatter_plot['marker'].update(dict(
+            color=coloring,
+            colorscale=colorscale,
+            showscale=True,
+        ))
+    elif marker is not None:
+        scatter_plot['marker'].update(marker)
+
     return [scatter_plot]

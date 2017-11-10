@@ -1,8 +1,13 @@
-import plotly.graph_objs as go
+# Author: Yu-Chia Chen <yuchaz@uw.edu>
+#
+#
+# Transformed 2D patches to 3D after:
+#         Till Hoffmann <t.hoffmann13@imperial.ac.uk>
+#         https://stackoverflow.com/questions/18228966/how-can-matplotlib-2d-patches-be-transformed-to-3d-with-arbitrary-normals
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
+
 import numpy as np
-from matplotlib import cm
-from matplotlib.patches import Ellipse
-from mpl_toolkits.mplot3d import art3d, Axes3D
+from .utils import _check_backend
 
 def covar_plotter3d_matplotlib(embedding, rieman_metric, inspect_points_idx, ax,
                                colors):
@@ -14,10 +19,13 @@ def covar_plotter3d_matplotlib(embedding, rieman_metric, inspect_points_idx, ax,
                              color=colors[pts_idx] )
     return ax
 
+@_check_backend('matplotlib')
 def plot_ellipse_matplotlib(cov, pos, ax, nstd=2, **kwargs):
     """
     Plot 2d ellipse in 3d using matplotlib backend
     """
+    from matplotlib.patches import Ellipse
+    from mpl_toolkits.mplot3d import art3d, Axes3D
     ellipse_param, normal = calc_2d_ellipse_properties(cov,nstd)
     ellipse_kwds = merge_keywords(ellipse_param, kwargs)
     ellip = Ellipse(xy=(0,0), **ellipse_kwds)
@@ -154,8 +162,10 @@ def translate_in_3d(points,delta):
     """Translate the points in 2d by amount of delta"""
     return points + delta
 
+@_check_backend('plotly')
 def create_ellipse_mesh(points,**kwargs):
     """Visualize the ellipse by using the mesh of the points."""
+    import plotly.graph_objs as go
     x,y,z = points.T
     return (go.Mesh3d(x=x,y=y,z=z,**kwargs),
             go.Scatter3d(x=x, y=y, z=z,

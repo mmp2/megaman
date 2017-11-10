@@ -1,8 +1,29 @@
-from matplotlib import colors, cm
-import numpy as np
-import plotly.graph_objs as go
+# Author: Yu-Chia Chen <yuchaz@uw.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+import numpy as np
+
+def _check_backend(backend):
+    def decorator(func):
+        def wrapper(*args,**kwargs):
+            import warnings
+            warnings.warn(
+                'Be careful in using megaman.plotter modules'
+                ' API will change in the next release.',
+                FutureWarning
+            )
+            import pkgutil
+            package = pkgutil.find_loader(backend)
+            if package is not None:
+                return func(*args,**kwargs)
+            else:
+                raise ImportError('plotting backend {} not installed'.format(backend))
+        return wrapper
+    return decorator
+
+@_check_backend('matplotlib')
 def get_colors_array(name,coloring,base255=True):
+    from matplotlib import colors, cm
     cmap = cm.get_cmap(name=name)
     norm = colors.Normalize()
     normalized_coloring = norm(coloring)
@@ -23,7 +44,9 @@ def generate_colors_and_colorscale(name,coloring,**kwargs):
 def generate_grid(size,num_groups=100):
     return np.arange(0,size,num_groups)
 
+@_check_backend('plotly')
 def plotly_layout(embedding):
+    import plotly.graph_objs as go
     max_value = 1.2*np.max(np.absolute(embedding[:,:3]))
     axis_range = [-max_value,max_value]
     layout = go.Layout(

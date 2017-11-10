@@ -1,9 +1,13 @@
-import numpy as np
+# Author: Yu-Chia Chen <yuchaz@uw.edu>
+# LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+import numpy as np
 from .utils import *
+from .utils import _check_backend
 from .scatter_3d import scatter_plot3d_plotly, scatter_plot3d_matplotlib
 from .covar_plotter3 import covar_plotter3d_plotly, covar_plotter3d_matplotlib
 
+@_check_backend('plotly')
 def plot_with_plotly( embedding, rieman_metric, nstd=2,
                       color_by_ratio=True, if_ellipse=False ):
     from plotly.offline import iplot
@@ -27,6 +31,7 @@ def plot_with_plotly( embedding, rieman_metric, nstd=2,
 def plot_embedding_with_plotly(trace_var,idx,if_ellipse=False):
     plot_with_plotly(trace_var.Y[idx],trace_var.H[idx]/30,if_ellipse=if_ellipse)
 
+@_check_backend('matplotlib')
 def plot_with_matplotlib(embedding, rieman_metric, nstd=2,
                          color_by_ratio=True, if_ellipse=False):
     import matplotlib.pyplot as plt
