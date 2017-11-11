@@ -1,3 +1,4 @@
+from __future__ import division
 from .utils import generate_toy_laplacian
 from megaman.relaxation.trace_variable import TracingVariable as tv
 from megaman.relaxation import *
@@ -6,7 +7,7 @@ import shutil, os
 def test_copy():
     n, s, d = 1000, 3, 2
     niter = 10
-    niter_trace = round(niter/2)
+    niter_trace = niter//2
     ltrace = 2*niter_trace+1
     L = generate_toy_laplacian(n)
     Y0 = np.zeros((n,s))

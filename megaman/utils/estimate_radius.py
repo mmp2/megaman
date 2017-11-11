@@ -14,11 +14,11 @@ def compute_laplacian_by_row(A, sample, radius):
     nbrs = np.split(A.indices, A.indptr[1:-1])
     L = [laplacian_i_row(A, d, nbrs, i) for i in sample]
     return(L)
-    
+
 def laplacian_i_row(A, d, nbrs, i):
     dt = np.sum((A[i,nbrs]/d[nbrs]))
     Li = [compute_Lij(A[i, j], d[j], dt) for j in nbrs]
-    
+
 def compute_Lij(Aij, dj, dt):
     Lij = Aij / (dj * dt)
     return(Lij)
@@ -54,7 +54,7 @@ def distortion(X, L, sample, PS, nbrs, n, d):
             X_t = project_tangent(X, p, nbr, d)
             X_tangent = X.copy()
             X_tangent = X_tangent[:,range(d)]
-            X_tangent[nbr,:] = X_t # rmetric only depends on nbrs 
+            X_tangent[nbr,:] = X_t # rmetric only depends on nbrs
             H = riemann_metric_lazy(X_tangent,sample,L,d)[0]
             dist += np.linalg.norm(H[i, :, :] - np.eye(d))
         else:
@@ -62,18 +62,18 @@ def distortion(X, L, sample, PS, nbrs, n, d):
     if nsum > 0:
         distortion = dist/nsum
     else:
-        distortion = 'Inf' 
+        distortion = 'Inf'
     return distortion
-    
+
 def evaluate_radius(radius, d, sample):
     global DIST
     global X
-    
+
     t0 = time.time()
     D = DIST.copy()
     (n, dim) = X.shape
     D.data[D.data > radius] = 0.0
-    D.eliminate_zeros()    
+    D.eliminate_zeros()
     h = np.sqrt(2)*radius / 3.0
     affinity_kwds = {'radius':h}
     A = compute_affinity_matrix(D, 'gaussian', **affinity_kwds)
@@ -85,67 +85,80 @@ def evaluate_radius(radius, d, sample):
     print("for radius: " + str(radius) + " distortion is: " + str(e_dist))
     print("for radius: " + str(radius) + " analysis took: " + str(t1-t0) + " seconds\n")
     return(radius, e_dist)
-    
-def radius_search(d, sample, rmin, rmax, ntry):
+
+def radius_search(d, sample, rmin, rmax, ntry, search_space='linspace'):
     print("performing radius search...\n")
-    radii = np.linspace(rmin, rmax, ntry)
+    if search_space == "linspace":
+        radii = np.linspace(rmin, rmax, ntry)
+    elif search_space == "logspace":
+        radii = np.logspace(np.log10(rmin),np.log10(rmax), ntry)
+    else:
+        raise ValueError("search_space can only be logspace or linspace")
     results = np.array([evaluate_radius(r, d, sample) for r in radii])
-    return(results)    
-    
-def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes):
+    return(results)
+
+def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_space='linspace'):
     print("performing parallel radius search...\n")
-    radii = np.linspace(rmin, rmax, ntry)
+    if search_space == "linspace":
+        radii = np.linspace(rmin, rmax, ntry)
+    elif search_space == "logspace":
+        radii = np.logspace(np.log10(rmin),np.log10(rmax), ntry)
+    else:
+        raise ValueError("search_space can only be logspace or linspace")
     pool = mp.Pool(processes = processes)
     results = [pool.apply_async(evaluate_radius, args = (r,d,sample)) for r in radii]
     results = [p.get() for p in results]
     results.sort()
     return(np.array(results))
-    
-def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel):
+
+def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel, search_space='linspace'):
     """
     This function is used to estimate the bandwidth, h, of the Gaussian Kernel:
         exp(-||x_i - x_j||/2h^2)
-        
-    
-    The "radius" refers to the truncation constant which we take to be 3*h 
-    and this is the parameter over which we will iterate.     
-    
-    We use the method of: https://arxiv.org/abs/1406.0118    
+
+
+    The "radius" refers to the truncation constant which we take to be 3*h
+    and this is the parameter over which we will iterate.
+
+    We use the method of: https://arxiv.org/abs/1406.0118
 
     Parameters
     ----------
     data : numpy array,
         Original data set for which we are estimating the bandwidth
     dists : scipy.csr_matrix,
-        A CSR matrix containing pairwise distances from data up to rmax 
+        A CSR matrix containing pairwise distances from data up to rmax
     sample : np.array,
-        subset of data points over which to evaluate the radii 
+        subset of data points over which to evaluate the radii
     d : int,
         dimension over which to evaluate the radii (smaller usually better)
     rmin : float,
-        smallest radius ( = 3 * bandwidth) to consider 
+        smallest radius ( = 3 * bandwidth) to consider
     rmax : float,
-        largest radius ( = 3 * bandwidth) to consider 
+        largest radius ( = 3 * bandwidth) to consider
     ntry : int,
-        number of radii between rmax and rmin to try 
+        number of radii between rmax and rmin to try
     run_parallel : bool,
-        whether to run the analysis in parallel over radii 
-        
+        whether to run the analysis in parallel over radii
+
+    search_space : str,
+        either 'linspace' or 'logspace', choose to search in log or linear space
+
     Returns
     -------
     results : np.array (2d)
-        first column is the set of radii and the second column is the distortion 
+        first column is the set of radii and the second column is the distortion
         (smaller is better)
-    
-    """    
+
+    """
     # declare global variables
     global DIST
     global X
 
-    # process distance matrix 
+    # process distance matrix
     dists = dists.tocsr()
     dists.data[dists.data > rmax] = 0.0
-    dists.eliminate_zeros()    
+    dists.eliminate_zeros()
 
     # Assign global variables
     DIST = dists
@@ -157,9 +170,9 @@ def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel):
         ncpu = mp.cpu_count() # 32 for Newton
         processes = int(min(ntry, ncpu))
         print('using ' + str(processes) + ' processes to perform asynchronous parallel radius search')
-        results = multi_process_radius_search(d, sample, rmin, rmax, ntry, processes)
+        results = multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_space)
     else:
-        results = radius_search(d, sample, rmin, rmax, ntry)
+        results = radius_search(d, sample, rmin, rmax, ntry, search_space)
     t1 = time.time()
     print('analysis took: ' + str(t1 - t0) + ' seconds to complete.')
     return(results)

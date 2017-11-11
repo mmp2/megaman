@@ -14,6 +14,7 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('geometry')
     config.add_subpackage('geometry/cyflann')
     config.add_subpackage('geometry/tests')
+    config.add_subpackage('plotter')
     config.add_subpackage('relaxation')
     config.add_subpackage('relaxation/tests')
     config.add_subpackage('utils')
