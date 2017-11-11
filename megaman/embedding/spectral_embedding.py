@@ -112,13 +112,13 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     The ``adjacency`` variable is not strictly the adjacency matrix of a graph but more generally
     an affinity or similarity matrix between samples (for instance the
     heat kernel of a euclidean distance matrix or a k-NN matrix).
-    The Laplacian must be symmetric so that the eigen vector decomposition works as expected. 
+    The Laplacian must be symmetric so that the eigen vector decomposition works as expected.
     This is ensured by the default setting (for more details,
     see the documentation in geometry.py).
-    
+
     The data and generic geometric parameters are passed via a Geometry object, which also
     computes the Laplacian. By default, the 'geometric' Laplacian (or "debiased", or "renormalized" with
-    alpha=1) is used. This is the Laplacian construction defined in [Coifman and Lafon, 2006] (see also 
+    alpha=1) is used. This is the Laplacian construction defined in [Coifman and Lafon, 2006] (see also
     documentation in laplacian.py). Thus, with diffusion_maps=False, spectral embedding is a modification
     of the Laplacian Eigenmaps algorithm of [Belkin and Nyiogi, 2002], with diffusion_maps=False, geom.laplacian_method
     ='symmetricnormalized' it is exactly the Laplacian Eigenmaps, with diffusion_maps=True, diffusion_time>0 it
@@ -158,10 +158,10 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         connected graph, but for spectral clustering, this should be kept as
         False to retain the first eigenvector.
     diffusion_map : boolean, optional. Whether to return the diffusion map
-        version by re-scaling the embedding coordinate by the eigenvalues to the power 
+        version by re-scaling the embedding coordinate by the eigenvalues to the power
         diffusion_time.
-    diffusion_time: if diffusion_map=True, the eigenvectors of the Laplacian are rescaled by 
-        (1-lambda)^diffusion_time, where lambda is the corresponding eigenvalue. 
+    diffusion_time: if diffusion_map=True, the eigenvectors of the Laplacian are rescaled by
+        (1-lambda)^diffusion_time, where lambda is the corresponding eigenvalue.
         diffusion_time has the role of scale parameter. One of the main ideas of diffusion framework is
         that running the diffusion forward in time (taking larger and larger
         powers of the Laplacian/transition matrix) reveals the geometric structure of X at larger and
@@ -247,13 +247,13 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
             else:
                 symmetrized_laplacian /= np.sqrt(w)
                 symmetrized_laplacian /= np.sqrt(w[:,np.newaxis])
-                symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
+                symmetrized_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
         else: # using a symmetric laplacian but adjust to avoid positive definite errors
             symmetrized_laplacian = geom.laplacian_matrix.copy()
             if sparse.isspmatrix(symmetrized_laplacian):
                 symmetrized_laplacian = (1+epsilon)*sparse.identity(n_nodes) - symmetrized_laplacian
             else:
-                symmetrixed_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
+                symmetrized_laplacian = (1+epsilon)*np.identity(n_nodes) - symmetrized_laplacian
 
     if PD_solver: # then eI - L was used, fix the eigenvalues
         lambdas, diffusion_map = eigen_decomposition(symmetrized_laplacian, n_components+1, eigen_solver=eigen_solver,
@@ -267,10 +267,10 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     if re_normalize:
         diffusion_map /= np.sqrt(w[:, np.newaxis]) # put back on original Laplacian space
         diffusion_map /= np.linalg.norm(diffusion_map, axis = 0) # norm 1 vectors
-    # sort the eigenvalues 
+    # sort the eigenvalues
     ind = np.argsort(lambdas); ind = ind[::-1]
     lambdas = lambdas[ind]; lambdas[0] = 0
-    diffusion_map = diffusion_map[:, ind]        
+    diffusion_map = diffusion_map[:, ind]
     eigenvalues = lambdas.copy()
     eigenvectors = diffusion_map.copy()
     if diffusion_maps:
@@ -368,7 +368,7 @@ class SpectralEmbedding(BaseEmbedding):
     def fit(self, X, y=None, input_type='data'):
         """
         Fit the model from data in X.
-        
+
         Parameters
         ----------
         input_type : string, one of: 'data', 'distance' or 'affinity'.
@@ -378,14 +378,14 @@ class SpectralEmbedding(BaseEmbedding):
             and n_features is the number of features.
 
         If self.input_type is distance, or affinity:
-        
+
         X : array-like, shape (n_samples, n_samples),
             Interpret X as precomputed distance or adjacency graph
             computed from samples.
 
         Returns
         -------
-        self : object 
+        self : object
                Returns the instance itself.
         """
         X = self._validate_input(X, input_type)
@@ -407,9 +407,9 @@ class SpectralEmbedding(BaseEmbedding):
     def predict(self, X_test, y=None):
         """
         Predict embedding on new data X_test given the existing embedding on training data
-        
+
         Uses the Nystrom Extension to estimate the eigenvectors.
-        
+
         Currently only works with input_type data (i.e. not affinity or distance)
         """
         if not hasattr(self, 'geom_'):
@@ -423,7 +423,7 @@ class SpectralEmbedding(BaseEmbedding):
                 cyflann_kwds = adjacency_kwds['cyflann_kwds']
             else:
                 cyflann_kwds = {}
-        total_adjacency_matrix = complete_adjacency_matrix(self.geom_.adjacency_matrix, 
+        total_adjacency_matrix = complete_adjacency_matrix(self.geom_.adjacency_matrix,
                                                            self.geom_.X,
                                                            X_test,adjacency_kwds)
         # Compute the affinity matrix, check method and kwds
