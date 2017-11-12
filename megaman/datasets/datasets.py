@@ -7,6 +7,7 @@ import numpy as np
 from scipy import ndimage
 from sklearn.utils import check_random_state
 
+import collections
 
 def get_megaman_image(factor=1):
     """Return an RGBA representation of the megaman icon"""
@@ -54,3 +55,63 @@ def generate_megaman_manifold(sampling=2, nfolds=2,
         X = np.dot(X, U)
 
     return X, c
+
+def generate_noisefree_hourglass(n_size, scaling_factor=1.75, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    fz = lambda z: -4*z**4 + 4*z**2 + 1
+    X = np.random.normal(0,1,[n_size,3])
+    sphere = X / np.linalg.norm(X,axis=1)[:,None]
+    r = np.linalg.norm(sphere,axis=1)
+
+    x,y,z = sphere.T
+    theta = np.arctan2(y,x)
+    phi = np.arccos(z/r)
+
+    r_hour = fz(z)
+    theta_hour = theta
+    z_hour = z
+    phi_hour = np.arccos(z_hour/r_hour)
+
+    x_hour = r_hour*np.cos(theta_hour)*np.sin(phi_hour)
+    y_hour = r_hour*np.sin(theta_hour)*np.sin(phi_hour)
+    z_hour = r_hour*np.cos(phi_hour)
+
+    x_hour *= 0.5
+    y_hour *= 0.5
+
+    hourglass = np.vstack((x_hour,y_hour,z_hour)).T
+    hourglass *= scaling_factor
+
+    return hourglass
+
+def _genereate_noises(sigmas, size, dimensions, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    if isinstance(sigmas, (collections.Sequence, np.ndarray)):
+        assert len(sigmas) == dimensions, \
+            'The size of sigmas should be the same as noises dimensions'
+        return np.random.multivariate_normal(np.zeros(dimensions),
+                                             np.diag(sigmas), size)
+    else:
+        return np.random.normal(0,sigmas,[size,dimensions])
+
+def _add_noises_on_primary_dimensions(data,sigmas=0.1,seed=None):
+    size,dim = data.shape
+    noises = _genereate_noises(sigmas,size,dim)
+    return data + noises
+
+def _add_noises_on_additional_dimensions(data,addition_dims,sigmas=1,seed=None):
+    if addition_dims == 0:
+        return data
+    else:
+        noises = _genereate_noises(sigmas,data.shape[0],addition_dims,seed)
+        return np.hstack((data,noises))
+
+def generate_noisy_hourglass(size, sigma_primary=0.05, addition_dims=0,
+                             sigma_additional=0.1, scaling_factor=1.75, seed=None):
+    hourglass = generate_noisefree_hourglass(size, scaling_factor, seed)
+    hourglass = _add_noises_on_primary_dimensions(hourglass, sigma_primary)
+    hourglass = _add_noises_on_additional_dimensions(hourglass, addition_dims,
+                                                     sigma_additional)
+    return hourglass
