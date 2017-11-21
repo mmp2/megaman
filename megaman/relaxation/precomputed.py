@@ -63,7 +63,7 @@ def compute_Lk(laplacian_matrix,n_samples,subset):
         Lk.setdiag(lk)
         Lk[:,rk] = -(lk.reshape(-1,1))
         Lk[rk,:] = -(lk.reshape(1,-1))
-        Lk_tensor.append(Lk)
+        Lk_tensor.append(sp.sparse.csr_matrix(Lk))
         si_map[k] = idx
 
     assert len(Lk_tensor) == subset.shape[0], \
