@@ -3,7 +3,7 @@ from __future__ import division
 try:
     import matplotlib
     MATPLOTLIB_LOADED = True
-    matplotlib.use('Agg')
+    # matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 except ImportError:
     MATPLOTLIB_LOADED = False

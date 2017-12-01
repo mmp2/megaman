@@ -74,7 +74,7 @@ def evaluate_radius(radius, d, sample):
     (n, dim) = X.shape
     D.data[D.data > radius] = 0.0
     D.eliminate_zeros()
-    h = radius
+    h = radius / 3.0
     affinity_kwds = {'radius':h}
     A = compute_affinity_matrix(D, 'gaussian', **affinity_kwds)
     (PS, nbrs) = compute_nbr_wts(A, sample)
