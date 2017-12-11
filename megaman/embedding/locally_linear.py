@@ -9,6 +9,7 @@
 #         Jake Vanderplas  -- <vanderplas@astro.washington.edu>
 # License: BSD 3 clause (C) INRIA 2011
 
+from __future__ import division
 import warnings
 import numpy as np
 import scipy.sparse as sparse

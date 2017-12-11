@@ -12,6 +12,7 @@
 #         Satrajit Ghosh <satra@mit.edu> https://github.com/satra/mapalign/blob/master/mapalign/embed.py
 # License: BSD 3 clause
 
+from __future__ import division
 import warnings
 import numpy as np
 from scipy import sparse

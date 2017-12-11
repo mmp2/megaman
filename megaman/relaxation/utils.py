@@ -1,6 +1,7 @@
 # Author: Yu-Chia Chen <yuchaz@uw.edu>
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+from __future__ import division
 import numpy as np
 import time, os, warnings
 

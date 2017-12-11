@@ -9,6 +9,7 @@
 #         after the Matlab function rmetric.m by Dominique Perrault-Joncas
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+from __future__ import division
 import warnings
 import numpy as np
 
@@ -126,12 +127,12 @@ def riemann_metric_lazy( Y, sample,laplacian, n_dim, invert_h=False, mode_inv = 
     for j in np.arange(n_dim-1):
         for i in np.arange(j+1,n_dim):
             h_dual_metric[ :,i,j] = h_dual_metric[:,j,i]
- 
+
     if( invert_h ):
         riemann_metric, Hvv, Hsvals, Gsvals = compute_G_from_H( h_dual_metric )
     else:
         riemann_metric = Hvv = Hsvals = Gsvals = None
-   
+
     return h_dual_metric,riemann_metric, Hvv, Hsvals, Gsvals
 
 def compute_G_from_H( H, mdimG = None, mode_inv = "svd" ):

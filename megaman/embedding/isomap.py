@@ -3,6 +3,7 @@
 # Author: James McQueen <jmcq@u.washington.edu>
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
+from __future__ import division
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path as graph_shortest_path
@@ -202,7 +203,7 @@ class Isomap(BaseEmbedding):
         self : object
             Returns the instance itself.
         """
-        
+
         X = self._validate_input(X, input_type)
         self.fit_geometry(X, input_type)
 
