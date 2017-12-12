@@ -71,7 +71,7 @@ def locally_linear_embedding(geom, n_components, reg=1e-3,
     reg : float
         regularization constant, multiplies the trace of the local covariance
         matrix of the distances.
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
@@ -89,6 +89,13 @@ def locally_linear_embedding(geom, n_components, reg=1e-3,
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.
@@ -144,13 +151,12 @@ class LocallyLinearEmbedding(BaseEmbedding):
         specification of geometry parameters: keys are
         ["adjacency_method", "adjacency_kwds", "affinity_method",
          "affinity_kwds", "laplacian_method", "laplacian_kwds"]
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue
-            decomposition. Uses a dense data array, and thus should be avoided
-            for large problems.
+            use standard dense matrix operations for the eigenvalue decomposition.
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -163,6 +169,13 @@ class LocallyLinearEmbedding(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState

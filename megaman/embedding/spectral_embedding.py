@@ -131,7 +131,7 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
     geom : a Geometry object from megaman.embedding.geometry
     n_components : integer, optional
         The dimension of the projection subspace.
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
@@ -149,9 +149,17 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state : int seed, RandomState instance, or None (default)
         A pseudo random number generator used for the initialization of the
-        lobpcg eigen vectors decomposition when eigen_solver == 'amg'.
+        lobpcg eigen vectors decomposition when eigen_solver == 'amg'
+        or eigen_solver == 'samg'.
         By default, arpack is used.
     drop_first : bool, optional, default=True
         Whether to drop the first eigenvector. For spectral embedding, this
@@ -215,12 +223,12 @@ def spectral_embedding(geom, n_components=8, eigen_solver='auto',
                                                    nvec=n_components + 1)
     re_normalize = False
     PD_solver = False
-    if eigen_solver in ['amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
+    if eigen_solver in ['samg', 'amg', 'lobpcg']: # these methods require a symmetric positive definite matrix!
         epsilon = 2
         PD_solver = True
         if lapl_type not in ['symmetricnormalized', 'unnormalized']:
             re_normalize = True
-            # If lobpcg (or amg with lobpcg) is chosen and
+            # If lobpcg (or amg/samg with lobpcg) is chosen and
             # If the Laplacian is non-symmetric then we need to extract:
             # the w (weight) vector from geometry
             # and the symmetric Laplacian = S.
@@ -308,13 +316,12 @@ class SpectralEmbedding(BaseEmbedding):
         specification of geometry parameters: keys are
         ["adjacency_method", "adjacency_kwds", "affinity_method",
          "affinity_kwds", "laplacian_method", "laplacian_kwds"]
-    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', or 'amg'}
+    eigen_solver : {'auto', 'dense', 'arpack', 'lobpcg', 'amg' or 'samg'}
         'auto' :
             algorithm will attempt to choose the best method for input data
         'dense' :
-            use standard dense matrix operations for the eigenvalue
-            decomposition. Uses a dense data array, and thus should be avoided
-            for large problems.
+            use standard dense matrix operations for the eigenvalue decomposition.
+            For this method, M must be an array or matrix type.  This method should be avoided for large problems.
         'arpack' :
             use arnoldi iteration in shift-invert mode. For this method,
             M may be a dense matrix, sparse matrix, or general linear operator.
@@ -327,6 +334,13 @@ class SpectralEmbedding(BaseEmbedding):
         'amg' :
             AMG requires pyamg to be installed. It can be faster on very large,
             sparse problems, but may also lead to instabilities.
+        'samg' :
+            Algebraic Multigrid solver from Fraunhofer SCAI (requires
+            ``Fraunhofer SAMG`` and ``pysamg`` to be installed). It can be
+            significantly faster on very large, sparse problems. Note that SAMG
+            is a commercial product and one needs a license to use it. For
+            licensing (including test or educational licenses)
+            contact samg@scai.fraunhofer.de
     random_state : numpy.RandomState or int, optional
         The generator or seed used to determine the starting vector for arpack
         iterations.  Defaults to numpy.random.RandomState
