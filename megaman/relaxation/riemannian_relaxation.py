@@ -233,10 +233,15 @@ class EpsilonRiemannianRelaxation(RiemannianRelaxation):
     def rieman_loss(self,Hnew=None):
         used_H = self.H if Hnew is None else Hnew
         subset = self.relaxation_kwds['subset']
+        # TODO: possible to cythonize? learn cython and try!
         err = np.zeros(self.n)
-        for k in subset:
-            U = self.IUUEPS[k].dot( used_H[k]-self.UU[k] ).dot(self.IUUEPS[k])
-            err[k] = np.linalg.norm(U,ord=2)
+        err[subset] = np.linalg.norm(
+            np.matmul(self.IUUEPS[subset],np.matmul(
+                used_H[subset]-self.UU[subset],self.IUUEPS[subset])),
+            axis=(1,2),ord=2)
+        # for k in subset:
+        #     U = self.IUUEPS[k].dot( used_H[k]-self.UU[k] ).dot(self.IUUEPS[k])
+        #     err[k] = np.linalg.norm(U,ord=2)
         loss = np.mean(err) \
                if not self.relaxation_kwds['weights'].shape[0] == self.n \
                else self.relaxation_kwds['weights'].T.dot(err)
@@ -278,9 +283,11 @@ class RLossRiemannianRelaxation(RiemannianRelaxation):
         used_H = self.H if Hnew is None else Hnew
         subset = self.relaxation_kwds['subset']
         err = np.zeros(self.n)
-        for k in subset:
-            U = used_H[k] - self.Id
-            err[k] = np.linalg.norm(U,ord=2)
+        err[subset] = np.linalg.norm(
+            used_H[subset] - self.Id[None,...], axis=(1,2), ord=2)
+        # for k in subset:
+        #     U = used_H[k] - self.Id
+        #     err[k] = np.linalg.norm(U,ord=2)
         loss = np.mean(err) \
                if self.relaxation_kwds['weights'].shape[0] != self.n \
                else self.relaxation_kwds['weights'].T.dot(err)
@@ -320,6 +327,7 @@ def matrix_derivative(U):
 
 def epsilon_norm(Hk,Uk,epsI):
     UUk = Uk.dot(Uk.T)
+    # TODO: why inverse here?
     iUUepk = np.linalg.inv(sqrtm_psd(UUk+epsI))
     HUUK = iUUepk.dot(Hk - UUk).dot(iUUepk)
     return UUk, iUUepk, HUUK

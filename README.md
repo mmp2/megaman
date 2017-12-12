@@ -91,6 +91,7 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 - [Marina Meila](http://www.stat.washington.edu/mmp/)
 - [Zhongyue Zhang](https://github.com/Jerryzcn)
 - [Jake VanderPlas](http://www.vanderplas.com)
+- [Yu-Chia Chen](https://github.com/yuchaz)
 
 ## Other Contributors
 

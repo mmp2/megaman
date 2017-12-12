@@ -214,6 +214,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
             lambdas, diffusion_map = eigh(G,**(solver_kwds or {}))
         else:
             lambdas, diffusion_map = eig(G,**(solver_kwds or {}))
+            sort_index = np.argsort(lambdas)
+            lambdas = lambdas[sort_index]
+            diffusion_map[:,sort_index]
         if largest:# eigh always returns eigenvalues in ascending order
             lambdas = lambdas[::-1] # reverse order the e-values
             diffusion_map = diffusion_map[:, ::-1] # reverse order the vectors
@@ -262,12 +265,12 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
     -------
     null_space : estimated k vectors of the null space
     error : estimated error (sum of eigenvalues)
-    
+
     Notes
     -----
     dense solver key words: see
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eigh.html
-        for symmetric problems and 
+        for symmetric problems and
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig
         for non symmetric problems.
     arpack sovler key words: see

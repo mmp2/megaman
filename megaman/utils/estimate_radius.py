@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import sys, time
 from megaman.geometry.rmetric import riemann_metric_lazy
@@ -65,7 +66,7 @@ def distortion(X, L, sample, PS, nbrs, n, d):
         distortion = 'Inf'
     return distortion
 
-def evaluate_radius(radius, d, sample):
+def evaluate_radius(radius, d, sample, rad_bw_ratio=3.0):
     global DIST
     global X
 
@@ -74,7 +75,7 @@ def evaluate_radius(radius, d, sample):
     (n, dim) = X.shape
     D.data[D.data > radius] = 0.0
     D.eliminate_zeros()
-    h = np.sqrt(2)*radius / 3.0
+    h = radius / rad_bw_ratio
     affinity_kwds = {'radius':h}
     A = compute_affinity_matrix(D, 'gaussian', **affinity_kwds)
     (PS, nbrs) = compute_nbr_wts(A, sample)
@@ -86,7 +87,7 @@ def evaluate_radius(radius, d, sample):
     print("for radius: " + str(radius) + " analysis took: " + str(t1-t0) + " seconds\n")
     return(radius, e_dist)
 
-def radius_search(d, sample, rmin, rmax, ntry, search_space='linspace'):
+def radius_search(d, sample, rmin, rmax, ntry, search_space='linspace', rad_bw_ratio=3.0):
     print("performing radius search...\n")
     if search_space == "linspace":
         radii = np.linspace(rmin, rmax, ntry)
@@ -94,10 +95,11 @@ def radius_search(d, sample, rmin, rmax, ntry, search_space='linspace'):
         radii = np.logspace(np.log10(rmin),np.log10(rmax), ntry)
     else:
         raise ValueError("search_space can only be logspace or linspace")
-    results = np.array([evaluate_radius(r, d, sample) for r in radii])
+    results = np.array([evaluate_radius(r, d, sample, rad_bw_ratio) for r in radii])
     return(results)
 
-def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_space='linspace'):
+def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes,
+                                search_space='linspace', rad_bw_ratio=3.0):
     print("performing parallel radius search...\n")
     if search_space == "linspace":
         radii = np.linspace(rmin, rmax, ntry)
@@ -106,19 +108,20 @@ def multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_s
     else:
         raise ValueError("search_space can only be logspace or linspace")
     pool = mp.Pool(processes = processes)
-    results = [pool.apply_async(evaluate_radius, args = (r,d,sample)) for r in radii]
+    results = [pool.apply_async(evaluate_radius, args = (r,d,sample,rad_bw_ratio)) for r in radii]
     results = [p.get() for p in results]
     results.sort()
     return(np.array(results))
 
-def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel, search_space='linspace'):
+def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel,
+                        search_space='linspace', rad_bw_ratio=3.0):
     """
     This function is used to estimate the bandwidth, h, of the Gaussian Kernel:
-        exp(-||x_i - x_j||/2h^2)
+        exp(-||x_i - x_j||/h^2)
 
 
-    The "radius" refers to the truncation constant which we take to be 3*h
-    and this is the parameter over which we will iterate.
+    The "radius" refers to the truncation constant which we take to be
+    rad_bw_ratio * h and this is the parameter over which we will iterate.
 
     We use the method of: https://arxiv.org/abs/1406.0118
 
@@ -133,16 +136,17 @@ def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel, 
     d : int,
         dimension over which to evaluate the radii (smaller usually better)
     rmin : float,
-        smallest radius ( = 3 * bandwidth) to consider
+        smallest radius ( = rad_bw_ratio * bandwidth) to consider
     rmax : float,
-        largest radius ( = 3 * bandwidth) to consider
+        largest radius ( = rad_bw_ratio * bandwidth) to consider
     ntry : int,
         number of radii between rmax and rmin to try
     run_parallel : bool,
         whether to run the analysis in parallel over radii
-
     search_space : str,
         either 'linspace' or 'logspace', choose to search in log or linear space
+    rad_bw_ratio : float,
+        the ratio of radius and kernel bandwidth, default to be 3 (radius = 3*h)
 
     Returns
     -------
@@ -170,9 +174,9 @@ def run_estimate_radius(data, dists, sample, d, rmin, rmax, ntry, run_parallel, 
         ncpu = mp.cpu_count() # 32 for Newton
         processes = int(min(ntry, ncpu))
         print('using ' + str(processes) + ' processes to perform asynchronous parallel radius search')
-        results = multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_space)
+        results = multi_process_radius_search(d, sample, rmin, rmax, ntry, processes, search_space, rad_bw_ratio)
     else:
-        results = radius_search(d, sample, rmin, rmax, ntry, search_space)
+        results = radius_search(d, sample, rmin, rmax, ntry, search_space, rad_bw_ratio)
     t1 = time.time()
     print('analysis took: ' + str(t1 - t0) + ' seconds to complete.')
     return(results)
