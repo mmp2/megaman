@@ -1,0 +1,231 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Aug 19 21:34:40 2017
+
+@author: Hui Pang
+"""
+
+
+import numpy as np
+import math
+
+def k_means_clustering(data,K,initial="klogk",multiplier=1,max_iter=300,tol=1e-4,random_state=None):
+    """
+    K-means clustering is an algorithm that take a data set and 
+    a number of clusters K and returns the labels which represents
+    the clusters of data which are similar to others
+    
+    Parameters    
+    --------------------
+    data: array-like, shape= (N,D)
+    K: integer
+        number of K clusters   
+    Returns
+    -------
+    labels: array-like, shape (1,N) 
+    n_iter: int
+    centroids: array-like, shape (K,D) 
+    """
+    np.random.seed(seed=random_state)
+    N,D = data.shape
+    if initial=="orthogonal":
+        centroids, data_norms = orthogonal_initialization(data,K)
+    elif initial=="kmeans++":
+        centroids=k_means_pplus(data,K)
+        data_norms=None
+    else:
+        centroids=k_logk_initialization(data,K,multiplier)
+        data_norms=None
+    n_iter=0
+    # Run the main k-means algorithm
+    while True:
+        n_iter+=1
+        old_centroids =np.copy(centroids)
+        labels = get_labels(data, old_centroids)                
+        centroids = get_centroids(data,K,labels,centroids,data_norms,initial,multiplier)    
+        if (_has_converged(data,centroids, old_centroids,tol) or n_iter>=max_iter):
+            break    
+    return labels,n_iter,centroids
+
+def orthogonal_initialization(data,K):
+    """
+    Initialize the centrodis by orthogonal_initialization.
+    Parameters    
+    --------------------
+    data: array-like, shape= (N,D)
+    K: integer
+        number of K clusters   
+    Returns
+    -------
+    centroids: array-like, shape (K,D)  
+    data_norms: array-like, shape=(1,N)     
+    """
+    N= data.shape[0]
+    centroids= data[np.random.randint(0, N-1,1),:] 
+    data_norms = np.linalg.norm(data, axis = 1)# contains the norm of each data point, only do this once
+         
+    center_norms = np.linalg.norm(centroids, axis=1) # contains the norms of the centers, will need to be updated when new center added
+        
+    for k in range(1,K):    
+        ## Here's where we compute the cosine of the angle between them:
+        # Compute the dot (inner) product between each data point and each center
+        new_center_index,new_center = new_orthogonal_center(data,data_norms,centroids,center_norms =center_norms)
+        centroids = np.vstack((centroids,new_center))          
+        center_norms = np.hstack((center_norms,data_norms[new_center_index]))   
+    return centroids,data_norms
+
+def new_orthogonal_center(data,data_norms,centroids,center_norms=None): 
+    """
+    Initialize the centrodis by orthogonal_initialization.
+    Parameters    
+    --------------------
+    data: array-like, shape= (N,D)
+    data_norms: array-like, shape=(1,N)
+    centroids: array-like, shape (K,D)
+    center_norms:array-like,shape=(1,K)        
+    Returns
+    -------
+    new_center: array-like, shape (1,D)
+    new_center_index: integer   
+                        data index of the new center
+    """
+    if center_norms is None:
+        center_norms = np.linalg.norm(centroids, axis=1)
+    cosine = np.inner(data,centroids) # cosine[i, j] = np.dot(X[i, :],centroids[j,:])
+    cosine = cosine/center_norms # divide each column by the center norm
+    cosine = cosine/data_norms[:,np.newaxis] # divide each row by the data norm  
+    max_cosine = np.max(abs(cosine), 1) # the largest (absolute) cosine for each data point 
+
+    # then we find the index of the new center:
+    new_center_index = np.argmin(max_cosine) # the data index of the new center is the smallest max cosine
+    new_center = data[new_center_index, :]       
+    return new_center_index,new_center
+
+def get_labels(data, centroids):
+    """
+    Returns a label for each piece of data in the dataset
+    
+    Parameters
+    ------------
+    data: array-like, shape= (N,D)
+    K: integer
+        number of K clusters  
+    centroids: array-like, shape=(K, D)     
+    
+    returns
+    -------------
+    labels: array-like, shape (1,N)
+    """
+    distances = np.sqrt(((data - centroids[:, np.newaxis])**2).sum(axis=2))
+    return np.argmin(distances, axis=0)
+    
+def get_centroids(data,K,labels,centroids,data_norms,initial,multiplier):
+    """
+    For each element in the dataset, choose the closest centroid
+    
+    Parameters
+    ------------
+    data: array-like, shape= (N,D)
+    K: integer, number of K clusters  
+    centroids: array-like, shape=(K,D)     
+    labels: array-like, shape (1,N)
+    returns
+    -------------
+    centroids: array-like, shape (K,D)    
+    """
+    #D = data.shape[1]    
+    for j in range(K):
+        cluster_points = np.where(labels == j)[0]
+        cluster_total = len(cluster_points)
+        if cluster_total == 0:
+            if initial=='orthorgonal':
+                _, temp = new_orthogonal_center(data,data_norms,centroids)
+            elif initial=="kmeans++":
+                return k_means_pplus(data,K)
+            else:
+                return k_logk_initialization(data,K,multiplier)
+        else:
+            temp = np.mean(data[cluster_points,:],axis=0)      
+        centroids[j,:] = temp
+    return centroids       
+
+
+def _has_converged(data,centroids,old_centroids,tol):
+    """
+    Stop if the sum of squared distances does not change much 
+    Parameters
+    -----------
+    centroids: array-like, shape=(K, D)     
+    old_centroids: array-like, shape=(K, D)
+    ------------    
+    returns
+    True: bool
+    
+    """
+    old_labels=get_labels(data, old_centroids)
+    rss_old=((data-old_centroids[old_labels])**2).sum()
+    new_labels= get_labels(data,centroids)
+    rss_new=((data-centroids[new_labels])**2).sum()  
+    return abs(rss_new-rss_old)<tol
+
+def k_logk_initialization(data,K,multiplier):
+    """
+    Initialize the centrodis by k_logk_initialization.
+    Parameters    
+    --------------------
+    data: array-like, shape= (N,D)
+    K: integer
+        number of K clusters   
+    Returns
+    -------
+    centroids: array-like, shape (K,D)  
+    """
+    try: 
+        N,D=data.shape
+    except ValueError:
+        centroids=None
+        print("The input data should be a two-dimension array")
+    else:
+        if K>N:
+            print("The number of clusters is larger than the number of data points")
+            centroids=None
+        else:
+            K_prime=int(multiplier*K*math.ceil(math.log(K)))       
+            old_centroids=data[np.random.randint(0,N,K_prime),:]
+            labels = get_labels(data, old_centroids)
+            deleted_centroids=np.zeros(K_prime)
+            for i in range(K_prime):
+                cluster_points=np.where(labels==i)[0]
+                cluster_total=len(cluster_points)
+                old_centroids[i,:]=np.mean(data[cluster_points,:],axis=0)
+                if(cluster_total<N/(math.e*K_prime)):    #remove the center that has too few points around
+                    deleted_centroids[i]=1
+            updated_centroids=old_centroids[deleted_centroids==0,]
+            K_remained=updated_centroids.shape[0]
+            centroid_index=np.random.randint(K_remained)
+            centroids=updated_centroids[centroid_index,]
+            for k in range(1,K):
+                distances = ((updated_centroids[:,np.newaxis] - centroids)**2).sum(axis=2)   
+                d=np.min(distances, axis=1)
+                centroid_index=np.argmax(d)
+                centroids=np.vstack((centroids,updated_centroids[centroid_index,]))
+        return centroids
+
+def k_means_pplus(X,K):
+    N,D=X.shape
+    if K>N:
+        print("The number of cluster is larger than the number of points!")
+        centroids=None
+    else:
+        centroid_index=np.random.randint(0,N)
+        centroids=X[centroid_index,:]
+        for i in range(1,K):
+            X=np.delete(X,centroid_index,axis=0)
+            distances = ((X[:,np.newaxis] - centroids)**2).sum(axis=2)   
+            d=np.min(distances, axis=1)
+            #centroid_index=np.argmax(d)
+            prob=d/sum(d)
+            centroid_index=np.random.choice(range(X.shape[0]),p=prob)
+            centroids=np.vstack((centroids,X[centroid_index,:]))
+    return centroids
