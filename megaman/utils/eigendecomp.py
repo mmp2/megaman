@@ -283,7 +283,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
         for symmetric problems and
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig
         for non symmetric problems.
-    arpack sovler key words: see
+    arpack solver key words: see
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html
         for symmetric problems and http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
         for non symmetric problems.
@@ -298,7 +298,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
                                                    nvec=k + k_skip)
     random_state = check_random_state(random_state)
 
-    if eigen_solver == 'arpack':
+    if eigen_solver == 'arpack' or eigen_solver == 'slepc':
         # This matches the internal initial state used by ARPACK
         v0 = random_state.uniform(-1, 1, M.shape[0])
         try:

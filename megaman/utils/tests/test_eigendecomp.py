@@ -12,7 +12,8 @@ SOLVER_KWDS_DICT = {'auto':None,
                     'dense':{'turbo':True, 'type':1},
                     'arpack':{'mode':'normal', 'tol':0, 'maxiter':None},
                     'lobpcg':{'maxiter':20, 'tol':None},
-                    'amg':{'maxiter':20, 'tol':None,'aggregate':'standard'}}
+                    'amg':{'maxiter':20, 'tol':None,'aggregate':'standard'},
+                    'slepc':None}
 
 def _check_with_col_sign_flipping(A, B, tol=0.0):
     """ Check array A and B are equal with possible sign flipping on
