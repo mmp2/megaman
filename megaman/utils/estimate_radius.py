@@ -57,7 +57,7 @@ def distortion(X, L, sample, PS, nbrs, n, d):
             X_tangent = X_tangent[:,range(d)]
             X_tangent[nbr,:] = X_t # rmetric only depends on nbrs
             H = riemann_metric_lazy(X_tangent,sample,L,d)[0]
-            dist += np.linalg.norm(H[i, :, :] - np.eye(d))
+            dist += np.linalg.norm(H[i, :, :] - np.eye(d), ord=2)
         else:
             nsum -= 1
     if nsum > 0:
