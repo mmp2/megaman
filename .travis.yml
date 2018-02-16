@@ -13,7 +13,7 @@ env:
     # Directory where tests are run from
     - TEST_DIR=/tmp/megaman
     - CONDA_CHANNEL="conda-forge"
-    - CONDA_DEPS="pip nose coverage cython scikit-learn flann h5py"
+    - CONDA_DEPS="pip nose coverage cython scikit-learn flann h5py slepc4py"
     - PIP_DEPS="coveralls"
   matrix:
     - EXTRA_DEPS="pyflann pyamg"
