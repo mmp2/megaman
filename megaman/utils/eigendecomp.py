@@ -1,5 +1,5 @@
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
-
+from __future__ import absolute_import
 import warnings
 import numpy as np
 from scipy import sparse
@@ -25,7 +25,7 @@ except ImportError:
     install pyamg or use another method."""
     
 try:
-    import slepctools as slepc
+    from . import slepctools as slepc
     SLEPC_LOADED = True
 except ImportError:
     #You need to install slepc4py with conda:
@@ -75,6 +75,10 @@ def check_eigen_solver(eigen_solver, solver_kwds, size=None, nvec=None):
                     solver_kwds = None
             else:
                 eigen_solver = 'dense'
+                solver_kwds = None
+        elif eigen_solver == 'slepc':
+            if not SLEPC_LOADED:
+                eigen_solver = 'arpack'
                 solver_kwds = None
 
     return eigen_solver, solver_kwds
