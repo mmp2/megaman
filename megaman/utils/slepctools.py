@@ -93,7 +93,7 @@ def get_eigenpairs(A, npairs=8, largest=True, comm=PETSc.COMM_WORLD):
         eps.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
     else:
         eps.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
-    eps.setDimensions(nev=8,ncv=SLEPc.DECIDE,mpd=SLEPc.DECIDE)
+    eps.setDimensions(nev=npairs,ncv=SLEPc.DECIDE,mpd=SLEPc.DECIDE)
     eps.solve()
     nconv = eps.getConverged()
     vr = A.getVecLeft()
@@ -113,4 +113,73 @@ def get_eigenpairs(A, npairs=8, largest=True, comm=PETSc.COMM_WORLD):
         else:
             evecs[:,i] = vr.getArray()
         evals[i] = k.real
-    return evals, evecs    
+    return evals, evecs  
+
+
+def get_null_space(A, npairs, comm=PETSc.COMM_WORLD):
+    """
+    Returns 'npairs' eigenpairs with eigenvalues close to 0. Uses shift-and-invert.
+    Parameters:
+    -----------
+    A: scipy CSR matrix, or numpy array or PETSc mat 
+    npairs : integer
+        Number of eigenvalues/vectors to return
+    comm: MPI communicator
+
+    Returns:
+    --------
+    evals: 1D array of npairs, eigenvalues from largest to smallest
+    evecs: 2D array of (n, npairs) where n is size of A matrix
+    """
+    matrixtype = str(type(A))
+    if 'scipy' in matrixtype:
+        n = A.shape[0]
+        A = get_petsc_matrix(A, comm)
+    elif 'petsc' in matrixtype:
+        n = A.getSize()
+    elif 'numpy' in matrixtype:
+        A = csr_matrix(A)
+        n = A.shape[0]
+        A = get_petsc_matrix(A, comm)
+    else:
+        Print('Matrix type {} is not compatible. Use scipy CSR or PETSc AIJ type.'.format(type(A)))
+    mpisize = comm.size
+    Print('Matrix size: {}'.format(n))
+    eps = SLEPc.EPS()
+    eps.create()
+    eps.setOperators(A)
+    eps.setFromOptions() #Use command line options
+    eps.setProblemType(SLEPc.EPS.ProblemType.HEP)
+    eps.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_REAL)
+    eps.setTarget(0.)
+    eps.setDimensions(nev=npairs,ncv=SLEPc.DECIDE,mpd=SLEPc.DECIDE)
+    st=eps.getST()
+    ksp=st.getKSP()
+    pc=ksp.getPC()
+    pc.setType(PETSc.PC.Type.CHOLESKY)
+    pc.setFactorShift(shift_type=A.FactorShiftType.POSITIVE_DEFINITE)
+    pc.setFactorSolverPackage('mumps')
+    st.setType(SLEPc.ST.Type.SINVERT)
+    eps.setUp()
+    eps.solve()
+    nconv = eps.getConverged()
+    vr = A.getVecLeft()
+    vi = A.getVecLeft()
+    if nconv < npairs:
+        Print("{} eigenvalues required, {} converged.".format(npairs,nconv))
+        npairs = nconv
+    evals = np.zeros(npairs)
+    evecs = np.zeros((n,npairs))
+    for i in range(npairs):
+        k = eps.getEigenpair(i,vr,vi)
+        if abs(k.imag) > 1.e-10:
+            Print("Imaginary eigenvalue: {} + {}j".format(k.real,k.imag))
+            Print("Error: {}".format(eps.computeError(i)))
+        if mpisize > 1:
+            evecs[:,i] = get_numpy_array(vr)
+        else:
+            evecs[:,i] = vr.getArray()
+        evals[i] = k.real
+    return evals, evecs 
+
+  

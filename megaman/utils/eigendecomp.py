@@ -302,7 +302,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
                                                    nvec=k + k_skip)
     random_state = check_random_state(random_state)
 
-    if eigen_solver == 'arpack' or eigen_solver == 'slepc':
+    if eigen_solver == 'arpack':
         # This matches the internal initial state used by ARPACK
         v0 = random_state.uniform(-1, 1, M.shape[0])
         try:
@@ -362,5 +362,8 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
             eigen_values = eigen_values[index]
             eigen_vectors = eigen_vectors[:, index]
             return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
+    elif eigen_solver == 'slepc':
+        eigen_values, eigen_vectors = slepc.get_null_space(M, k+k_skip)
+        return eigen_vectors[:, k_skip:], np.sum(eigen_values[k_skip:])
     else:
         raise ValueError("Unrecognized eigen_solver '%s'" % eigen_solver)
