@@ -87,13 +87,15 @@ def get_eigenpairs(A, npairs=8, largest=True, comm=PETSc.COMM_WORLD):
     eps = SLEPc.EPS()
     eps.create()
     eps.setOperators(A)
-    eps.setFromOptions() #Use command line options
     eps.setProblemType(SLEPc.EPS.ProblemType.HEP)
     if largest:
         eps.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
     else:
         eps.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
     eps.setDimensions(nev=npairs,ncv=SLEPc.DECIDE,mpd=SLEPc.DECIDE)
+    eps.setTolerances(tol=1.e-14)
+    eps.setFromOptions() #Use command line options
+    eps.setUp()
     eps.solve()
     nconv = eps.getConverged()
     vr = A.getVecLeft()
@@ -148,7 +150,6 @@ def get_null_space(A, npairs, comm=PETSc.COMM_WORLD):
     eps = SLEPc.EPS()
     eps.create()
     eps.setOperators(A)
-    eps.setFromOptions() #Use command line options
     eps.setProblemType(SLEPc.EPS.ProblemType.HEP)
     eps.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_REAL)
     eps.setTarget(0.)
@@ -160,6 +161,8 @@ def get_null_space(A, npairs, comm=PETSc.COMM_WORLD):
     pc.setFactorShift(shift_type=A.FactorShiftType.POSITIVE_DEFINITE)
     pc.setFactorSolverPackage('mumps')
     st.setType(SLEPc.ST.Type.SINVERT)
+    eps.setTolerances(tol=1.e-14)
+    eps.setFromOptions() #Use command line options
     eps.setUp()
     eps.solve()
     nconv = eps.getConverged()
