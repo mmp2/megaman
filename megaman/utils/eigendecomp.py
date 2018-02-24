@@ -1,5 +1,5 @@
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
-
+from __future__ import absolute_import
 import warnings
 import numpy as np
 from scipy import sparse
@@ -10,7 +10,7 @@ from sklearn.utils.validation import check_random_state
 from .validation import check_array
 
 
-EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg']
+EIGEN_SOLVERS = ['auto', 'dense', 'arpack', 'lobpcg', 'slepc']
 BAD_EIGEN_SOLVERS = {}
 AMG_KWDS = ['strength', 'aggregate', 'smooth', 'max_levels', 'max_coarse']
 
@@ -23,6 +23,14 @@ except ImportError:
     BAD_EIGEN_SOLVERS['amg'] = """The eigen_solver was set to 'amg',
     but pyamg is not available. Please either
     install pyamg or use another method."""
+    
+try:
+    from . import slepctools as slepc
+    SLEPC_LOADED = True
+except ImportError:
+    #You need to install slepc4py with conda:
+    #conda install -c conda-forge slepc4py 
+    SLEPC_LOADED = False
 
 
 def check_eigen_solver(eigen_solver, solver_kwds, size=None, nvec=None):
@@ -67,6 +75,10 @@ def check_eigen_solver(eigen_solver, solver_kwds, size=None, nvec=None):
                     solver_kwds = None
             else:
                 eigen_solver = 'dense'
+                solver_kwds = None
+        elif eigen_solver == 'slepc':
+            if not SLEPC_LOADED:
+                eigen_solver = 'arpack'
                 solver_kwds = None
 
     return eigen_solver, solver_kwds
@@ -136,7 +148,6 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
         if G.getformat() is not 'csr':
             G.tocsr()
     G = G.astype(np.float)
-
     # Check for symmetry
     is_symmetric = _is_symmetric(G)
 
@@ -222,6 +233,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
             diffusion_map = diffusion_map[:, ::-1] # reverse order the vectors
         lambdas = lambdas[:n_components]
         diffusion_map = diffusion_map[:, :n_components]
+    elif eigen_solver == 'slepc':
+        if is_symmetric:
+            lambdas, diffusion_map = slepc.get_eigenpairs(G,npairs=n_components,largest=largest)        
     return (lambdas, diffusion_map)
 
 
@@ -273,7 +287,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
         for symmetric problems and
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.eig.html#scipy.linalg.eig
         for non symmetric problems.
-    arpack sovler key words: see
+    arpack solver key words: see
         http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigsh.html
         for symmetric problems and http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.linalg.eigs.html#scipy.sparse.linalg.eigs
         for non symmetric problems.
@@ -348,5 +362,8 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
             eigen_values = eigen_values[index]
             eigen_vectors = eigen_vectors[:, index]
             return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
+    elif eigen_solver == 'slepc':
+        eigen_values, eigen_vectors = slepc.get_eigenpairs(M,npairs=k+k_skip,largest=False) 
+        return eigen_vectors[:, k_skip:], np.sum(eigen_values[k_skip:])
     else:
         raise ValueError("Unrecognized eigen_solver '%s'" % eigen_solver)

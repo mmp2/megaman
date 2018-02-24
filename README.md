@@ -67,6 +67,7 @@ Optional requirements include
 - [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [nose](https://nose.readthedocs.org/) for running the unit tests
 - [h5py](http://www.h5py.org) for reading testing .mat files
+- [slepc4py] (http://slepc.upv.es/), for parallel eigendecomposition.
 
 These requirements can be installed on Linux and MacOSX using the following conda command:
 

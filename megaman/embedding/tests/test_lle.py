@@ -66,6 +66,9 @@ def test_lle_simple_grid():
     distance_matrix = G.compute_adjacency_matrix()
     N = lle.barycenter_graph(distance_matrix, X).todense()
     reconstruction_error = np.linalg.norm(np.dot(N, X) - X, 'fro')
+    print('*************')
+    print('Reconstruction error for {}: {}'.format('numpy',reconstruction_error))
+    print('*************')
     assert(reconstruction_error < tol)
     for eigen_solver in EIGEN_SOLVERS:
         clf = lle.LocallyLinearEmbedding(n_components = n_components, geom = G,
@@ -74,6 +77,9 @@ def test_lle_simple_grid():
         assert(clf.embedding_.shape[1] == n_components)
         reconstruction_error = np.linalg.norm(
         np.dot(N, clf.embedding_) - clf.embedding_, 'fro') ** 2
+        print('*************')
+        print('Reconstruction error for {}: {}'.format(eigen_solver,reconstruction_error))
+        print('*************')
         assert(reconstruction_error < tol)
 
 def test_lle_manifold():
