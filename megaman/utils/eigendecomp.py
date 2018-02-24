@@ -363,7 +363,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
             eigen_vectors = eigen_vectors[:, index]
             return eigen_vectors[:, k_skip:k+1], np.sum(eigen_values[k_skip:k+1])
     elif eigen_solver == 'slepc':
-        eigen_values, eigen_vectors = slepc.get_null_space(M, k+k_skip)
+        eigen_values, eigen_vectors = slepc.get_eigenpairs(M,npairs=n_k+k_skip,largest=False) 
         return eigen_vectors[:, k_skip:], np.sum(eigen_values[k_skip:])
     else:
         raise ValueError("Unrecognized eigen_solver '%s'" % eigen_solver)
