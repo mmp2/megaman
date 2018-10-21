@@ -17,7 +17,7 @@ from scipy import sparse
 from numpy.linalg import eigh, svd, inv
 
 
-def riemann_metric( Y, laplacian, n_dim=None, invert_h=False, mode_inv = 'svd'):
+def riemann_metric(Y, laplacian, n_dim=None, invert_h=False, mode_inv = 'svd'):
     """
     Parameters
     ----------
@@ -58,20 +58,22 @@ def riemann_metric( Y, laplacian, n_dim=None, invert_h=False, mode_inv = 'svd'):
     Dominique Perraul-Joncas, Marina Meila, arXiv:1305.7255
     """
     n_samples = laplacian.shape[0]
-    h_dual_metric = np.zeros((n_samples, n_dim, n_dim ))
+    h_dual_metric = np.zeros((n_samples, n_dim, n_dim))
     n_dim_Y = Y.shape[1]
     h_dual_metric_full = np.zeros((n_samples, n_dim_Y, n_dim_Y))
-    for i in np.arange(n_dim_Y):
-        for j in np.arange(i, n_dim_Y):
-            yij = Y[:,i]*Y[:,j]
-            h_dual_metric_full[ :, i, j] = 0.5*(laplacian.dot(yij)-Y[:,j]*laplacian.dot(Y[:,i])-Y[:,i]*laplacian.dot(Y[:,j]))
+    for i in range(n_dim_Y):
+        for j in range(i, n_dim_Y):
+            yij = Y[:,i] * Y[:,j]
+            h_dual_metric_full[ :, i, j] = \
+                0.5 * (laplacian.dot(yij) - \
+                       Y[:, j] * laplacian.dot(Y[:, i]) - \
+                       Y[:, i] * laplacian.dot(Y[:, j]))
     for j in np.arange(n_dim_Y - 1):
         for i in np.arange(j+1, n_dim_Y):
-            h_dual_metric_full[ :,i,j] = h_dual_metric_full[:,j,i]
+            h_dual_metric_full[:, i, j] = h_dual_metric_full[:, j, i]
 
-    # compute rmetric if requested
-    riemann_metric, h_dual_metric, Hvv, Hsvals, Gsvals = compute_G_from_H(h_dual_metric_full)
-
+    riemann_metric, h_dual_metric, Hvv, Hsvals, Gsvals = \
+        compute_G_from_H(h_dual_metric_full)
     return h_dual_metric, riemann_metric, Hvv, Hsvals, Gsvals
 
 def riemann_metric_lazy( Y, sample,laplacian, n_dim, invert_h=False, mode_inv = 'svd'):
@@ -155,7 +157,7 @@ def compute_G_from_H(H, mdimG=None, mode_inv="svd"):
     n_dim = H.shape[2]
     if mode_inv is 'svd':
         Huu, Hsvals, Hvv = np.linalg.svd(H)
-        if mdimG is None:
+        if mdimG is None or mdimG == n_dim:
             Gsvals = 1./Hsvals
             G = np.zeros((n_samples, n_dim, n_dim))
             new_H = H
