@@ -158,7 +158,8 @@ def compute_G_from_H(H, mdimG=None, mode_inv="svd"):
     if mode_inv is 'svd':
         Huu, Hsvals, Hvv = np.linalg.svd(H)
         if mdimG is None or mdimG == n_dim:
-            Gsvals = 1./Hsvals
+            # Gsvals = 1./Hsvals
+            Gsvals = np.divide(1, Hsvals, out=np.zeros_like(Hsvals), where=Hsvals != 0)
             G = np.zeros((n_samples, n_dim, n_dim))
             new_H = H
             for i in np.arange(n_samples):
@@ -275,7 +276,7 @@ class RiemannMetric(object):
         Compute the Reimannian Metric
         """
         if self.H is None:
-            self.H, self.G, self.Hvv, self.Hsval = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = mode_inv)
+            self.H, self.G, self.Hvv, self.Hsval, self.Gsvals = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = mode_inv)
         if mode_inv is 'svd' and return_svd:
             return self.G, self.Hvv, self.Hsvals, self.Gsvals
         else:
@@ -286,7 +287,7 @@ class RiemannMetric(object):
 
     def get_detG(self):
         if self.G is None:
-            self.H, self.G, self.Hvv, self.Hsval = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = self.mode_inv)
+            self.H, self.G, self.Hvv, self.Hsval, self.Gsvals = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = self.mode_inv)
         if self.detG is None:
             if self.mdimG == self.mdimY:
                 self.detG = 1./np.linalg.det(H)
