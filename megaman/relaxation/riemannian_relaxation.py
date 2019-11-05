@@ -233,15 +233,11 @@ class EpsilonRiemannianRelaxation(RiemannianRelaxation):
     def rieman_loss(self,Hnew=None):
         used_H = self.H if Hnew is None else Hnew
         subset = self.relaxation_kwds['subset']
-        # TODO: possible to cythonize? learn cython and try!
         err = np.zeros(self.n)
         err[subset] = np.linalg.norm(
             np.matmul(self.IUUEPS[subset],np.matmul(
                 used_H[subset]-self.UU[subset],self.IUUEPS[subset])),
             axis=(1,2),ord=2)
-        # for k in subset:
-        #     U = self.IUUEPS[k].dot( used_H[k]-self.UU[k] ).dot(self.IUUEPS[k])
-        #     err[k] = np.linalg.norm(U,ord=2)
         loss = np.mean(err) \
                if not self.relaxation_kwds['weights'].shape[0] == self.n \
                else self.relaxation_kwds['weights'].T.dot(err)

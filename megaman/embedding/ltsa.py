@@ -82,7 +82,7 @@ def ltsa(geom, n_components, eigen_solver='auto',
                                                    size=geom.adjacency_matrix.shape[0],
                                                    nvec=n_components + 1)
     if eigen_solver != 'dense':
-        M = sparse.csr_matrix((N, N))
+        M = sparse.dok_matrix((N, N))
     else:
         M = np.zeros((N, N))
     for i in range(N):
@@ -102,11 +102,12 @@ def ltsa(geom, n_components, eigen_solver='auto',
         Gi[:, 0] = 1. / np.sqrt(n_neighbors_i)
         GiGiT = np.dot(Gi, Gi.T)
         nbrs_x, nbrs_y = np.meshgrid(neighbors_i, neighbors_i)
-        with warnings.catch_warnings():
-            # sparse will complain this is better with lil_matrix but it doesn't work
-            warnings.simplefilter("ignore")
-            M[nbrs_x, nbrs_y] -= GiGiT
-            M[neighbors_i, neighbors_i] += 1
+        # with warnings.catch_warnings():
+        #     # sparse will complain this is better with lil_matrix but it doesn't work
+        #     warnings.simplefilter("ignore")
+        M[nbrs_x, nbrs_y] -= GiGiT
+        M[neighbors_i, neighbors_i] += 1
+    M = sparse.csr_matrix(M)
     return null_space(M, n_components, k_skip=1, eigen_solver=eigen_solver,
                       random_state=random_state,solver_kwds=solver_kwds)
 
