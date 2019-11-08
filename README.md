@@ -33,9 +33,9 @@ You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 - [Tutorial Notebook]( https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb)
 
-## Installation with Conda
+## ~~Installation with Conda~~
 
-The easiest way to install ``megaman`` and its dependencies is with
+<!-- The easiest way to install ``megaman`` and its dependencies is with
 [conda](http://conda.pydata.org/miniconda.html), the cross-platform package
 manager for the scientific Python ecosystem.
 
@@ -46,36 +46,57 @@ $ conda install megaman --channel=conda-forge
 ```
 
 Currently builds are available for OSX and Linux, on Python 2.7, 3.4, and 3.5.
-For other operating systems, see the full install instructions below.
+For other operating systems, see the full install instructions below. -->
+
+Due to the change of API,
+`$ conda install -c conda-forge megaman`
+is no longer supported.
+We are currently working on fixing the bug.
+
+Please see the full install instructions below to build `megaman` from source.
 
 ## Installation from source
 
 To install megaman from source requires the following:
 
-- [python](http://python.org) tested with versions 2.7, 3.4, and 3.5
+- [python](http://python.org) tested with versions 2.7, 3.5 and 3.6
 - [numpy](http://numpy.org) version 1.8 or higher
 - [scipy](http://scipy.org) version 0.16.0 or higher
 - [scikit-learn](http://scikit-learn.org)
 - [FLANN](http://www.cs.ubc.ca/research/flann/)
+- [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [cython](http://cython.org/)
 - a C++ compiler such as ``gcc``/``g++``
-- [plotly](https://plot.ly) an graphing library for interactive plot
 
 Optional requirements include
 
 - [pyamg](http://pyamg.org/), which allows for faster decompositions of large matrices
-- [pyflann](http://www.cs.ubc.ca/research/flann/) which offers another method of computing distance matrices (this is bundled with the FLANN source code)
 - [nose](https://nose.readthedocs.org/) for running the unit tests
 - [h5py](http://www.h5py.org) for reading testing .mat files
+- [plotly](https://plot.ly) an graphing library for interactive plot
+
 
 These requirements can be installed on Linux and MacOSX using the following conda command:
 
+```shell
+$ conda create -n manifold_env python=3.5 -y
+# can also use python=2.7 or python=3.6
+
+$ source activate manifold_env
+$ conda install --channel=conda-forge -y pip nose coverage cython numpy scipy \
+                                         scikit-learn pyflann pyamg h5py plotly
 ```
-$ conda install --channel=conda-forge pip nose coverage gcc cython numpy scipy scikit-learn pyflann pyamg h5py plotly
+
+Clone this repository and `cd` into source repository
+
+```shell
+$ cd /tmp/
+$ git clone https://github.com/mmp2/megaman.git
+$ cd megaman
 ```
 
 Finally, within the source repository, run this command to install the ``megaman`` package itself:
-```
+```shell
 $ python setup.py install
 ```
 
