@@ -33,6 +33,10 @@ You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 - [Tutorial Notebook]( https://github.com/mmp2/megaman/blob/master/examples/megaman_tutorial.ipynb)
 
+## Installation and Examples in Google Colab
+
+
+
 ## ~~Installation with Conda~~
 
 <!-- The easiest way to install ``megaman`` and its dependencies is with
