@@ -126,6 +126,7 @@ to run the unit tests. ``megaman`` is tested on Python versions 2.7, 3.4, and 3.
 ## Other Contributors
 
 - Xiao Wang: lazy rmetric, Nystrom Extension
+- [Hangliang Ren (Harry)](https://github.com/Harryahh): Installation tutorials, Spectral Embedding
 
 ## Future Work
 
