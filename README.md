@@ -35,7 +35,7 @@ You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 ## Installation and Examples in Google Colab
 
-Below it's a tutorial to install and use megaman on Google Colab.
+Below it's a tutorial to install megaman on Google Colab, through conda environment.
 
 It also provides tutorial of using megaman to build spectral embedding on uniform swiss roll dataset.
 
