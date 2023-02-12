@@ -35,12 +35,12 @@ You can also find our arXiv paper at http://arxiv.org/abs/1603.02763
 
 ## Installation and Examples in Google Colab
 
-When deploying megaman, there's some dependencies hard to install. Below it's a script to install and use megaman easily on Google Colab.
+Below it's a tutorial to install and use megaman on Google Colab.
 
 It also provides an example of using megaman to build spectral embedding on uniform swiss roll dataset.
 
 - [Install & Example script]( https://colab.research.google.com/drive/1ms22YK3TvrIx0gji6UZqG0zoSNRCWtXj?usp=sharing)
-- [You can also download the script here]()
+- [You can download the Jupyter Notebook version here]( https://github.com/mmp2/megaman/blob/master/examples/megaman_install_usage_colab.ipynb)
 
 ## ~~Installation with Conda~~
 
