@@ -31,14 +31,14 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
 
 def test_lle_with_sklearn():
     N = 10
-    X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
+    X, color = datasets.make_s_curve(N, random_state=0)
     n_components = 2
     n_neighbors = 3
-    knn = NearestNeighbors(n_neighbors + 1).fit(X)
+    knn = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(X)
     G = geom.Geometry()
     G.set_data_matrix(X)
     G.set_adjacency_matrix(knn.kneighbors_graph(X, mode = 'distance'))
-    sk_Y_lle = manifold.LocallyLinearEmbedding(n_neighbors, n_components, method = 'standard').fit_transform(X)
+    sk_Y_lle = manifold.LocallyLinearEmbedding(n_neighbors=n_neighbors, n_components=n_components, method='standard').fit_transform(X)
     (mm_Y_lle, err) = lle.locally_linear_embedding(G, n_components)
     assert(_check_with_col_sign_flipping(sk_Y_lle, mm_Y_lle, 0.05))
 

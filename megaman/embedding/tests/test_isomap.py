@@ -31,15 +31,15 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
 
 def test_isomap_with_sklearn():
     N = 10
-    X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
+    X, color = datasets.make_s_curve(N, random_state=0)
     n_components = 2
     n_neighbors = 3
-    knn = NearestNeighbors(n_neighbors + 1).fit(X)
+    knn = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(X)
     # Assign the geometry matrix to get the same answer since sklearn using k-neighbors instead of radius-neighbors
     g = geom.Geometry(X)
     g.set_adjacency_matrix(knn.kneighbors_graph(X, mode = 'distance'))
     # test Isomap with sklearn
-    sk_Y_iso = manifold.Isomap(n_neighbors, n_components, eigen_solver = 'arpack').fit_transform(X)
+    sk_Y_iso = manifold.Isomap(n_neighbors=n_neighbors, n_components=n_components, eigen_solver='arpack').fit_transform(X)
     mm_Y_iso = iso.isomap(g, n_components)
     assert(_check_with_col_sign_flipping(sk_Y_iso, mm_Y_iso, 0.05))
 

@@ -32,23 +32,23 @@ def _check_with_col_sign_flipping(A, B, tol=0.0):
 
 def test_ltsa_with_sklearn():
     N = 10
-    X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
+    X, color = datasets.make_s_curve(N, random_state=0)
     n_components = 2
     n_neighbors = 3
-    knn = NearestNeighbors(n_neighbors + 1).fit(X)
+    knn = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(X)
     G = geom.Geometry()
     G.set_data_matrix(X)
     G.set_adjacency_matrix(knn.kneighbors_graph(X, mode = 'distance'))
-    sk_Y_ltsa = manifold.LocallyLinearEmbedding(n_neighbors, n_components,
-                                                method = 'ltsa',
-                                                eigen_solver = 'arpack').fit_transform(X)
+    sk_Y_ltsa = manifold.LocallyLinearEmbedding(n_neighbors=n_neighbors, n_components=n_components,
+                                                method='ltsa',
+                                                eigen_solver='arpack').fit_transform(X)
     (mm_Y_ltsa, err) = ltsa.ltsa(G, n_components, eigen_solver = 'arpack')
     assert(_check_with_col_sign_flipping(sk_Y_ltsa, mm_Y_ltsa, 0.05))
 
 
 def test_ltsa_eigendecomps():
     N = 10
-    X, color = datasets.samples_generator.make_s_curve(N, random_state=0)
+    X, color = datasets.make_s_curve(N, random_state=0)
     n_components = 2
     G = geom.Geometry(adjacency_method = 'brute', adjacency_kwds = {'radius':2})
     G.set_data_matrix(X)

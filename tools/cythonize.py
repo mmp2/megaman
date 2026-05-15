@@ -45,8 +45,8 @@ except NameError:
 def process_pyx(fromfile, tofile):
     try:
         from Cython.Compiler.Version import version as cython_version
-        from distutils.version import LooseVersion
-        if LooseVersion(cython_version) < LooseVersion('0.22'):
+        cython_ver = tuple(int(x) for x in cython_version.split('.')[:2])
+        if cython_ver < (0, 22):
             raise Exception('Building megaman requires Cython >= 0.22')
 
     except ImportError:

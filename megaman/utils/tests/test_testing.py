@@ -3,7 +3,7 @@
 import warnings
 import sys
 import unittest
-from nose.tools import assert_raises, assert_equal
+import pytest
 
 from megaman.utils.testing import assert_raise_message, assert_no_warnings, assert_warns
 
@@ -17,22 +17,22 @@ def test_assert_raise_message():
     assert_raise_message(ValueError, "test",
                          _raise_ValueError, "test")
 
-    assert_raises(AssertionError,
-                  assert_raise_message, ValueError, "something else",
-                  _raise_ValueError, "test")
+    with pytest.raises(AssertionError):
+        assert_raise_message(ValueError, "something else",
+                             _raise_ValueError, "test")
 
-    assert_raises(ValueError,
-                  assert_raise_message, TypeError, "something else",
-                  _raise_ValueError, "test")
+    with pytest.raises(ValueError):
+        assert_raise_message(TypeError, "something else",
+                             _raise_ValueError, "test")
 
-    assert_raises(AssertionError,
-                  assert_raise_message, ValueError, "test",
-                  _no_raise)
+    with pytest.raises(AssertionError):
+        assert_raise_message(ValueError, "test",
+                             _no_raise)
 
     # multiple exceptions in a tuple
-    assert_raises(AssertionError,
-                  assert_raise_message, (ValueError, AttributeError),
-                  "test", _no_raise)
+    with pytest.raises(AssertionError):
+        assert_raise_message((ValueError, AttributeError),
+                             "test", _no_raise)
 
 
 # This class is inspired from numpy 1.7 with an alteration to check
@@ -51,13 +51,14 @@ class TestWarns(unittest.TestCase):
         # This is because `clean_warning_registry()` is called internally by
         # assert_warns and clears all previous filters.
         warnings.simplefilter("ignore", UserWarning)
-        assert_equal(assert_warns(UserWarning, f), 3)
+        assert assert_warns(UserWarning, f) == 3
 
         # Test that the warning registry is empty after assert_warns
-        assert_equal(sys.modules['warnings'].filters, [])
+        assert sys.modules['warnings'].filters == []
 
-        assert_raises(AssertionError, assert_no_warnings, f)
-        assert_equal(assert_no_warnings(lambda x: x, 1), 1)
+        with pytest.raises(AssertionError):
+            assert_no_warnings(f)
+        assert assert_no_warnings(lambda x: x, 1) == 1
 
     def test_warn_wrong_warning(self):
         def f():

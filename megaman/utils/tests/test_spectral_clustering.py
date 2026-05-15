@@ -28,4 +28,4 @@ def test_spectral_clustering():
     for stabalize in [True, False]:
         for renormalize in [True, False]:
             for solver in EIGEN_SOLVERS:
-                yield check_labels, stabalize, renormalize, solver
+                check_labels(stabalize, renormalize, solver)

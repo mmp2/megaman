@@ -133,9 +133,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
 
     # Convert G to best type for eigendecomposition
     if sparse.issparse(G):
-        if G.getformat() is not 'csr':
+        if G.getformat() != 'csr':
             G.tocsr()
-    G = G.astype(np.float)
+    G = G.astype(np.float64)
 
     # Check for symmetry
     is_symmetric = _is_symmetric(G)
@@ -307,7 +307,7 @@ def null_space(M, k, k_skip=1, eigen_solver='arpack',
     elif eigen_solver == 'dense':
         if hasattr(M, 'toarray'):
             M = M.toarray()
-        eigen_values, eigen_vectors = eigh(M, eigvals=(0, k+k_skip),overwrite_a=True,
+        eigen_values, eigen_vectors = eigh(M, subset_by_index=[0, k+k_skip],overwrite_a=True,
                                            **(solver_kwds or {}))
         index = np.argsort(np.abs(eigen_values))
         eigen_vectors = eigen_vectors[:, index]

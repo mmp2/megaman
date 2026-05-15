@@ -46,7 +46,7 @@ def _graph_connected_component(graph, node_id):
         belong to the largest connected components of the given query
         node
     """
-    connected_components = np.zeros(shape=(graph.shape[0]), dtype=np.bool)
+    connected_components = np.zeros(shape=(graph.shape[0]), dtype=np.bool_)
     connected_components[node_id] = True
     n_node = graph.shape[0]
     for i in range(n_node):

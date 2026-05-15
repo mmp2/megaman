@@ -1,18 +1,14 @@
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
 import os
+import pytest
 
-from nose.tools import assert_true
-from nose.tools import assert_equal
 import scipy.io
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
 from scipy.sparse import isspmatrix
 import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_array_equal, assert_allclose
-
-from nose.tools import assert_raises
-from nose.plugins.skip import SkipTest
 
 from megaman.geometry.rmetric import *
 from megaman.embedding.spectral_embedding import _graph_is_connected

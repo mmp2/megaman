@@ -18,7 +18,7 @@ class Kmeans():
         self.fit(data)
         return self.labels_
 
-def k_means_clustering(data,K):
+def k_means_clustering(data, K, max_iter=300):
     """
     K-means clustering is an algorithm that take a data set and 
     a number of clusters K and returns the labels which represents
@@ -28,21 +28,25 @@ def k_means_clustering(data,K):
     --------------------
     data: array-like, shape= (m_samples,n_samples)
     K: integer
-        number of K clusters   
+        number of K clusters
+    max_iter: integer
+        maximum number of iterations (default=300)
     Returns
     -------
     labels: array-like, shape (1,n_samples)    
     """
     N = data.shape[0]
     centroids, data_norms = orthogonal_initialization(data,K)
-    old_centroids= np.zeros((N,K))
+    old_centroids= np.zeros_like(centroids)
     labels = []
     
     # Run the main k-means algorithm
-    while not _has_converged(centroids, old_centroids):    
+    for _ in range(max_iter):
+        if _has_converged(centroids, old_centroids):
+            break
+        old_centroids = centroids.copy()
         labels = get_labels(data, centroids,K)                
         centroids = get_centroids(data,K,labels,centroids,data_norms)
-        old_centroids = centroids
         
     return labels
 
@@ -135,12 +139,12 @@ def get_centroids(data,k,labels,centroids,data_norms):
 
     D = data.shape[1]    
     for j in range(k):
-        cluster_points = np.where(labels == j)
+        cluster_points = np.where(labels == j)[0]
         cluster_total = len(cluster_points)
         if cluster_total == 0:
             _, temp = new_orthogonal_center(data,data_norms,centroids)
         else:
-            temp = np.mean(data[cluster_points,:],axis=1)      
+            temp = np.mean(data[cluster_points,:],axis=0)      
         centroids[j,:] = temp
     return centroids       
 
@@ -156,4 +160,4 @@ def _has_converged(centroids, old_centroids):
     True: bool
     
     """
-    return (set([tuple(a) for a in centroids]) == set([tuple(a) for a in old_centroids]))    
+    return np.allclose(centroids, old_centroids, equal_nan=True)    

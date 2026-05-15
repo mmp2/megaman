@@ -92,7 +92,7 @@ def test_affinity():
     for adjacency_radius in [0.5, 1.0, 5.0]:
         for affinity_radius in [0.1, 0.5, 1.0]:
             for symmetrize in [True, False]:
-                yield (check_affinity, adjacency_radius,
+                check_affinity(adjacency_radius,
                        affinity_radius, symmetrize)
 
 

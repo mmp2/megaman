@@ -1,5 +1,5 @@
 from megaman.relaxation.utils import *
-from nose.tools import assert_raises
+import pytest
 import numpy as np
 import numpy.testing
 import shutil, warnings
@@ -67,9 +67,12 @@ def test_update_lossf():
     assert calculated_kwds['eps_orth'] == 0.55, 'eps_orth should be updated to 0.55.'
 
 def test_raise_lossf_error():
-    assert_raises(ValueError, _initialize_kwds, dict(lossf='rloss'),n,s,d)
-    assert_raises(ValueError, _initialize_kwds, dict(lossf='epsilon'),n,d,d)
-    assert_raises(ValueError, _initialize_kwds, dict(projected=True, subset=np.arange(0,n,5)),n,s,d)
+    with pytest.raises(ValueError):
+        _initialize_kwds(dict(lossf='rloss'),n,s,d)
+    with pytest.raises(ValueError):
+        _initialize_kwds(dict(lossf='epsilon'),n,d,d)
+    with pytest.raises(ValueError):
+        _initialize_kwds(dict(projected=True, subset=np.arange(0,n,5)),n,s,d)
 
 def test_default_momentum():
     calculated_kwds = _initialize_kwds(dict(step_method='momentum',linesearch=False),n,s,d)

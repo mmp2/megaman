@@ -51,7 +51,7 @@ def test_laplacian_vs_matlab():
 
     for input_type in [np.array, csr_matrix]:
         for laplacian_method in laplacians:
-            yield check_laplacian, input_type, laplacian_method
+            check_laplacian(input_type, laplacian_method)
 
 
 def test_laplacian_smoketest():
@@ -67,7 +67,7 @@ def test_laplacian_smoketest():
         assert_equal(lap.shape, (X.shape[0], X.shape[0]))
 
     for method in Laplacian.asymmetric_methods():
-        yield check_laplacian, method
+        check_laplacian(method)
 
 
 def test_laplacian_unknown_method():
@@ -94,4 +94,4 @@ def test_laplacian_full_output():
     for method in Laplacian.asymmetric_methods():
         for adjacency_radius in [0.5, 1.0]:
             for affinity_radius in [0.1, 0.3]:
-                yield check_symmetric, method, adjacency_radius, affinity_radius
+                check_symmetric(method, adjacency_radius, affinity_radius)

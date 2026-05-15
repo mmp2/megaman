@@ -35,7 +35,7 @@ def test_embeddings_fit_vs_transform():
 
     for Embedding in EMBEDDINGS:
         for n_components in [1, 2, 3]:
-            yield check_embedding, Embedding, n_components
+            check_embedding(Embedding, n_components)
 
 
 def test_embeddings_bad_arguments():
@@ -52,4 +52,4 @@ def test_embeddings_bad_arguments():
         assert_raises(ValueError, embedding.fit, X)
 
     for Embedding in EMBEDDINGS:
-        yield check_bad_args, Embedding
+        check_bad_args(Embedding)
