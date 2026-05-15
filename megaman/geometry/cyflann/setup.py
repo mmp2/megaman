@@ -12,7 +12,7 @@ def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
 
     config = Configuration('geometry/cyflann', parent_package, top_path)
-    libraries = ['flann', 'flann_cpp']
+    libraries = ['flann', 'flann_cpp', 'lz4']
     if os.name == 'posix':
         libraries.append('m')
 
@@ -37,7 +37,8 @@ def configuration(parent_package='', top_path=None):
            include_dirs=[numpy.get_include(), flann_include],
            libraries=libraries,
            library_dirs=[flann_lib],
-           extra_compile_args=["-O3"],
+           extra_compile_args=["-O3", "-std=c++11"],
+           language="c++",
            **kwds)
 
     return config

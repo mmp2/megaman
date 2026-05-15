@@ -7,7 +7,7 @@ from __future__ import division
 from scipy import sparse
 import numpy as np
 cimport numpy as np
-from index cimport *
+from .index cimport *
 
 cdef class Index:
     """

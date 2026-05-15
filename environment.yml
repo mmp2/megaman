@@ -1,0 +1,32 @@
+# Conda environment for megaman development
+# Usage: conda env create -f environment.yml
+#        conda activate megaman-dev
+name: megaman-dev
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python (3.9-3.11 supported; numpy.distutils requires numpy<2.0)
+  - python>=3.9,<3.12
+
+  # C++ FLANN library (provides flann/flann.hpp, libflann, libflann_cpp)
+  - flann>=1.9
+
+  # Build tools
+  - cython>=0.29.30
+  - setuptools>=64
+  - wheel
+  - compilers  # provides gcc/g++ on linux, clang on mac
+
+  # Core runtime dependencies
+  - numpy>=1.21,<2.0
+  - scipy>=1.7
+  - scikit-learn>=1.0
+  - h5py
+
+  # Optional but recommended
+  - pyamg
+
+  # Testing
+  - pytest>=7.0
+  - pytest-cov
