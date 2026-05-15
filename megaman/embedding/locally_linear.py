@@ -52,7 +52,7 @@ def barycenter_graph(distance_matrix, X, reg=1e-3):
         else:
             R = reg
         G.flat[::n_neighbors_i + 1] += R
-        w = solve(G, v, sym_pos = True)
+        w = solve(G, v, assume_a='pos')
         W[i, nbrs_i] = w / np.sum(w)
     return W
 

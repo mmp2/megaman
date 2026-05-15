@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-import cPickle
+import pickle
 from scipy.io import loadmat, savemat
 from scipy.sparse import coo_matrix, dia_matrix, identity
 
@@ -8,14 +8,14 @@ def save_sparse_in_2_parts(A, name):
     # mat and coo format easily readable into MATLAB
     nz = len(A.data)
     A = A.tocoo()
-    A_1 = {'I1':A.row[xrange(0, int(nz/2))],
-           'J1':A.col[xrange(0, int(nz/2))],
-           'V1':A.data[xrange(0, int(nz/2))]}
+    A_1 = {'I1':A.row[range(0, int(nz/2))],
+           'J1':A.col[range(0, int(nz/2))],
+           'V1':A.data[range(0, int(nz/2))]}
     savemat(name + '_part_1.mat', A_1)
 
-    A_2 = {'I2':A.row[xrange(int(nz/2), nz)],
-           'J2':A.col[xrange(int(nz/2), nz)],
-           'V2':A.data[xrange(int(nz/2), nz)]}
+    A_2 = {'I2':A.row[range(int(nz/2), nz)],
+           'J2':A.col[range(int(nz/2), nz)],
+           'V2':A.data[range(int(nz/2), nz)]}
     savemat(name + '_part_2.mat', A_2)
     return(None)
     
@@ -39,9 +39,9 @@ def save_sparse_in_k_parts(A, name, k):
         nkp1 = nk + nper 
         if ii == k-1:
             nkp1 = nz 
-        A_k = {'I':A.row[xrange(nk, nkp1)],
-               'J':A.col[xrange(nk, nkp1)],
-               'V':A.data[xrange(nk, nkp1)]}
+        A_k = {'I':A.row[range(nk, nkp1)],
+               'J':A.col[range(nk, nkp1)],
+               'V':A.data[range(nk, nkp1)]}
         savemat(fname, A_k)
         nk = nkp1
     return(None)
@@ -69,14 +69,14 @@ def dump_array_in_k_parts(A, name, k):
         if ii == k-1:
             nkp1 = n
         A_k = A[range(nk, nkp1)]
-        cPickle.dump(A_k, open(fname, 'wb'), -1)
+        pickle.dump(A_k, open(fname, 'wb'), -1)
         nk = nkp1
     return(None)
 
 def load_array_in_k_parts(name, k):
     for ii in range(k):
         fname = name + '_part_' + str(ii+1) + '.p'
-        A_k = cPickle.load(open(fname, 'rb'))
+        A_k = pickle.load(open(fname, 'rb'))
         if ii == 0:
             A = A_k.copy()
         else:
@@ -88,7 +88,7 @@ def set_sparse_diag_to_one(mat):
     (n, n) = mat.shape
     # copy the matrix, subtract the diagonal values, add identity matrix 
     # see http://nbviewer.jupyter.org/gist/Midnighter/9992103 for speed testing
-    cpy = mat - dia_matrix((mat.diagonal()[sp.newaxis, :], [0]), shape=(n, n)) + identity(n)
+    cpy = mat - dia_matrix((mat.diagonal()[np.newaxis, :], [0]), shape=(n, n)) + identity(n)
     return(cpy)
     
 def set_coo_diag_to_one(mat):
