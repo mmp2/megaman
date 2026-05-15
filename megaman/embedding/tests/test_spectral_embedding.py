@@ -1,7 +1,6 @@
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
-from nose.tools import assert_true
-from nose.tools import assert_equal
+import pytest
 
 from scipy.sparse import csr_matrix
 from scipy.sparse import csc_matrix
@@ -11,14 +10,11 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal, assert_allclose
 import warnings
 
-from nose.tools import assert_raises
-from nose.plugins.skip import SkipTest
-
 from megaman.embedding.spectral_embedding import SpectralEmbedding, spectral_embedding, _graph_is_connected
 import megaman.geometry.geometry as geom
 
 from sklearn.metrics import normalized_mutual_info_score
-from sklearn.datasets.samples_generator import make_blobs
+from sklearn.datasets import make_blobs
 from megaman.utils.testing import assert_raise_message
 
 
@@ -76,7 +72,7 @@ def test_spectral_embedding_two_components(seed=36):
 
     # thresholding on the first components using 0.
     label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
-    assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
+    assert normalized_mutual_info_score(true_label, label_) == 1.0
 
 def test_diffusion_embedding_two_components_no_diffusion_time(seed=36):
     """Test spectral embedding with two components"""
@@ -109,7 +105,7 @@ def test_diffusion_embedding_two_components_no_diffusion_time(seed=36):
 
     # thresholding on the first components using 0.
     label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
-    assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
+    assert normalized_mutual_info_score(true_label, label_) == 1.0
 
 def test_diffusion_embedding_two_components_diffusion_time_one(seed=36):
     """Test spectral embedding with two components"""
@@ -143,7 +139,7 @@ def test_diffusion_embedding_two_components_diffusion_time_one(seed=36):
 
     # thresholding on the first components using 0.
     label_ = np.array(embedded_coordinate.ravel() < 0, dtype="float")
-    assert_equal(normalized_mutual_info_score(true_label, label_), 1.0)
+    assert normalized_mutual_info_score(true_label, label_) == 1.0
 
 def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5):
     """Test spectral embedding with precomputed kernel"""
@@ -163,7 +159,7 @@ def test_spectral_embedding_precomputed_affinity(seed=36,almost_equal_decimals=5
     assert_array_almost_equal(
         se_precomp.affinity_matrix_.todense(), se_rbf.affinity_matrix_.todense(),
         almost_equal_decimals)
-    assert_true(_check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05))
+    assert _check_with_col_sign_flipping(embed_precomp, embed_rbf, 0.05)
 
 
 def test_spectral_embedding_amg_solver(seed=20):
@@ -174,14 +170,14 @@ def test_spectral_embedding_amg_solver(seed=20):
     try:
         import pyamg
     except ImportError:
-        raise SkipTest("pyamg not available.")
+        pytest.skip("pyamg not available.")
     se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
                                random_state=np.random.RandomState(seed), geom = geom_params)
     se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
                                   random_state=np.random.RandomState(seed))
     embed_amg = se_amg.fit_transform(S)
     embed_arpack = se_arpack.fit_transform(S)
-    assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
+    assert _check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05)
 
 
 def test_spectral_embedding_symmetrzation(seed=36):
@@ -192,14 +188,14 @@ def test_spectral_embedding_symmetrzation(seed=36):
     try:
         import pyamg
     except ImportError:
-        raise SkipTest("pyamg not available.")
+        pytest.skip("pyamg not available.")
     se_amg = SpectralEmbedding(n_components=2,eigen_solver="amg",
                                random_state=np.random.RandomState(seed), geom = geom_params)
     se_arpack = SpectralEmbedding(n_components=2, eigen_solver="arpack", geom = geom_params,
                                   random_state=np.random.RandomState(seed))
     embed_amg = se_amg.fit_transform(S)
     embed_arpack = se_arpack.fit_transform(S)
-    assert_true(_check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05))
+    assert _check_with_col_sign_flipping(embed_amg, embed_arpack, 0.05)
 
 
 def test_spectral_embedding_unknown_eigensolver(seed=36):
@@ -207,7 +203,8 @@ def test_spectral_embedding_unknown_eigensolver(seed=36):
     se = SpectralEmbedding(n_components=1,
                            random_state=np.random.RandomState(seed),
                            eigen_solver="<unknown>")
-    assert_raises(ValueError, se.fit, S)
+    with pytest.raises(ValueError):
+        se.fit(S)
 
 
 def test_connectivity(seed=36):
@@ -217,17 +214,17 @@ def test_connectivity(seed=36):
                       [0, 1, 1, 1, 0],
                       [0, 0, 1, 1, 1],
                       [0, 0, 0, 1, 1]])
-    assert_equal(_graph_is_connected(graph), False)
-    assert_equal(_graph_is_connected(csr_matrix(graph)), False)
-    assert_equal(_graph_is_connected(csc_matrix(graph)), False)
+    assert _graph_is_connected(graph) == False
+    assert _graph_is_connected(csr_matrix(graph)) == False
+    assert _graph_is_connected(csc_matrix(graph)) == False
     graph = np.array([[1, 1, 0, 0, 0],
                       [1, 1, 1, 0, 0],
                       [0, 1, 1, 1, 0],
                       [0, 0, 1, 1, 1],
                       [0, 0, 0, 1, 1]])
-    assert_equal(_graph_is_connected(graph), True)
-    assert_equal(_graph_is_connected(csr_matrix(graph)), True)
-    assert_equal(_graph_is_connected(csc_matrix(graph)), True)
+    assert _graph_is_connected(graph) == True
+    assert _graph_is_connected(csr_matrix(graph)) == True
+    assert _graph_is_connected(csc_matrix(graph)) == True
 
 def test_predict_size(seed=36):
     """Test the predict function returns appropriate size data"""
@@ -247,7 +244,7 @@ def test_predict_size(seed=36):
         assert(embed_total.shape[1] == embed_train.shape[1])
     
     for diffusion_maps in [False, True]:
-        yield check_size, diffusion_maps
+        check_size(diffusion_maps)
 
 def test_predict_error_not_fitted(seed=36):
     """ Test predict function raises an error when .fit() has not been called"""

@@ -7,7 +7,21 @@ from itertools import product
 import numpy as np
 from numpy.testing import assert_array_equal
 import scipy.sparse as sp
-from nose.tools import assert_raises, assert_true, assert_false, assert_equal
+import pytest
+
+# Compatibility shims for nose.tools (used extensively below in functional style)
+def assert_raises(exc, func, *args, **kwargs):
+    with pytest.raises(exc):
+        func(*args, **kwargs)
+
+def assert_true(val, msg=None):
+    assert val, msg
+
+def assert_false(val, msg=None):
+    assert not val, msg
+
+def assert_equal(a, b, msg=None):
+    assert a == b, msg
 
 from megaman.utils.validation import check_array, check_symmetric, DataConversionWarning
 from megaman.utils.testing import (assert_no_warnings, assert_warns,
@@ -31,12 +45,12 @@ def test_check_array():
     assert_raises(ValueError, check_array, X_ndim)
     check_array(X_ndim, allow_nd=True)  # doesn't raise
     # force_all_finite
-    X_inf = np.arange(4).reshape(2, 2).astype(np.float)
+    X_inf = np.arange(4).reshape(2, 2).astype(np.float64)
     X_inf[0, 0] = np.inf
     assert_raises(ValueError, check_array, X_inf)
     check_array(X_inf, force_all_finite=False)  # no raise
     # nan check
-    X_nan = np.arange(4).reshape(2, 2).astype(np.float)
+    X_nan = np.arange(4).reshape(2, 2).astype(np.float64)
     X_nan[0, 0] = np.nan
     assert_raises(ValueError, check_array, X_nan)
     check_array(X_inf, force_all_finite=False)  # no raise
@@ -44,10 +58,10 @@ def test_check_array():
     # dtype and order enforcement.
     X_C = np.arange(4).reshape(2, 2).copy("C")
     X_F = X_C.copy("F")
-    X_int = X_C.astype(np.int)
-    X_float = X_C.astype(np.float)
+    X_int = X_C.astype(np.int_)
+    X_float = X_C.astype(np.float64)
     Xs = [X_C, X_F, X_int, X_float]
-    dtypes = [np.int32, np.int, np.float, np.float32, None, np.bool, object]
+    dtypes = [np.int32, np.int_, np.float64, np.float32, None, np.bool_]
     orders = ['C', 'F', None]
     copys = [True, False]
 
@@ -76,8 +90,8 @@ def test_check_array():
     X_csc = sp.csc_matrix(X_C)
     X_coo = X_csc.tocoo()
     X_dok = X_csc.todok()
-    X_int = X_csc.astype(np.int)
-    X_float = X_csc.astype(np.float)
+    X_int = X_csc.astype(np.int_)
+    X_float = X_csc.astype(np.float64)
 
     Xs = [X_csc, X_coo, X_dok, X_int, X_float]
     accept_sparses = [['csr', 'coo'], ['coo', 'dok']]

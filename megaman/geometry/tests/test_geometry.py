@@ -2,8 +2,8 @@
 
 from __future__ import division ## removes integer division
 
+import pytest
 import numpy as np
-from nose import SkipTest
 from numpy.testing import assert_array_almost_equal, assert_allclose
 from scipy.spatial.distance import pdist, squareform
 from megaman.utils.testing import assert_raise_message
@@ -22,7 +22,7 @@ def test_compute_adjacency_matrix_args(almost_equal_decimals=5):
             try:
                 import pyflann as pyf
             except ImportError:
-                raise SkipTest("pyflann not installed.")
+                pytest.skip("pyflann not installed.")
         X = np.random.uniform(size=(10, 2))
         D = compute_adjacency_matrix(X, adjacency_method, **params[1])
         A = compute_affinity_matrix(D, radius=1)

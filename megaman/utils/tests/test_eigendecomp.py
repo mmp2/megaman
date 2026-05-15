@@ -9,7 +9,7 @@ import numpy as np
 SPD_SOLVERS = EIGEN_SOLVERS
 NON_SPD_SOLVERS = ['auto', 'dense', 'arpack']
 SOLVER_KWDS_DICT = {'auto':None,
-                    'dense':{'turbo':True, 'type':1},
+                    'dense':{},
                     'arpack':{'mode':'normal', 'tol':0, 'maxiter':None},
                     'lobpcg':{'maxiter':20, 'tol':None},
                     'amg':{'maxiter':20, 'tol':None,'aggregate':'standard'}}

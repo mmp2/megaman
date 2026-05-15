@@ -1,6 +1,6 @@
 # LICENSE: Simplified BSD https://github.com/mmp2/megaman/blob/master/LICENSE
 
-from nose import SkipTest
+import pytest
 
 import numpy as np
 from numpy.testing import assert_allclose, assert_raises, assert_equal
@@ -43,7 +43,7 @@ def test_adjacency():
 
     def check_kneighbors(n_neighbors, method):
         if method == 'pyflann' and NO_PYFLANN:
-            raise SkipTest("pyflann not installed")
+            pytest.skip("pyflann not installed")
 
         G = compute_adjacency_matrix(X, method=method,
                             n_neighbors=n_neighbors)
@@ -67,13 +67,13 @@ def test_adjacency():
         Gtrue[n_neighbors] = compute_adjacency_matrix(X, method='brute',
                                              n_neighbors=n_neighbors)
         for method in Adjacency.methods():
-            yield check_kneighbors, n_neighbors, method
+            check_kneighbors(n_neighbors, method)
 
     for radius in [0.1, 0.5, 1.0]:
         Gtrue[radius] = compute_adjacency_matrix(X, method='brute',
                                         radius=radius)
         for method in Adjacency.methods():
-            yield check_radius, radius, method
+            check_radius(radius, method)
 
 
 def test_unknown_method():
@@ -93,7 +93,7 @@ def test_all_methods_close():
             try:
                 import pyflann as pyf
             except ImportError:
-                raise SkipTest("pyflann not installed.")
+                pytest.skip("pyflann not installed.")
             flindex = pyf.FLANN()
             flindex.build_index(X, algorithm='kmeans',
                                 target_precision=0.9)
@@ -103,7 +103,7 @@ def test_all_methods_close():
         assert_allclose(this_D.toarray(), D_true, rtol=1E-5)
 
     for method in ['auto', 'cyflann', 'pyflann', 'brute']:
-        yield check_method, method
+        check_method(method)
 
 
 def test_custom_adjacency():
@@ -134,4 +134,4 @@ def test_cyflann_index_type():
         assert_allclose(this_D.toarray(), D_true, rtol=1E-5, atol=1E-5)
     
     for index_type in ['kmeans', 'kdtrees']:
-        yield check_index_type, index_type
+        check_index_type(index_type)
