@@ -133,9 +133,9 @@ def eigen_decomposition(G, n_components=8, eigen_solver='auto',
 
     # Convert G to best type for eigendecomposition
     if sparse.issparse(G):
-        if G.getformat() is not 'csr':
+        if G.getformat() != 'csr':
             G.tocsr()
-    G = G.astype(np.float)
+    G = G.astype(np.float64)
 
     # Check for symmetry
     is_symmetric = _is_symmetric(G)

@@ -1,235 +1,261 @@
-"""
-run_eberle_embedding.py
------------------------
-Script to run megaman Spectral Embedding (Laplacian Eigenmaps / Diffusion Maps)
-on Dr. Eberle's precomputed historical-document similarity matrices.
-
-Data source: https://tubcloud.tu-berlin.de/s/oXCfSTgQjXQNZKd
-  - similarity_gt.npz     : ground-truth similarity matrix
-  - similarity_tfidf.npz  : cosine/TF-IDF precomputed similarity matrix
-  - metadata.csv/.json    : per-document metadata (date, author, title, etc.)
-
-Following Prof. Meila's advice:
-  - Compute & save 10 eigenvectors + eigenvalues
-  - Save the Laplacian matrix for distortion computation
-  - Produce basic visualizations
-
-Usage:
-  python run_eberle_embedding.py --data_dir /path/to/downloaded/data
-"""
-
 import os
-import argparse
 import numpy as np
 import scipy.sparse as sp
-import scipy.io as sio
+import pandas as pd
 import matplotlib
-matplotlib.use('Agg')   # non-interactive backend, safe on any machine
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.colors import Normalize
 
-# ── megaman ──────────────────────────────────────────────────────────────────
 from megaman.geometry import Geometry
 from megaman.embedding import SpectralEmbedding
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+DATA_DIR = os.path.join(os.path.dirname(__file__),
+                        '01062026_sphaera_textparts',
+                        'text_parts_with_metadata')
+
+GT_PATH   = os.path.join(DATA_DIR, 'ground_truth_matrix_of_text_parts.npy')
+SIM_PATH  = os.path.join(DATA_DIR, 'similarity_matrix_of_text_parts.npy')
+META_PATH = os.path.join(DATA_DIR, 'text_parts_with_metadata.csv')
+OUT_DIR   = os.path.join(os.path.dirname(__file__), 'eberle_results')
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
-N_COMPONENTS   = 10        # number of eigenvectors to compute (per Prof. Meila)
-LAPLACIAN_TYPE = 'geometric'   # options: 'geometric', 'symmetricnormalized',
-                               # 'renormalized', 'randomwalk', 'unnormalized'
-EIGEN_SOLVER   = 'arpack'      # robust default; try 'amg' for very large matrices
+N_COMPONENTS   = 10            # eigenvectors to compute (Prof. Meila's advice)
+LAPLACIAN_TYPE = 'geometric'   # Coifman-Lafon: best for manifold structure
+EIGEN_SOLVER   = 'arpack'      # robust for sparse/large matrices
 RANDOM_STATE   = 42
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Helper utilities
+# Step 1: Load data
 # ─────────────────────────────────────────────────────────────────────────────
 
-def load_similarity_matrix(path: str):
+def load_data():
+    print("Loading data...")
+    gt   = np.load(GT_PATH)
+    sim  = np.load(SIM_PATH)
+    meta = pd.read_csv(META_PATH)
+
+    # The CSV has 1942 rows (1 extra header row artifact?) — align to matrix
+    if len(meta) == gt.shape[0] + 1:
+        meta = meta.iloc[1:].reset_index(drop=True)
+
+    print(f"  Ground truth matrix : {gt.shape},  range [{gt.min():.3f}, {gt.max():.3f}]")
+    print(f"  TF-IDF sim matrix   : {sim.shape}, range [{sim.min():.3f}, {sim.max():.3f}]")
+    print(f"  Metadata rows       : {len(meta)}, columns: {list(meta.columns)}")
+    return gt, sim, meta
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 2: Prepare affinity matrices
+# ─────────────────────────────────────────────────────────────────────────────
+
+def prepare_affinity(matrix: np.ndarray, label: str) -> sp.csr_matrix:
     """
-    Load a similarity matrix from .npz (scipy sparse), .npy (dense numpy),
-    or .mat (MATLAB) format.  Returns a scipy CSR sparse matrix.
+    Clip negatives, symmetrize, and convert to sparse CSR.
+    The TF-IDF matrix has small negative values (down to -0.71) which
+    are not valid affinities — we zero them out.
     """
-    ext = os.path.splitext(path)[1].lower()
-    print(f"  Loading {os.path.basename(path)} ...")
+    A = matrix.copy()
 
-    if ext == '.npz':
-        # Try scipy sparse first
-        try:
-            mat = sp.load_npz(path)
-            print(f"    → sparse matrix  shape={mat.shape}  nnz={mat.nnz}")
-            return mat.tocsr()
-        except Exception:
-            pass
-        # Fall back to numpy archive (dense)
-        arr = np.load(path, allow_pickle=True)
-        key = list(arr.files)[0]
-        mat = arr[key]
-        print(f"    → dense array  shape={mat.shape}")
-        return sp.csr_matrix(mat)
-
-    elif ext == '.npy':
-        mat = np.load(path, allow_pickle=True)
-        print(f"    → dense array  shape={mat.shape}")
-        return sp.csr_matrix(mat)
-
-    elif ext == '.mat':
-        data = sio.loadmat(path)
-        # Find the first non-metadata key
-        key = [k for k in data if not k.startswith('__')][0]
-        mat = data[key]
-        print(f"    → MATLAB matrix  key='{key}'  shape={mat.shape}")
-        if sp.issparse(mat):
-            return mat.tocsr()
-        return sp.csr_matrix(mat)
-
-    else:
-        raise ValueError(f"Unsupported file extension: {ext}")
-
-
-def ensure_affinity_valid(A):
-    """
-    Megaman expects the affinity (similarity) matrix to be:
-      - square, symmetric
-      - non-negative (similarities, not distances!)
-      - values in [0, 1] recommended; if values >> 1, normalize
-
-    This function symmetrizes and clips negatives.
-    """
-    # Symmetrize
-    A = 0.5 * (A + A.T)
-
-    # Clip negatives (shouldn't happen with cosine / GT similarities)
-    if sp.issparse(A):
-        A.data = np.clip(A.data, 0, None)
-    else:
+    # Clip negatives to 0 (cosine sim can go slightly negative for dissimilar docs)
+    neg_count = (A < 0).sum()
+    if neg_count > 0:
+        print(f"  [{label}] Clipping {neg_count} negative values to 0")
         A = np.clip(A, 0, None)
 
-    return A
+    # Ensure symmetry
+    A = 0.5 * (A + A.T)
+
+    # Convert to sparse (keep only non-zero entries)
+    A_sparse = sp.csr_matrix(A)
+    print(f"  [{label}] Sparse affinity: nnz={A_sparse.nnz} "
+          f"({100*A_sparse.nnz / A.size:.1f}% non-zero)")
+    return A_sparse
 
 
-def run_embedding(affinity_matrix, label: str, out_dir: str):
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 3: Run embedding
+# ─────────────────────────────────────────────────────────────────────────────
+
+def run_embedding(affinity_matrix: sp.csr_matrix, label: str):
     """
-    Given a precomputed affinity/similarity matrix, run Spectral Embedding:
-      1. Build a Geometry object (bypassing adjacency/distance computation)
-      2. Compute the Laplacian
-      3. Compute eigenvectors / eigenvalues
-      4. Save everything
+    Inject precomputed affinity into a Geometry object and run
+    Spectral Embedding (Laplacian Eigenmaps).
 
     Returns
     -------
     embedding    : ndarray (n_docs, N_COMPONENTS)
     eigenvalues  : ndarray (N_COMPONENTS,)
     eigenvectors : ndarray (n_docs, N_COMPONENTS)
-    laplacian    : sparse matrix (n_docs, n_docs)
+    laplacian    : sparse matrix (n_docs, n_docs)   ← for distortion computation
     """
     print(f"\n{'='*60}")
-    print(f"  Running embedding for: {label}")
+    print(f"  Embedding: {label}")
     print(f"{'='*60}")
 
-    # ── Step 1: Build Geometry, inject precomputed affinity ───────────────
+    # Build Geometry and inject the precomputed affinity (bypasses
+    # adjacency/distance computation entirely)
     geom = Geometry(laplacian_method=LAPLACIAN_TYPE)
-    geom.set_affinity_matrix(affinity_matrix)   # bypass adj/affinity computation
+    geom.set_affinity_matrix(affinity_matrix)
 
-    # ── Step 2: Compute Laplacian (with full output for distortion later) ─
+    # Compute Laplacian with full output (needed for distortion + lobpcg solvers)
     print("  Computing Laplacian ...")
-    laplacian = geom.compute_laplacian_matrix(copy=True, return_lapsym=True)
-    print(f"    Laplacian type : {LAPLACIAN_TYPE}")
-    print(f"    Laplacian shape: {laplacian.shape}")
+    geom.compute_laplacian_matrix(copy=False, return_lapsym=True)
+    print(f"  Laplacian type: {LAPLACIAN_TYPE}")
 
-    # ── Step 3: Spectral Embedding ────────────────────────────────────────
-    print(f"  Running spectral decomposition (n_components={N_COMPONENTS}) ...")
+    # SpectralEmbedding with precomputed affinity
+    print(f"  Eigen-decomposition (n_components={N_COMPONENTS}, solver={EIGEN_SOLVER}) ...")
     se = SpectralEmbedding(
-        n_components  = N_COMPONENTS,
-        geom          = geom,
-        eigen_solver  = EIGEN_SOLVER,
-        random_state  = RANDOM_STATE,
-        drop_first    = True,   # drop trivial constant eigenvector
-        diffusion_maps= False,
+        n_components   = N_COMPONENTS,
+        geom           = geom,
+        eigen_solver   = EIGEN_SOLVER,
+        random_state   = RANDOM_STATE,
+        drop_first     = True,   # drop trivial constant eigenvector
+        diffusion_maps = False,
     )
-    # Pass affinity directly — input_type='affinity' tells megaman not to recompute
     se.fit(affinity_matrix, input_type='affinity')
 
-    embedding    = se.embedding_       # (n_docs, N_COMPONENTS)
-    eigenvalues  = se.eigenvalues_     # (N_COMPONENTS,)
-    eigenvectors = se.eigenvectors_    # (n_docs, N_COMPONENTS)
+    embedding    = se.embedding_        # (n_docs, N_COMPONENTS)
+    eigenvalues  = se.eigenvalues_      # (N_COMPONENTS,)
+    eigenvectors = se.eigenvectors_     # (n_docs, N_COMPONENTS)
     laplacian    = se.laplacian_matrix_
 
     print(f"  Embedding shape : {embedding.shape}")
-    print(f"  Eigenvalues     : {np.round(eigenvalues, 6)}")
+    print(f"  Eigenvalues     : {np.round(eigenvalues, 5)}")
 
-    # ── Step 4: Save outputs ──────────────────────────────────────────────
-    os.makedirs(out_dir, exist_ok=True)
-    prefix = os.path.join(out_dir, label)
+    # ── Save outputs ─────────────────────────────────────────────────────
+    os.makedirs(OUT_DIR, exist_ok=True)
+    prefix = os.path.join(OUT_DIR, label)
 
     np.save(f"{prefix}_embedding.npy",    embedding)
     np.save(f"{prefix}_eigenvalues.npy",  eigenvalues)
     np.save(f"{prefix}_eigenvectors.npy", eigenvectors)
-
-    # Save Laplacian as sparse NPZ (needed for distortion computation)
     sp.save_npz(f"{prefix}_laplacian.npz", sp.csr_matrix(laplacian))
 
-    print(f"  Saved to: {out_dir}/")
-    print(f"    {label}_embedding.npy    → (n_docs × {N_COMPONENTS})")
-    print(f"    {label}_eigenvalues.npy  → ({N_COMPONENTS},)")
-    print(f"    {label}_eigenvectors.npy → (n_docs × {N_COMPONENTS})")
-    print(f"    {label}_laplacian.npz    → sparse Laplacian")
+    print(f"\n  Saved:")
+    print(f"    {label}_embedding.npy     shape={embedding.shape}")
+    print(f"    {label}_eigenvalues.npy   shape={eigenvalues.shape}")
+    print(f"    {label}_eigenvectors.npy  shape={eigenvectors.shape}")
+    print(f"    {label}_laplacian.npz     sparse Laplacian (for distortion)")
 
     return embedding, eigenvalues, eigenvectors, laplacian
 
 
-def plot_embedding(embedding, label: str, out_dir: str, metadata=None):
-    """
-    Plot 2D scatter of the first two embedding dimensions.
-    Optionally color by a metadata column (e.g., year, author).
-    """
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle(f"Spectral Embedding — {label}", fontsize=14, fontweight='bold')
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 4: Visualizations
+# ─────────────────────────────────────────────────────────────────────────────
 
-    # ── Panel 1: first two eigenvectors ───────────────────────────────────
+def _parse_year(year_val):
+    """Parse year column — may be a string range like '1550-1600' or a plain int."""
+    try:
+        s = str(year_val).strip()
+        if '-' in s and not s.startswith('-'):
+            return float(s.split('-')[0])
+        return float(s)
+    except Exception:
+        return np.nan
+
+
+def plot_embedding_grid(embedding: np.ndarray, label: str, meta: pd.DataFrame):
+    """
+    3-panel figure:
+      1. Dims 1 & 2, colored by document index
+      2. Dims 1 & 2, colored by year
+      3. Dims 2 & 3, colored by language
+    """
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig.suptitle(f'Spectral Embedding — {label}  ({embedding.shape[0]} documents)',
+                 fontsize=13, fontweight='bold')
+
+    x1, x2 = embedding[:, 0], embedding[:, 1]
+    x3 = embedding[:, 2] if embedding.shape[1] > 2 else embedding[:, 0]
+
+    # Panel 1: colored by document index
     ax = axes[0]
-    x, y = embedding[:, 0], embedding[:, 1]
-    scatter = ax.scatter(x, y, s=15, alpha=0.7, c=np.arange(len(x)),
-                         cmap='viridis', linewidths=0)
-    plt.colorbar(scatter, ax=ax, label='Document index')
-    ax.set_xlabel('Eigenvector 1')
-    ax.set_ylabel('Eigenvector 2')
-    ax.set_title('Dims 1 & 2')
+    sc = ax.scatter(x1, x2, s=8, alpha=0.6, c=np.arange(len(x1)), cmap='viridis')
+    plt.colorbar(sc, ax=ax, label='Doc index')
+    ax.set_xlabel('Eigenvec 1'); ax.set_ylabel('Eigenvec 2')
+    ax.set_title('Dims 1 & 2 (by index)')
 
-    # ── Panel 2: second and third eigenvectors ────────────────────────────
+    # Panel 2: colored by year
     ax = axes[1]
-    if embedding.shape[1] >= 3:
-        x2, y2 = embedding[:, 1], embedding[:, 2]
-    else:
-        x2, y2 = embedding[:, 0], embedding[:, 1]
-    scatter2 = ax.scatter(x2, y2, s=15, alpha=0.7, c=np.arange(len(x2)),
-                          cmap='plasma', linewidths=0)
-    plt.colorbar(scatter2, ax=ax, label='Document index')
-    ax.set_xlabel('Eigenvector 2')
-    ax.set_ylabel('Eigenvector 3')
-    ax.set_title('Dims 2 & 3')
+    years = meta['years'].apply(_parse_year).values
+    valid = ~np.isnan(years)
+    sc = ax.scatter(x1[~valid], x2[~valid], s=6, alpha=0.3, c='lightgray')
+    sc = ax.scatter(x1[valid],  x2[valid],  s=8, alpha=0.7,
+                    c=years[valid], cmap='plasma')
+    plt.colorbar(sc, ax=ax, label='Year')
+    ax.set_xlabel('Eigenvec 1'); ax.set_ylabel('Eigenvec 2')
+    ax.set_title('Dims 1 & 2 (by year)')
+
+    # Panel 3: colored by language
+    ax = axes[2]
+    langs = meta['languages'].fillna('Unknown').values
+    unique_langs = sorted(set(langs))
+    lang_cmap = cm.get_cmap('tab20', len(unique_langs))
+    lang_to_idx = {l: i for i, l in enumerate(unique_langs)}
+    colors = [lang_to_idx[l] for l in langs]
+    sc = ax.scatter(x1, x3, s=8, alpha=0.6, c=colors, cmap='tab20',
+                    vmin=0, vmax=len(unique_langs)-1)
+    # Legend (top languages only)
+    handles = [plt.Line2D([0],[0], marker='o', color='w',
+                          markerfacecolor=lang_cmap(lang_to_idx[l]), markersize=6,
+                          label=l)
+               for l in unique_langs[:12]]
+    ax.legend(handles=handles, fontsize=6, loc='upper right', framealpha=0.7)
+    ax.set_xlabel('Eigenvec 1'); ax.set_ylabel('Eigenvec 3')
+    ax.set_title('Dims 1 & 3 (by language)')
 
     plt.tight_layout()
-    out_path = os.path.join(out_dir, f"{label}_embedding_2d.png")
+    out_path = os.path.join(OUT_DIR, f'{label}_embedding_plots.png')
     plt.savefig(out_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  Plot saved: {out_path}")
 
 
-def plot_eigenvalues(eigenvalues_dict: dict, out_dir: str):
-    """Plot eigenvalue spectra for each similarity matrix."""
+def plot_eigenvalue_spectra(ev_dict: dict):
+    """Compare eigenvalue spectra across both similarity matrices."""
     fig, ax = plt.subplots(figsize=(8, 4))
-    for label, evals in eigenvalues_dict.items():
-        ax.plot(np.arange(1, len(evals)+1), evals, 'o-', label=label, markersize=5)
+    markers = ['o-', 's--']
+    for (label, evals), mk in zip(ev_dict.items(), markers):
+        ax.plot(np.arange(1, len(evals)+1), evals, mk, label=label,
+                markersize=6, linewidth=1.8)
     ax.set_xlabel('Eigenvector index')
     ax.set_ylabel('Eigenvalue')
-    ax.set_title('Eigenvalue spectra (larger = more informative)')
+    ax.set_title('Eigenvalue spectra — look for the "gap" to choose embedding dim')
     ax.legend()
     ax.grid(True, alpha=0.3)
-    out_path = os.path.join(out_dir, 'eigenvalue_spectra.png')
+    out_path = os.path.join(OUT_DIR, 'eigenvalue_spectra.png')
     plt.savefig(out_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  Eigenvalue plot saved: {out_path}")
+
+
+def plot_gt_vs_tfidf(emb_gt: np.ndarray, emb_tfidf: np.ndarray):
+    """Side-by-side comparison of GT vs TF-IDF embeddings (dims 1 & 2)."""
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    fig.suptitle('GT vs TF-IDF: Dims 1 & 2', fontsize=13, fontweight='bold')
+
+    for ax, emb, title in zip(axes,
+                               [emb_gt, emb_tfidf],
+                               ['Ground Truth Similarity', 'TF-IDF Cosine Similarity']):
+        sc = ax.scatter(emb[:, 0], emb[:, 1], s=7, alpha=0.6,
+                        c=np.arange(len(emb)), cmap='viridis')
+        plt.colorbar(sc, ax=ax, label='Doc index')
+        ax.set_xlabel('Eigenvec 1'); ax.set_ylabel('Eigenvec 2')
+        ax.set_title(title)
+
+    plt.tight_layout()
+    out_path = os.path.join(OUT_DIR, 'gt_vs_tfidf_comparison.png')
+    plt.savefig(out_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"  Comparison plot saved: {out_path}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -237,68 +263,48 @@ def plot_eigenvalues(eigenvalues_dict: dict, out_dir: str):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description='Megaman embedding for Dr. Eberle\'s data')
-    parser.add_argument('--data_dir', type=str, required=True,
-                        help='Directory containing the downloaded TU Berlin data files')
-    parser.add_argument('--out_dir',  type=str, default='eberle_results',
-                        help='Directory to save outputs (default: ./eberle_results)')
-    args = parser.parse_args()
+    os.makedirs(OUT_DIR, exist_ok=True)
 
-    data_dir = args.data_dir
-    out_dir  = args.out_dir
-    os.makedirs(out_dir, exist_ok=True)
+    # ── Load ──────────────────────────────────────────────────────────────
+    gt_raw, sim_raw, meta = load_data()
 
-    # ── Auto-detect files in data_dir ────────────────────────────────────
-    # Adjust these filenames to match whatever Dr. Eberle uploaded
-    print("\nScanning data directory:", data_dir)
-    all_files = os.listdir(data_dir)
-    print("  Files found:", all_files)
+    # ── Prepare affinities ────────────────────────────────────────────────
+    print("\nPreparing affinity matrices ...")
+    A_gt   = prepare_affinity(gt_raw,  'gt')
+    A_tfidf = prepare_affinity(sim_raw, 'tfidf')
 
-    # Try to find the two similarity matrices — update names if needed
-    # Common naming patterns; we'll try to be flexible:
-    similarity_files = {}
-    for f in all_files:
-        fl = f.lower()
-        if any(kw in fl for kw in ['gt', 'ground', 'groundtruth', 'ground_truth']):
-            similarity_files['gt'] = os.path.join(data_dir, f)
-        elif any(kw in fl for kw in ['tfidf', 'tf_idf', 'cosine', 'precomputed']):
-            similarity_files['tfidf'] = os.path.join(data_dir, f)
+    # ── Run embeddings ────────────────────────────────────────────────────
+    emb_gt,   evals_gt,   _, lap_gt   = run_embedding(A_gt,    'gt')
+    emb_tfidf, evals_tfidf, _, lap_tfidf = run_embedding(A_tfidf, 'tfidf')
 
-    if not similarity_files:
-        # Fallback: treat all matrix files as inputs
-        for f in all_files:
-            if f.endswith(('.npz', '.npy', '.mat')):
-                key = os.path.splitext(f)[0]
-                similarity_files[key] = os.path.join(data_dir, f)
+    # ── Visualize ─────────────────────────────────────────────────────────
+    print("\nGenerating plots ...")
+    plot_embedding_grid(emb_gt,    'gt',    meta)
+    plot_embedding_grid(emb_tfidf, 'tfidf', meta)
+    plot_gt_vs_tfidf(emb_gt, emb_tfidf)
+    plot_eigenvalue_spectra({'gt': evals_gt, 'tfidf': evals_tfidf})
 
-    print(f"\nSimilarity matrices to process: {list(similarity_files.keys())}")
-
-    # ── Run embedding for each matrix ─────────────────────────────────────
-    eigenvalues_dict = {}
-
-    for label, path in similarity_files.items():
-        A = load_similarity_matrix(path)
-        A = ensure_affinity_valid(A)
-
-        embedding, evals, evecs, laplacian = run_embedding(A, label, out_dir)
-
-        eigenvalues_dict[label] = evals
-        plot_embedding(embedding, label, out_dir)
-
-    # ── Eigenvalue spectra comparison ─────────────────────────────────────
-    if eigenvalues_dict:
-        plot_eigenvalues(eigenvalues_dict, out_dir)
-
-    print("\n" + "="*60)
-    print("  All done!  Results saved to:", out_dir)
-    print("="*60)
+    print(f"\n{'='*60}")
+    print(f"  Done!  All results saved to: {OUT_DIR}/")
+    print(f"{'='*60}")
     print("""
-Next steps (for the meeting):
-  1. Inspect the 2D plots — look for meaningful clusters
-  2. Try coloring points by metadata (year, author, etc.)
-  3. Examine eigenvalue gap to choose effective embedding dimension
-  4. The saved Laplacian (.npz) can be used for distortion computation later
-  5. Compare GT vs TF-IDF embeddings — do they agree on structure?
+Outputs:
+  gt_embedding.npy          ← 1941 × 10  (eigenvectors)
+  gt_eigenvalues.npy        ← (10,)
+  gt_eigenvectors.npy       ← 1941 × 10
+  gt_laplacian.npz          ← sparse Laplacian for distortion
+  tfidf_* (same set)
+
+  gt_embedding_plots.png    ← 3-panel: by index / year / language
+  tfidf_embedding_plots.png
+  gt_vs_tfidf_comparison.png
+  eigenvalue_spectra.png    ← look for spectral gap
+
+Discussion points for meeting:
+  1. Do GT and TF-IDF embeddings agree on global structure?
+  2. Which eigenvalue gap suggests the right embedding dimension?
+  3. Are there visible clusters by year, language, or author?
+  4. Next: distortion computation using saved Laplacian
 """)
 
 
