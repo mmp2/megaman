@@ -11,9 +11,6 @@ from matplotlib.colors import Normalize
 from megaman.geometry import Geometry
 from megaman.embedding import SpectralEmbedding
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Paths
-# ─────────────────────────────────────────────────────────────────────────────
 DATA_DIR = os.path.join(os.path.dirname(__file__),
                         '01062026_sphaera_textparts',
                         'text_parts_with_metadata')
@@ -23,17 +20,10 @@ SIM_PATH  = os.path.join(DATA_DIR, 'similarity_matrix_of_text_parts.npy')
 META_PATH = os.path.join(DATA_DIR, 'text_parts_with_metadata.csv')
 OUT_DIR   = os.path.join(os.path.dirname(__file__), 'eberle_results')
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Configuration
-# ─────────────────────────────────────────────────────────────────────────────
-N_COMPONENTS   = 10            # eigenvectors to compute (Prof. Meila's advice)
+N_COMPONENTS   = 10            # eigenvectors to compute
 LAPLACIAN_TYPE = 'geometric'   # Coifman-Lafon: best for manifold structure
 EIGEN_SOLVER   = 'arpack'      # robust for sparse/large matrices
 RANDOM_STATE   = 42
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 1: Load data
-# ─────────────────────────────────────────────────────────────────────────────
 
 def load_data():
     print("Loading data...")
@@ -41,7 +31,6 @@ def load_data():
     sim  = np.load(SIM_PATH)
     meta = pd.read_csv(META_PATH)
 
-    # The CSV has 1942 rows (1 extra header row artifact?) — align to matrix
     if len(meta) == gt.shape[0] + 1:
         meta = meta.iloc[1:].reset_index(drop=True)
 
@@ -51,16 +40,8 @@ def load_data():
     return gt, sim, meta
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 2: Prepare affinity matrices
-# ─────────────────────────────────────────────────────────────────────────────
-
 def prepare_affinity(matrix: np.ndarray, label: str) -> sp.csr_matrix:
-    """
-    Clip negatives, symmetrize, and convert to sparse CSR.
-    The TF-IDF matrix has small negative values (down to -0.71) which
-    are not valid affinities — we zero them out.
-    """
+    """Clip negatives, symmetrize, and convert to sparse CSR."""
     A = matrix.copy()
 
     # Clip negatives to 0 (cosine sim can go slightly negative for dissimilar docs)
@@ -77,11 +58,6 @@ def prepare_affinity(matrix: np.ndarray, label: str) -> sp.csr_matrix:
     print(f"  [{label}] Sparse affinity: nnz={A_sparse.nnz} "
           f"({100*A_sparse.nnz / A.size:.1f}% non-zero)")
     return A_sparse
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 3: Run embedding
-# ─────────────────────────────────────────────────────────────────────────────
 
 def run_embedding(affinity_matrix: sp.csr_matrix, label: str):
     """
@@ -146,10 +122,6 @@ def run_embedding(affinity_matrix: sp.csr_matrix, label: str):
 
     return embedding, eigenvalues, eigenvectors, laplacian
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 4: Visualizations
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_year(year_val):
     """Parse year column — may be a string range like '1550-1600' or a plain int."""
@@ -258,26 +230,15 @@ def plot_gt_vs_tfidf(emb_gt: np.ndarray, emb_tfidf: np.ndarray):
     print(f"  Comparison plot saved: {out_path}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Main
-# ─────────────────────────────────────────────────────────────────────────────
-
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-
-    # ── Load ──────────────────────────────────────────────────────────────
     gt_raw, sim_raw, meta = load_data()
-
-    # ── Prepare affinities ────────────────────────────────────────────────
     print("\nPreparing affinity matrices ...")
     A_gt   = prepare_affinity(gt_raw,  'gt')
     A_tfidf = prepare_affinity(sim_raw, 'tfidf')
 
-    # ── Run embeddings ────────────────────────────────────────────────────
     emb_gt,   evals_gt,   _, lap_gt   = run_embedding(A_gt,    'gt')
     emb_tfidf, evals_tfidf, _, lap_tfidf = run_embedding(A_tfidf, 'tfidf')
-
-    # ── Visualize ─────────────────────────────────────────────────────────
     print("\nGenerating plots ...")
     plot_embedding_grid(emb_gt,    'gt',    meta)
     plot_embedding_grid(emb_tfidf, 'tfidf', meta)
