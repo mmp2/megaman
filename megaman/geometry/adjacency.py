@@ -4,7 +4,12 @@ import numpy as np
 from sklearn import neighbors
 from scipy import sparse
 
-from .cyflann.index import Index as CyIndex
+try:
+    from .cyflann.index import Index as CyIndex
+    CYFLANN_LOADED = True
+except ImportError:
+    CyIndex = None
+    CYFLANN_LOADED = False
 from .utils import RegisterSubclasses
 
 try:
@@ -100,6 +105,10 @@ class CyFLANNAdjacency(Adjacency):
                                                mode='distance')
 
     def _get_built_index(self, X):
+        if not CYFLANN_LOADED:
+            raise ImportError(
+                "cyflann extension is not compiled. "
+                "Build megaman from source or use method='kd_tree' instead.")
         if self.flann_index is None:
             cyindex = CyIndex(X, target_precision=self.target_precision,
                               **(self.cyflann_kwds or {}))

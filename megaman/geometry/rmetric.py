@@ -155,7 +155,7 @@ def compute_G_from_H(H, mdimG=None, mode_inv="svd"):
     """
     n_samples = H.shape[0]
     n_dim = H.shape[2]
-    if mode_inv is 'svd':
+    if mode_inv == 'svd':
         Huu, Hsvals, Hvv = np.linalg.svd(H)
         if mdimG is None or mdimG == n_dim:
             # Gsvals = 1./Hsvals
@@ -277,7 +277,7 @@ class RiemannMetric(object):
         """
         if self.H is None:
             self.H, self.G, self.Hvv, self.Hsval, self.Gsvals = riemann_metric(self.Y, self.L, self.mdimG, invert_h = True, mode_inv = mode_inv)
-        if mode_inv is 'svd' and return_svd:
+        if mode_inv == 'svd' and return_svd:
             return self.G, self.Hvv, self.Hsvals, self.Gsvals
         else:
             return self.G
